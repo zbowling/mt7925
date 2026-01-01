@@ -16,15 +16,18 @@ patches/
 │   ├── 0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
 │   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
 │   ├── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
-│   └── 0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-path.patch
+│   ├── 0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-path.patch
+│   └── 0011-wifi-mt76-mt7925-add-lockdep-assertions-for-mutex-ve.patch
 ├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030, #1032)
 │   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
 │   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
 │   └── 0009-wifi-mt76-mt7925-add-NULL-checks-in-MLO-link-and-chanctx.patch
-└── error-handling/     # MCU return value error checking
-    ├── 0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-commands.patch
-    ├── 0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-sta_add.patch
-    └── 0008-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-key-setup.patch
+├── error-handling/     # MCU return value error checking
+│   ├── 0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-commands.patch
+│   ├── 0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-sta_add.patch
+│   └── 0008-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-key-setup.patch
+└── mt7921/             # Equivalent fixes for MT7921 (predecessor driver)
+    └── 0001-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
 ```
 
 ## Problem Description
@@ -374,6 +377,8 @@ If you see NULL pointer dereferences or BUG messages, the driver needs patching.
 
 ## Status
 
+### MT7925 Patches
+
 | Patch | Description | Status |
 |-------|-------------|--------|
 | 0001 | NULL pointer dereference fix | ✅ Submitted to LKML |
@@ -386,6 +391,15 @@ If you see NULL pointer dereferences or BUG messages, the driver needs patching.
 | 0008 | Key setup BSS info error handling | ✅ OpenWrt PR #1031 |
 | 0009 | MLO link/chanctx NULL checks | ✅ OpenWrt PR #1032 |
 | 0010 | TX path NULL pointer fix (mt792x) | ✅ OpenWrt PR #1033 |
+| 0011 | lockdep assertions for debugging | ✅ New |
+
+### MT7921 Patches
+
+The MT7921 driver (predecessor to MT7925) has the same mutex bugs. These were inherited when MT7925 was forked.
+
+| Patch | Description | Status |
+|-------|-------------|--------|
+| 0001 | Missing mutex protection in multiple paths | ✅ Ready for submission |
 
 ## Related Issues
 

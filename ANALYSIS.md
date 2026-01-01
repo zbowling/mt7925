@@ -139,6 +139,8 @@ This suggests the bugs were inherited and never audited.
 
 ## Patches Created
 
+### MT7925 Patches
+
 | Patch | Description | Status |
 |-------|-------------|--------|
 | 0001 | NULL pointer fix in VIF iteration | ✅ Submitted to LKML |
@@ -150,6 +152,14 @@ This suggests the bugs were inherited and never audited.
 | 0007 | BSS info sta_add error handling | ✅ OpenWrt PR #1031 |
 | 0008 | BSS info key setup error handling | ✅ OpenWrt PR #1031 |
 | 0009 | MLO link/chanctx NULL checks | ✅ OpenWrt PR #1032 |
+| 0010 | TX path NULL pointer fix (mt792x) | ✅ OpenWrt PR #1033 |
+| 0011 | lockdep assertions for debugging | ✅ New |
+
+### MT7921 Patches
+
+| Patch | Description | Status |
+|-------|-------------|--------|
+| 0001 | Missing mutex protection in multiple paths | ✅ New - Ready for submission |
 
 ## Testing Recommendations
 
@@ -174,8 +184,8 @@ medium-priority issues.
 
 ### Remaining Work
 
-1. **MT7921 backport**: Same bugs exist in MT7921, needs equivalent fixes
-2. **Remaining MCU error checks**: Lower-priority callbacks still ignore return values
-3. **SKB freeing race**: Potential race condition in station remove (needs investigation)
-4. **lockdep assertions**: Add debug assertions for mutex verification
+1. ~~**MT7921 backport**: Same bugs exist in MT7921, needs equivalent fixes~~ → **DONE** (Patch 0001 in patches/mt7921/)
+2. **Remaining MCU error checks**: Lower-priority callbacks still ignore return values (not critical - these are PM callbacks where errors can't be propagated anyway)
+3. ~~**SKB freeing race**: Potential race condition in station remove~~ → **Not an issue** (mt76_connac_free_pending_tx_skbs has internal spinlock protection)
+4. ~~**lockdep assertions**: Add debug assertions for mutex verification~~ → **DONE** (Patch 0011)
 
