@@ -314,6 +314,64 @@ dmesg | grep -i mt7925
 # The system should no longer hang or panic
 ```
 
+## Stress Testing
+
+This repository includes scripts to help validate the fixes by triggering the race conditions that cause crashes on unpatched kernels.
+
+### Quick Start
+
+```bash
+# Monitor kernel logs in real-time (run in separate terminal)
+sudo ./monitor.sh
+
+# Run all stress tests (5 minutes total)
+sudo ./stress-test.sh -s "YourSSID" -p "YourPassword" -d 300
+
+# Run specific test types
+sudo ./stress-test.sh -s "YourSSID" -p "YourPassword" -t roam -d 60
+sudo ./stress-test.sh -s "YourSSID" -p "YourPassword" -t reconnect -d 60
+sudo ./stress-test.sh -t scan -d 60  # No credentials needed for scan test
+```
+
+### Available Tests
+
+| Test | Description | Triggers |
+|------|-------------|----------|
+| `scan` | Rapid WiFi scan start/abort cycles | Race conditions in scan state machine |
+| `reconnect` | Connect/disconnect cycles | `vif_connect_iter()` NULL dereference |
+| `roam` | Force BSSID roaming (needs multiple APs) | MLO link state transitions |
+| `suspend` | Suspend/resume cycles | PM path races |
+| `interface` | Interface up/down cycles | Driver initialization races |
+| `combined` | Mix of all operations | Multiple race conditions |
+| `all` | Run all tests sequentially | Comprehensive coverage |
+
+### Test Options
+
+```
+-i, --interface IFACE   WiFi interface (default: auto-detect)
+-s, --ssid SSID         Target SSID for connection tests
+-p, --password PASS     WiFi password
+-d, --duration SECS     Test duration in seconds (default: 300)
+-t, --test TEST         Test type: all|roam|reconnect|suspend|scan|interface|combined
+-v, --verbose           Verbose output
+-l, --log FILE          Log file (default: /tmp/mt7925-stress.log)
+--dry-run               Show what would be done without executing
+```
+
+### Expected Results
+
+- **Unpatched kernel**: Expect kernel panics within minutes, especially during roam and reconnect tests
+- **Patched kernel**: All tests should complete without kernel errors
+
+### Interpreting Results
+
+The stress test monitors `dmesg` for errors. Check the log file for:
+```bash
+cat /tmp/mt7925-stress.log | grep -i error
+```
+
+If you see NULL pointer dereferences or BUG messages, the driver needs patching.
+
 ## Status
 
 | Patch | Description | Status |
