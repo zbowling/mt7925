@@ -27,7 +27,8 @@ patches/
 │   ├── 0011-wifi-mt76-mt7925-add-lockdep-assertions-for-mutex-ve.patch
 │   ├── 0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-roaming.patch
 │   ├── 0013-wifi-mt76-mt7925-fix-kernel-warning-in-MLO-ROC-setup.patch
-│   └── 0014-wifi-mt76-mt7925-add-NULL-checks-for-MLO-link-pointers-in-MCU.patch
+│   ├── 0014-wifi-mt76-mt7925-add-NULL-checks-for-MLO-link-pointers-in-MCU.patch
+│   └── 0015-wifi-mt76-mt792x-fix-firmware-reload-after-failed-load.patch
 ├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030, #1032)
 │   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
 │   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
@@ -177,6 +178,26 @@ This race occurs when:
 2. Concurrently, the link is being removed
 3. `mt792x_sta_to_link()` returns NULL
 4. Kernel crashes on `wcid = &mlink->wcid`
+
+#### Patch 15: Firmware Reload After Crash Fix (mt792x)
+
+**File**: `0015-wifi-mt76-mt792x-fix-firmware-reload-after-failed-load.patch`
+
+**CRITICAL**: Fixes "Failed to get patch semaphore" errors that prevent WiFi recovery after firmware crashes.
+
+**What it fixes:**
+- `mt792x_load_firmware()` in mt792x_core.c - Release semaphore and restart MCU before loading
+
+This is the same fix applied to MT7915 in commit 79dd14f. When firmware loading crashes mid-way (after acquiring semaphore but before releasing it), subsequent load attempts fail because the semaphore is still held. This manifests as:
+- Devices becoming unusable after suspend/resume failures
+- WiFi not recovering after firmware crashes
+- Requires full hardware reboot to recover
+
+The fix:
+1. Release patch semaphore (cleanup from any failed previous attempt)
+2. Restart MCU to ensure clean state
+3. Wait for MCU to be ready
+4. Proceed with normal firmware load
 
 ### Additional NULL Checks (patches/null-checks/)
 
@@ -407,6 +428,7 @@ All patches have been submitted upstream to the [OpenWrt mt76 repository](https:
 | 0012 | Key removal failure during MLO roaming | ✅ [OpenWrt PR #1037](https://github.com/openwrt/mt76/pull/1037) |
 | 0013 | MLO ROC kernel warning fix (AP mode) | ✅ [OpenWrt PR #1038](https://github.com/openwrt/mt76/pull/1038) |
 | 0014 | MCU function NULL checks for MLO | ✅ [OpenWrt PR #1039](https://github.com/openwrt/mt76/pull/1039) |
+| 0015 | Firmware reload after crash (mt792x) | ✅ [OpenWrt PR #1040](https://github.com/openwrt/mt76/pull/1040) |
 
 ### MT7921 Patches
 
