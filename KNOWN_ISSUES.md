@@ -85,10 +85,22 @@ After the failed roaming sequence, firmware enters an unresponsive state:
 
 | Issue | Driver Fix | Firmware Fix Needed |
 |-------|-----------|---------------------|
-| Key removal -EINVAL | ❌ Not yet | ✅ Yes |
+| Key removal -EINVAL | ✅ Patch 0012 | ❌ No (driver bug) |
 | BSS fetch failure | 🟡 NULL checks help | ✅ Yes |
 | MCU timeout recovery | ✅ Patches prevent crash | ✅ Root cause in FW |
 | Firmware hang | ✅ Auto-recovery works | ✅ Shouldn't happen |
+
+### New Fix: Patch 0012
+
+**File:** `patches/critical/0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-.patch`
+
+The key removal `-EINVAL` error was a **driver bug**, not a firmware issue. During MLO roaming:
+1. Link teardown cleans up driver state
+2. mac80211 requests group key removal
+3. `mt792x_vif_to_bss_conf()` returns NULL (link already gone)
+4. Driver returned `-EINVAL` instead of success
+
+The fix: Return success (0) when removing a key if the link is already torn down - the key is effectively removed with the link.
 
 ### What Our Patches Do
 
