@@ -327,7 +327,7 @@ dmesg | grep -i mt7925
 | 0007 | Station add BSS info error handling | ✅ OpenWrt PR #1031 |
 | 0008 | Key setup BSS info error handling | ✅ OpenWrt PR #1031 |
 | 0009 | MLO link/chanctx NULL checks | ✅ OpenWrt PR #1032 |
-| **0010** | **TX path NULL pointer fix (mt792x)** | 📋 **CRITICAL - Ready** |
+| 0010 | TX path NULL pointer fix (mt792x) | ✅ OpenWrt PR #1033 |
 
 ## Related Issues
 
