@@ -10,9 +10,9 @@ This document contains a comprehensive analysis of potential bugs and issues in 
 2. **Missing Mutex in Reset/ROC Paths** (Patch 0002) ✅ FIXED
 3. **Missing Mutex in PM Paths** (Patch 0003) ✅ FIXED
 
-### 🟠 High Priority Issues (Need Additional Patches)
+### 🟠 High Priority Issues (Fixed in Additional Patches)
 
-#### 1. Missing NULL Checks in mcu.c
+#### 1. Missing NULL Checks in mcu.c - ✅ FIXED (Patch 0004)
 
 **Location**: `mt7925/mcu.c` lines 1774 and 1852
 
@@ -36,27 +36,24 @@ band = chandef->chan->band;  // DOUBLE DEREFERENCE
 **Impact**: Kernel panic if `link_conf` is NULL during MLO operations
 **Risk**: HIGH - These are called during station add/update operations
 
-#### 2. Missing NULL Checks in main.c
+#### 2. Missing NULL Checks in main.c - ✅ FIXED (Patches 0005, 0009)
 
 **Location**: `mt7925/main.c` multiple locations
 
-The following lines call `mt792x_vif_to_bss_conf()` and use the result without NULL checks:
+| Line | Function | Status |
+|------|----------|--------|
+| 603 | `mt7925_set_key()` | ✅ Fixed (0005) |
+| 891 | `mt7925_mac_link_sta_add()` | ✅ Fixed (0005) |
+| 999 | `mt7925_mac_set_links()` | ✅ Fixed (0009) |
+| 1009 | `mt7925_mac_set_links()` | ✅ Fixed (0009) |
+| 1041 | `mt7925_mac_link_sta_assoc()` | ✅ Fixed (0005) |
+| 1043 | `mt7925_mac_link_sta_assoc()` | ✅ Fixed (0005) |
+| 1109 | `mt7925_mac_link_sta_remove()` | ✅ Fixed (0005) |
+| 1910 | `mt7925_link_info_changed()` | ✅ Fixed (0009) |
+| 2032 | `mt7925_change_vif_links()` | ✅ Fixed (0005) |
+| 2114 | `mt7925_assign_vif_chanctx()` | ✅ Fixed (0009) |
 
-| Line | Function | Risk |
-|------|----------|------|
-| 603 | `mt7925_set_key()` | HIGH - Key operations |
-| 891 | `mt7925_mac_link_sta_add()` | HIGH - Station add |
-| 999 | `mt7925_mac_set_links()` | MEDIUM - MLO setup |
-| 1009 | `mt7925_mac_set_links()` | MEDIUM - MLO setup |
-| 1041 | `mt7925_mac_link_sta_assoc()` | HIGH - Association |
-| 1043 | `mt7925_mac_link_sta_assoc()` | HIGH - Association |
-| 1109 | `mt7925_mac_link_sta_remove()` | HIGH - Station remove |
-| 1807 | `mt7925_ctx_iter()` | MEDIUM - Channel context |
-| 1910 | `mt7925_link_info_changed()` | MEDIUM - BSS info |
-| 2032 | `mt7925_change_vif_links()` | HIGH - Link changes |
-| 2114 | `mt7925_assign_vif_chanctx()` | MEDIUM - Channel context |
-
-#### 3. Unchecked MCU Return Values
+#### 3. Unchecked MCU Return Values - ✅ PARTIALLY FIXED (Patches 0006-0008)
 
 **Location**: Throughout `mt7925/main.c`
 
@@ -77,16 +74,22 @@ mt7925_mcu_set_rts_thresh(&dev->phy, val);  // Line 1230
 **Impact**: Failed MCU commands may not be detected, causing silent failures
 **Risk**: MEDIUM - Most of these are not critical path but could cause issues
 
+Fixed in patches 0006-0008:
+- ✅ AMPDU rx_ba/tx_ba return values (0006)
+- ✅ BSS info in sta_add (0007)
+- ✅ BSS info in key setup (0008)
+
+Remaining unchecked (lower priority - mostly in callbacks):
+- `mt7925_mcu_set_sniffer()` - monitor mode setup
+- `mt7925_mcu_set_deep_sleep()` - PM callback
+- `mt7925_mcu_set_beacon_filter()` - PM callback
+- `mt7925_mcu_set_rxfilter()` - config callback
+
 ### 🟡 Medium Priority Issues
 
-#### 4. Missing `mconf` NULL Checks
+#### 4. Missing `mconf` NULL Checks - ✅ MOSTLY FIXED (Patches 0005, 0009)
 
-Similar to `link_conf`, `mt792x_vif_to_link()` can return NULL but many callers don't check:
-
-```c
-mconf = mt792x_vif_to_link(mvif, link_id);
-// Then used without NULL check
-```
+Most locations are now fixed. Remaining are in callback iterators where errors can't be propagated.
 
 #### 5. Potential Race in SKB Freeing
 
@@ -134,18 +137,19 @@ MT7921 has the **same bugs** as MT7925 - they were copied when MT7925 was forked
 
 This suggests the bugs were inherited and never audited.
 
-## Recommended Additional Patches
+## Patches Created
 
-### Patch 0004: NULL Checks in MCU Functions
-Add NULL checks in `mcu.c` for `link_conf` usage in:
-- `mt7925_mcu_sta_phy_tlv()`
-- `mt7925_mcu_sta_rate_ctrl_tlv()`
-
-### Patch 0005: NULL Checks in Main Functions
-Add NULL checks in `main.c` for all `mt792x_vif_to_bss_conf()` calls without checks.
-
-### Patch 0006: MCU Error Handling
-Add return value checking for critical MCU calls.
+| Patch | Description | Status |
+|-------|-------------|--------|
+| 0001 | NULL pointer fix in VIF iteration | ✅ Submitted to LKML |
+| 0002 | Mutex fix in reset/ROC | ✅ Submitted to LKML |
+| 0003 | Mutex fix in PM paths | ✅ Submitted to LKML |
+| 0004 | NULL checks in MCU TLV functions | ✅ OpenWrt PR #1030 |
+| 0005 | NULL checks in main.c | ✅ OpenWrt PR #1030 |
+| 0006 | AMPDU MCU error handling | ✅ OpenWrt PR #1031 |
+| 0007 | BSS info sta_add error handling | ✅ OpenWrt PR #1031 |
+| 0008 | BSS info key setup error handling | ✅ OpenWrt PR #1031 |
+| 0009 | MLO link/chanctx NULL checks | ✅ OpenWrt PR #1032 |
 
 ## Testing Recommendations
 
@@ -158,11 +162,20 @@ To trigger these bugs:
 
 ## Conclusion
 
-The MT7925 driver has significant code quality issues stemming from:
-1. Insufficient NULL pointer checking
-2. Missing mutex protection (partially fixed)
-3. Ignored return values
-4. Inherited bugs from MT7921
+The MT7925 driver had significant code quality issues stemming from:
+1. ~~Insufficient NULL pointer checking~~ → **FIXED** (Patches 0001, 0004, 0005, 0009)
+2. ~~Missing mutex protection~~ → **FIXED** (Patches 0002, 0003)
+3. ~~Ignored return values~~ → **PARTIALLY FIXED** (Patches 0006-0008)
+4. Inherited bugs from MT7921 → Still present in MT7921, needs separate patch series
 
-These issues have existed since the driver was added to the kernel in late 2023. The patches in this repository fix the most critical issues (deadlocks and panics), but additional work is needed for a fully robust driver.
+These issues existed since the driver was added to the kernel in late 2023/early 2024. 
+The patches in this repository fix all critical issues (deadlocks and panics) and most 
+medium-priority issues.
+
+### Remaining Work
+
+1. **MT7921 backport**: Same bugs exist in MT7921, needs equivalent fixes
+2. **Remaining MCU error checks**: Lower-priority callbacks still ignore return values
+3. **SKB freeing race**: Potential race condition in station remove (needs investigation)
+4. **lockdep assertions**: Add debug assertions for mutex verification
 
