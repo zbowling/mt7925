@@ -53,22 +53,27 @@ This patch adds NULL checks for `bss_conf` in all loops that iterate over `valid
 
 **File**: `0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch`
 
-This patch adds mutex protection around interface iteration in two critical functions that are called during firmware recovery and ROC (Remain On Channel) operations.
+This patch adds mutex protection around interface iteration in two critical paths:
 
-**Functions fixed:**
+**Functions/Paths fixed:**
 - `mt7925_mac_reset_work()` in mac.c - Called during firmware recovery after MCU timeouts
-- `mt7925_roc_abort_sync()` in main.c - Called during suspend/resume and when aborting ROC operations
+- PCI suspend path in pci.c - Wraps the `mt7925_roc_abort_sync()` call with mutex protection
+
+**Important Note**: The mutex is added at the *call site* in pci.c rather than inside `mt7925_roc_abort_sync()` itself. This is because `roc_abort_sync` is called from two different contexts:
+1. Suspend path (pci.c) - doesn't hold mutex → needs mutex added at call site
+2. Station remove path (main.c) - already holds mutex → adding mutex inside would cause self-deadlock
 
 **What it fixes:**
 - System hangs during WiFi network switching
-- Deadlocks during BSSID roaming/hopping
+- Deadlocks during BSSID roaming/hopping  
+- Self-deadlock where wpa_supplicant hangs waiting on mutex it already owns
 - Network stack becoming unresponsive
 - Processes stuck waiting on mutex locks
 - Hangs during suspend/resume
 
 ### Patch 3: Runtime PM and MLO PM Mutex Fix
 
-**File**: `0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-runtime-PM.patch`
+**File**: `0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch`
 
 This patch fixes two additional code paths that iterate over active interfaces and call MCU functions without proper mutex protection.
 
@@ -134,7 +139,7 @@ cd /path/to/linux-kernel-source
 # Apply all three patches in order
 git apply /path/to/mt7925/0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
 git apply /path/to/mt7925/0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
-git apply /path/to/mt7925/0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-runtime-PM.patch
+git apply /path/to/mt7925/0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
 
 # Build the kernel or just the mt76 modules
 # For full kernel build:
@@ -161,7 +166,7 @@ cd linux-*/
 # Apply all patches
 patch -p1 < /path/to/mt7925/0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
 patch -p1 < /path/to/mt7925/0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
-patch -p1 < /path/to/mt7925/0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-runtime-PM.patch
+patch -p1 < /path/to/mt7925/0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
 
 # Build kernel package
 fakeroot debian/rules binary-headers binary-generic
@@ -182,7 +187,7 @@ cd linux-*/
 # Apply all patches
 patch -p1 < /path/to/mt7925/0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
 patch -p1 < /path/to/mt7925/0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
-patch -p1 < /path/to/mt7925/0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-runtime-PM.patch
+patch -p1 < /path/to/mt7925/0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
 
 # Build just the mt76 modules (including mt7925)
 make -j$(nproc) M=drivers/net/wireless/mediatek/mt76
