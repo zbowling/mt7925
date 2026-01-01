@@ -1,62 +1,33 @@
-From f82776104bc9aa21ec3fdbaf2840f074df75fd8f Mon Sep 17 00:00:00 2001
+From 9555df8f9c81ef5fb04c0dfbd13b36177bb0d7be Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
-Date: Wed, 31 Dec 2025 14:33:21 -0800
-Subject: [PATCH] wifi: mt76: mt7925: fix missing mutex protection in reset and
- ROC abort paths
+Date: Wed, 31 Dec 2025 15:42:27 -0800
+Subject: [PATCH 2/3] wifi: mt76: mt7925: fix missing mutex protection in reset
+ and ROC abort
 
-This patch is a follow-up to the NULL pointer dereference fix (commit
-6790e656030fb23527aa5c0d6eaa28ce029335b1). While that patch prevented
-kernel panics from NULL pointer dereferences, it did not address the
-underlying system hangs and deadlocks that occur during firmware
-recovery.
+During firmware recovery and ROC (Remain On Channel) abort operations,
+the driver iterates over active interfaces and calls MCU functions that
+require the device mutex to be held, but the mutex was not acquired.
 
-The issue manifests on Framework Desktop systems with MT7925 WiFi cards
-when:
-1. Switching between WiFi networks
-2. Disconnecting/reconnecting ethernet while WiFi is active
-3. Firmware message timeouts trigger hardware reset recovery
+This causes system-wide hangs where network commands hang indefinitely,
+processes get stuck in uninterruptible sleep (D state), and the system
+becomes completely unresponsive requiring force reboot.
 
-During these operations, MCU message timeouts can occur, triggering
-mt792x_reset() which queues reset_work. The reset work and ROC abort
-functions iterate over active interfaces and call MCU functions that
-require the device mutex to be held, but the mutex was not acquired
-before the iteration.
-
-This causes system-wide hangs where:
-- Network commands (ip, etc.) hang indefinitely
-- Processes get stuck in uninterruptible sleep (D state)
-- Tailscale and other network services timeout
-- System becomes completely unresponsive requiring force reboot
-
-The hang occurs because:
-1. Firmware timeouts trigger hardware reset via mt792x_reset()
-2. Reset work (mt7925_mac_reset_work) or ROC abort (mt7925_roc_abort_sync)
-   tries to iterate interfaces and call MCU functions
-3. MCU operations block indefinitely waiting for mutex that's held
-   elsewhere, or deadlock occurs
-4. Network stack becomes unresponsive
-
-Add mutex protection around interface iteration in both:
+Add mutex protection around interface iteration in:
 - mt7925_mac_reset_work(): Called during firmware recovery after MCU
   timeouts to reconnect all interfaces
 - mt7925_roc_abort_sync(): Called during suspend/resume and when aborting
   Remain On Channel operations
 
-This matches the pattern used elsewhere in the driver (e.g., in
-mt7925_roc_iter, mt7925_mcu_set_suspend_iter, etc.) where interface
+This matches the pattern used elsewhere in the driver where interface
 iteration callbacks invoke MCU functions.
-
-Note: The author does not have deep familiarity with this codebase, but
-this fix has been tested and appears to resolve the panic and deadlock
-issues observed on Framework Desktop hardware with MT7925 WiFi cards.
 
 Reported-by: Zac Bowling <zac@zacbowling.com>
 Tested-by: Zac Bowling <zac@zacbowling.com>
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
- drivers/net/wireless/mediatek/mt76/mt7925/mac.c  | 2 ++
- drivers/net/wireless/mediatek/mt76/mt7925/main.c | 5 ++++-
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/wireless/mediatek/mt76/mt7925/mac.c | 2 ++
+ drivers/net/wireless/mediatek/mt76/mt7925/pci.c | 2 ++
+ 2 files changed, 4 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 index 184efe8afa10..06420ac6ed55 100644
@@ -74,25 +45,20 @@ index 184efe8afa10..06420ac6ed55 100644
  	mt76_connac_power_save_sched(&dev->mt76.phy, pm);
  
  	mt7925_regd_change(&dev->phy, "00");
-diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 3001a62a8b67..1f7661175623 100644
---- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-+++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-@@ -459,10 +459,13 @@ void mt7925_roc_abort_sync(struct mt792x_dev *dev)
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
+index c4161754c01d..e9d62c6aee91 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
+@@ -455,7 +455,9 @@ static int mt7925_pci_suspend(struct device *device)
+ 	cancel_delayed_work_sync(&pm->ps_work);
+ 	cancel_work_sync(&pm->wake_work);
  
- 	timer_delete_sync(&phy->roc_timer);
- 	cancel_work_sync(&phy->roc_work);
--	if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
-+	if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state)) {
-+		mt792x_mutex_acquire(dev);
- 		ieee80211_iterate_interfaces(mt76_hw(dev),
- 					     IEEE80211_IFACE_ITER_RESUME_ALL,
- 					     mt7925_roc_iter, (void *)phy);
-+		mt792x_mutex_release(dev);
-+	}
- }
- EXPORT_SYMBOL_GPL(mt7925_roc_abort_sync);
++	mt792x_mutex_acquire(dev);
+ 	mt7925_roc_abort_sync(dev);
++	mt792x_mutex_release(dev);
  
+ 	err = mt792x_mcu_drv_pmctrl(dev);
+ 	if (err < 0)
 -- 
 2.51.0
 
