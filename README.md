@@ -2,6 +2,69 @@
 
 This repository contains three critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics and system deadlocks on Framework Desktop systems and other hardware using this WiFi card.
 
+## ⚠️ Disclaimer
+
+I am not an expert on the Linux kernel wireless subsystem or the MediaTek mt76 driver codebase. These fixes were developed through analysis of kernel panics and deadlock traces on my Framework Desktop, cross-referencing with similar code patterns in other drivers. However, based on the analysis below, these fixes appear sound and follow established patterns used by other wireless drivers in the kernel.
+
+**These bugs have existed since the MT7925 driver was added to the kernel tree (late 2023 / early 2024).** Given that the alternative is kernel panics and system-wide deadlocks requiring hard reboots, these fixes represent a significant improvement even if they're not perfect.
+
+## Background & Analysis
+
+### The Same Bugs Exist in MT7921
+
+The MT7925 driver was derived from the MT7921 driver (for the previous generation MediaTek WiFi chipset). Upon investigation, **the MT7921 driver has the exact same mutex protection bugs**:
+
+- `mt7921_roc_abort_sync()` - missing mutex protection ❌
+- `mt7921_set_runtime_pm()` - missing mutex protection ❌
+- Similar patterns throughout the codebase
+
+This suggests these bugs were inherited when MT7925 was forked from MT7921, and neither driver has been properly audited for mutex correctness.
+
+### The Older MT7615 Driver Does It Correctly
+
+The MT7615 driver (for much older MediaTek hardware) has **proper mutex protection** in the equivalent functions:
+
+```c
+// mt7615/main.c - roc_work has mutex protection
+mt7615_mutex_acquire(phy->dev);
+ieee80211_iterate_active_interfaces(phy->mt76->hw,
+                                    IEEE80211_IFACE_ITER_RESUME_ALL,
+                                    mt7615_roc_iter, phy);
+mt7615_mutex_release(phy->dev);
+```
+
+The MT7615 driver serves as a reference for how these patterns should be implemented.
+
+### Consistent with Other Wireless Drivers
+
+This mutex pattern is consistent with how other major wireless drivers handle `ieee80211_iterate_active_interfaces`:
+
+- **Intel iwlwifi**: Uses `lockdep_assert_held(&mvm->mutex)` to verify the driver mutex is held before calling iterate functions
+- **Atheros (ath9k/10k/11k/12k)**: Only uses the `_atomic` variant where callbacks don't need to sleep
+- **TI wlcore**: Explicitly documents mutex requirements in comments
+
+The mac80211 subsystem's `ieee80211_iterate_active_interfaces()` only protects the **interface list** with its internal mutex. It does **not** protect driver state. When callbacks invoke MCU functions (like MT76 does), the driver must hold its own mutex to protect hardware/firmware communication.
+
+### Why These Bugs Cause Deadlocks
+
+The pattern looks like this:
+
+```
+Thread A (e.g., wpa_supplicant):
+  1. Acquires device mutex
+  2. Calls sta_remove path
+  3. Calls roc_abort_sync()
+  4. Callback tries to send MCU command (needs mutex)
+  → DEADLOCK: Already holding mutex, tries to acquire again
+
+Thread B (e.g., suspend path):  
+  1. Calls roc_abort_sync() WITHOUT mutex
+  2. Callback tries to send MCU command (needs mutex)
+  → RACE CONDITION: No protection for MCU operations
+```
+
+Our fix adds mutex at the **call site** (not inside the function) to handle both cases correctly.
+
 ## Problem Description
 
 The MT7925 WiFi driver (mt7925e) has several related bugs that cause system instability:
