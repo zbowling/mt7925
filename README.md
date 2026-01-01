@@ -474,8 +474,8 @@ All patches have been submitted upstream to the [OpenWrt mt76 repository](https:
 | 0013 | MLO ROC kernel warning fix (AP mode) | ✅ [OpenWrt PR #1038](https://github.com/openwrt/mt76/pull/1038) |
 | 0014 | MCU function NULL checks for MLO | ✅ [OpenWrt PR #1039](https://github.com/openwrt/mt76/pull/1039) |
 | 0015 | Firmware reload after crash (mt792x) | ✅ [OpenWrt PR #1040](https://github.com/openwrt/mt76/pull/1040) |
-| 0016 | Resume path mutex protection | ⏳ Pending PR |
-| 0017 | NULL checks and error handling | ⏳ Pending PR |
+| 0016 | Resume path mutex protection | ✅ [OpenWrt PR #1042](https://github.com/openwrt/mt76/pull/1042) |
+| 0017 | NULL checks and error handling | ✅ [OpenWrt PR #1041](https://github.com/openwrt/mt76/pull/1041) |
 
 ### MT7921 Patches
 
