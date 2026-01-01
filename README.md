@@ -8,6 +8,13 @@ I am not an expert on the MediaTek mt76 driver codebase. These fixes were develo
 
 **These bugs have existed since the MT7925 driver was added to the kernel tree (late 2023 / early 2024).** Given that the alternative is kernel panics and system-wide deadlocks requiring hard reboots, these fixes represent a significant improvement.
 
+## 📋 Known Issues
+
+See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for ongoing issues that are **partially mitigated** by these patches but likely have root causes in the MediaTek firmware itself, including:
+- MCU timeout during MLO roaming
+- Performance degradation compared to Intel cards
+- Frequent deauthentication cycles
+
 ## Repository Structure
 
 ```
