@@ -401,6 +401,7 @@ All patches have been submitted upstream to the [OpenWrt mt76 repository](https:
 | 0009 | MLO link/chanctx NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
 | 0010 | TX path NULL pointer fix (mt792x) | ✅ Submitted to LKML and [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
 | 0011 | lockdep assertions for debugging | ✅ Submitted to LKML and [OpenWrt PR #1035](https://github.com/openwrt/mt76/pull/1035) |
+| 0012 | Key removal failure during MLO roaming | 🟡 Pending |
 
 ### MT7921 Patches
 
@@ -416,6 +417,7 @@ The MT7921 driver (predecessor to MT7925) has the same mutex bugs. These were in
 - [Ubuntu Launchpad Bug #2137291](https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2137291)
 - [Linux Kernel Mailing List Thread](https://lore.kernel.org/all/CAA5_Hq7vNOy9oCGkkgyukq2OP=a5yL_3ZKBdmNtBXS+zp6byiQ@mail.gmail.com/T/#u)
 - [OpenWrt mt76 Issue #1027](https://github.com/openwrt/mt76/issues/1027)
+- [OpenWrt mt76 Issue #1036](https://github.com/openwrt/mt76/issues/1036) - MLO roaming firmware hang (partially mitigated)
 
 ## Contributing
 
@@ -426,4 +428,4 @@ If you encounter issues or have improvements, please help by:
 
 ## License
 
-These patches are provided under the same license as the Linux kernel (GPL v2).
+These patches are provided under the same license as the Linux kernel (GPL v2) and BSD 3-Clause.
