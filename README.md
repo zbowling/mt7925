@@ -401,7 +401,7 @@ All patches have been submitted upstream to the [OpenWrt mt76 repository](https:
 | 0009 | MLO link/chanctx NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
 | 0010 | TX path NULL pointer fix (mt792x) | ✅ Submitted to LKML and [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
 | 0011 | lockdep assertions for debugging | ✅ Submitted to LKML and [OpenWrt PR #1035](https://github.com/openwrt/mt76/pull/1035) |
-| 0012 | Key removal failure during MLO roaming | 🟡 Pending |
+| 0012 | Key removal failure during MLO roaming | ✅ [OpenWrt PR #1037](https://github.com/openwrt/mt76/pull/1037) |
 
 ### MT7921 Patches
 

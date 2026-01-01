@@ -130,7 +130,8 @@ With our patches:
 
 ### Related Links
 
-- [OpenWrt Issue #XXX](https://github.com/openwrt/mt76/issues/XXX) (pending)
+- [OpenWrt Issue #1036](https://github.com/openwrt/mt76/issues/1036)
+- [OpenWrt PR #1037](https://github.com/openwrt/mt76/pull/1037) - Fix for key removal failure
 - [LKML Patches](https://lore.kernel.org/linux-wireless/?q=mt7925+zbowling)
 - [Framework Community Thread](https://community.frame.work/t/issues-with-mediatek-mt7925-rz717-wi-fi-card/75815)
 
