@@ -377,6 +377,8 @@ If you see NULL pointer dereferences or BUG messages, the driver needs patching.
 
 ## Status
 
+All patches have been submitted upstream to the [OpenWrt mt76 repository](https://github.com/openwrt/mt76).
+
 ### MT7925 Patches
 
 | Patch | Description | Status |
@@ -384,14 +386,14 @@ If you see NULL pointer dereferences or BUG messages, the driver needs patching.
 | 0001 | NULL pointer dereference fix | ✅ Submitted to LKML |
 | 0002 | Reset/ROC mutex fix | ✅ Submitted to LKML |
 | 0003 | Runtime PM/MLO PM mutex fix | ✅ Submitted to LKML |
-| 0004 | MCU STA TLV NULL checks | ✅ OpenWrt PR #1030 |
-| 0005 | Main.c link NULL checks | ✅ OpenWrt PR #1030 |
-| 0006 | AMPDU MCU error handling | ✅ OpenWrt PR #1031 |
-| 0007 | Station add BSS info error handling | ✅ OpenWrt PR #1031 |
-| 0008 | Key setup BSS info error handling | ✅ OpenWrt PR #1031 |
-| 0009 | MLO link/chanctx NULL checks | ✅ OpenWrt PR #1032 |
-| 0010 | TX path NULL pointer fix (mt792x) | ✅ OpenWrt PR #1033 |
-| 0011 | lockdep assertions for debugging | ✅ New |
+| 0004 | MCU STA TLV NULL checks | ✅ [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
+| 0005 | Main.c link NULL checks | ✅ [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
+| 0006 | AMPDU MCU error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0007 | Station add BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0008 | Key setup BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0009 | MLO link/chanctx NULL checks | ✅ [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
+| 0010 | TX path NULL pointer fix (mt792x) | ✅ [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
+| 0011 | lockdep assertions for debugging | ✅ [OpenWrt PR #1035](https://github.com/openwrt/mt76/pull/1035) |
 
 ### MT7921 Patches
 
@@ -399,7 +401,7 @@ The MT7921 driver (predecessor to MT7925) has the same mutex bugs. These were in
 
 | Patch | Description | Status |
 |-------|-------------|--------|
-| 0001 | Missing mutex protection in multiple paths | ✅ Ready for submission |
+| 0001 | Missing mutex protection in multiple paths | ✅ [OpenWrt PR #1034](https://github.com/openwrt/mt76/pull/1034) |
 
 ## Related Issues
 
