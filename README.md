@@ -383,17 +383,17 @@ All patches have been submitted upstream to the [OpenWrt mt76 repository](https:
 
 | Patch | Description | Status |
 |-------|-------------|--------|
-| 0001 | NULL pointer dereference fix | ✅ Submitted to LKML |
-| 0002 | Reset/ROC mutex fix | ✅ Submitted to LKML |
-| 0003 | Runtime PM/MLO PM mutex fix | ✅ Submitted to LKML |
-| 0004 | MCU STA TLV NULL checks | ✅ [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
-| 0005 | Main.c link NULL checks | ✅ [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
-| 0006 | AMPDU MCU error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0007 | Station add BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0008 | Key setup BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0009 | MLO link/chanctx NULL checks | ✅ [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
-| 0010 | TX path NULL pointer fix (mt792x) | ✅ [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
-| 0011 | lockdep assertions for debugging | ✅ [OpenWrt PR #1035](https://github.com/openwrt/mt76/pull/1035) |
+| 0001 | NULL pointer dereference fix | ✅ Submitted to LKML and [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
+| 0002 | Reset/ROC mutex fix | ✅ Submitted to LKML and [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
+| 0003 | Runtime PM/MLO PM mutex fix | ✅ Submitted to LKML and [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
+| 0004 | MCU STA TLV NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
+| 0005 | Main.c link NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
+| 0006 | AMPDU MCU error handling | ✅ Submitted to LKML and [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0007 | Station add BSS info error handling | ✅ Submitted to LKML and [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0008 | Key setup BSS info error handling | ✅ Submitted to LKML and [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0009 | MLO link/chanctx NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
+| 0010 | TX path NULL pointer fix (mt792x) | ✅ Submitted to LKML and [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
+| 0011 | lockdep assertions for debugging | ✅ Submitted to LKML and [OpenWrt PR #1035](https://github.com/openwrt/mt76/pull/1035) |
 
 ### MT7921 Patches
 
