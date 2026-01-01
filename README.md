@@ -16,9 +16,10 @@ patches/
 │   ├── 0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
 │   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
 │   └── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
-├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030)
+├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030, #1032)
 │   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
-│   └── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
+│   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
+│   └── 0009-wifi-mt76-mt7925-add-NULL-checks-in-MLO-link-and-chanctx.patch
 └── error-handling/     # MCU return value error checking
     ├── 0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-commands.patch
     ├── 0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-sta_add.patch
@@ -171,6 +172,18 @@ Adds comprehensive NULL checks throughout main.c.
 - `mt7925_mac_link_sta_remove()` - Check mlink and link_conf
 - `mt7925_change_vif_links()` - Check link_conf before adding BSS
 
+#### Patch 9: MLO Link and Chanctx NULL Checks
+
+**File**: `0009-wifi-mt76-mt7925-add-NULL-checks-in-MLO-link-and-chanctx.patch`
+
+Adds NULL pointer checks in MLO link selection and channel context functions.
+
+**Functions fixed:**
+- `mt7925_mac_set_links()` - Check primary and secondary link_conf before band selection
+- `mt7925_link_info_changed()` - Check mconf before getting link_conf (prevents chain dereference)
+- `mt7925_assign_vif_chanctx()` - Check mconf before use, return -EINVAL if NULL
+- `mt7925_unassign_vif_chanctx()` - Check mconf during MLO cleanup
+
 ### MCU Error Handling (patches/error-handling/)
 
 #### Patch 6: AMPDU MCU Error Handling
@@ -281,9 +294,10 @@ dmesg | grep -i mt7925
 | 0003 | Runtime PM/MLO PM mutex fix | ✅ Submitted to LKML |
 | 0004 | MCU STA TLV NULL checks | ✅ OpenWrt PR #1030 |
 | 0005 | Main.c link NULL checks | ✅ OpenWrt PR #1030 |
-| 0006 | AMPDU MCU error handling | 📋 Ready for submission |
-| 0007 | Station add BSS info error handling | 📋 Ready for submission |
-| 0008 | Key setup BSS info error handling | 📋 Ready for submission |
+| 0006 | AMPDU MCU error handling | ✅ OpenWrt PR #1031 |
+| 0007 | Station add BSS info error handling | ✅ OpenWrt PR #1031 |
+| 0008 | Key setup BSS info error handling | ✅ OpenWrt PR #1031 |
+| 0009 | MLO link/chanctx NULL checks | 📋 Ready for submission |
 
 ## Related Issues
 

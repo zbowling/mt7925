@@ -1,0 +1,113 @@
+From 244fdd9e7606e5ab54f905a0103e882785e8407c Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
+Date: Wed, 31 Dec 2025 17:32:55 -0800
+Subject: [PATCH] wifi: mt76: mt7925: add NULL checks in MLO link and chanctx
+ functions
+
+Add NULL pointer checks for mconf and link_conf in several functions
+that were missing validation after calling mt792x_vif_to_link() and
+mt792x_vif_to_bss_conf().
+
+Functions fixed:
+- mt7925_mac_set_links(): Check both primary and secondary link_conf
+  before dereferencing chanreq.oper for band selection
+- mt7925_link_info_changed(): Check mconf before using it to get
+  link_conf, prevents NULL dereference chain
+- mt7925_assign_vif_chanctx(): Check mconf before use, return -EINVAL
+  if NULL; check pri_link_conf before passing to MCU function
+- mt7925_unassign_vif_chanctx(): Check mconf before dereferencing,
+  return early if NULL during MLO cleanup
+
+These functions handle MLO (Multi-Link Operation) scenarios where link
+configurations may not be fully set up when called, particularly during
+rapid link state transitions or error recovery paths.
+
+Reported-by: Zac Bowling <zac@zacbowling.com>
+Signed-off-by: Zac Bowling <zac@zacbowling.com>
+---
+ .../net/wireless/mediatek/mt76/mt7925/main.c  | 39 +++++++++++++++----
+ 1 file changed, 32 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
+index 058394b2e067..852cf8ff842f 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
+@@ -1006,18 +1006,29 @@ mt7925_mac_set_links(struct mt76_dev *mdev, struct ieee80211_vif *vif)
+ {
+ 	struct mt792x_dev *dev = container_of(mdev, struct mt792x_dev, mt76);
+ 	struct mt792x_vif *mvif = (struct mt792x_vif *)vif->drv_priv;
+-	struct ieee80211_bss_conf *link_conf =
+-		mt792x_vif_to_bss_conf(vif, mvif->deflink_id);
+-	struct cfg80211_chan_def *chandef = &link_conf->chanreq.oper;
+-	enum nl80211_band band = chandef->chan->band, secondary_band;
++	struct ieee80211_bss_conf *link_conf;
++	struct cfg80211_chan_def *chandef;
++	enum nl80211_band band, secondary_band;
++	u16 sel_links;
++	u8 secondary_link_id;
++
++	link_conf = mt792x_vif_to_bss_conf(vif, mvif->deflink_id);
++	if (!link_conf)
++		return;
+ 
+-	u16 sel_links = mt76_select_links(vif, 2);
+-	u8 secondary_link_id = __ffs(~BIT(mvif->deflink_id) & sel_links);
++	chandef = &link_conf->chanreq.oper;
++	band = chandef->chan->band;
++
++	sel_links = mt76_select_links(vif, 2);
++	secondary_link_id = __ffs(~BIT(mvif->deflink_id) & sel_links);
+ 
+ 	if (!ieee80211_vif_is_mld(vif) || hweight16(sel_links) < 2)
+ 		return;
+ 
+ 	link_conf = mt792x_vif_to_bss_conf(vif, secondary_link_id);
++	if (!link_conf)
++		return;
++
+ 	secondary_band = link_conf->chanreq.oper.chan->band;
+ 
+ 	if (band == NL80211_BAND_2GHZ ||
+@@ -1927,7 +1938,12 @@ static void mt7925_link_info_changed(struct ieee80211_hw *hw,
+ 	struct ieee80211_bss_conf *link_conf;
+ 
+ 	mconf = mt792x_vif_to_link(mvif, info->link_id);
++	if (!mconf)
++		return;
++
+ 	link_conf = mt792x_vif_to_bss_conf(vif, mconf->link_id);
++	if (!link_conf)
++		return;
+ 
+ 	mt792x_mutex_acquire(dev);
+ 
+@@ -2136,9 +2152,14 @@ static int mt7925_assign_vif_chanctx(struct ieee80211_hw *hw,
+ 
+ 	if (ieee80211_vif_is_mld(vif)) {
+ 		mconf = mt792x_vif_to_link(mvif, link_conf->link_id);
++		if (!mconf) {
++			mutex_unlock(&dev->mt76.mutex);
++			return -EINVAL;
++		}
++
+ 		pri_link_conf = mt792x_vif_to_bss_conf(vif, mvif->deflink_id);
+ 
+-		if (vif->type == NL80211_IFTYPE_STATION &&
++		if (pri_link_conf && vif->type == NL80211_IFTYPE_STATION &&
+ 		    mconf == &mvif->bss_conf)
+ 			mt7925_mcu_add_bss_info(&dev->phy, NULL, pri_link_conf,
+ 						NULL, true);
+@@ -2167,6 +2188,10 @@ static void mt7925_unassign_vif_chanctx(struct ieee80211_hw *hw,
+ 
+ 	if (ieee80211_vif_is_mld(vif)) {
+ 		mconf = mt792x_vif_to_link(mvif, link_conf->link_id);
++		if (!mconf) {
++			mutex_unlock(&dev->mt76.mutex);
++			return;
++		}
+ 
+ 		if (vif->type == NL80211_IFTYPE_STATION &&
+ 		    mconf == &mvif->bss_conf)
+-- 
+2.51.0
+
