@@ -156,11 +156,12 @@ check_driver() {
 
 check_dmesg_errors() {
     local new_errors
-    new_errors=$(dmesg | grep -ciE "mt7925.*error|mt76.*null|BUG:|kernel panic" 2>/dev/null || echo "0")
+    new_errors=$(dmesg 2>/dev/null | grep -ciE "mt7925.*error|mt76.*null|BUG:|kernel panic" || true)
+    new_errors=${new_errors:-0}
     
-    if [[ "$new_errors" -gt 0 ]]; then
+    if [[ "$new_errors" =~ ^[0-9]+$ ]] && [[ "$new_errors" -gt 0 ]]; then
         log ERROR "Found $new_errors kernel errors related to mt7925!"
-        dmesg | grep -iE "mt7925.*error|mt76.*null|BUG:" | tail -5 >> "$LOG_FILE"
+        dmesg 2>/dev/null | grep -iE "mt7925.*error|mt76.*null|BUG:" | tail -5 >> "$LOG_FILE"
         ((ERRORS++)) || true
     fi
 }
