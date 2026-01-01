@@ -25,7 +25,8 @@ patches/
 │   ├── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
 │   ├── 0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-path.patch
 │   ├── 0011-wifi-mt76-mt7925-add-lockdep-assertions-for-mutex-ve.patch
-│   └── 0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-roaming.patch
+│   ├── 0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-roaming.patch
+│   └── 0013-wifi-mt76-mt7925-fix-kernel-warning-in-MLO-ROC-setup.patch
 ├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030, #1032)
 │   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
 │   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
@@ -403,6 +404,7 @@ All patches have been submitted upstream to the [OpenWrt mt76 repository](https:
 | 0010 | TX path NULL pointer fix (mt792x) | ✅ Submitted to LKML and [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
 | 0011 | lockdep assertions for debugging | ✅ Submitted to LKML and [OpenWrt PR #1035](https://github.com/openwrt/mt76/pull/1035) |
 | 0012 | Key removal failure during MLO roaming | ✅ [OpenWrt PR #1037](https://github.com/openwrt/mt76/pull/1037) |
+| 0013 | MLO ROC kernel warning fix (AP mode) | ✅ [OpenWrt PR #1038](https://github.com/openwrt/mt76/pull/1038) |
 
 ### MT7921 Patches
 
@@ -419,6 +421,7 @@ The MT7921 driver (predecessor to MT7925) has the same mutex bugs. These were in
 - [Linux Kernel Mailing List Thread](https://lore.kernel.org/all/CAA5_Hq7vNOy9oCGkkgyukq2OP=a5yL_3ZKBdmNtBXS+zp6byiQ@mail.gmail.com/T/#u)
 - [OpenWrt mt76 Issue #1027](https://github.com/openwrt/mt76/issues/1027)
 - [OpenWrt mt76 Issue #1036](https://github.com/openwrt/mt76/issues/1036) - MLO roaming firmware hang (partially mitigated)
+- [OpenWrt mt76 Issue #1014](https://github.com/openwrt/mt76/issues/1014) - MLO AP kernel oops (fixed by patch 0013)
 
 ## Contributing
 
