@@ -29,7 +29,8 @@ patches/
 │   ├── 0013-wifi-mt76-mt7925-fix-kernel-warning-in-MLO-ROC-setup.patch
 │   ├── 0014-wifi-mt76-mt7925-add-NULL-checks-for-MLO-link-pointers-in-MCU.patch
 │   ├── 0015-wifi-mt76-mt792x-fix-firmware-reload-after-failed-load.patch
-│   └── 0016-wifi-mt76-mt7925-add-mutex-protection-in-resume-path.patch
+│   ├── 0016-wifi-mt76-mt7925-add-mutex-protection-in-resume-path.patch
+│   └── 0017-wifi-mt76-mt7925-add-NULL-checks-and-error-handling.patch
 ├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030, #1032)
 │   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
 │   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
@@ -219,6 +220,29 @@ The fix:
 - Matches the protection pattern used elsewhere in the codebase (e.g., `init.c:202`)
 
 **Found by**: Static analysis (sparse/coccinelle) - identified as the only call site missing mutex protection for these MCU functions.
+
+#### Patch 17: NULL Checks and Error Handling
+
+**File**: `0017-wifi-mt76-mt7925-add-NULL-checks-and-error-handling.patch`
+
+**CRITICAL**: Adds missing NULL pointer checks and error handling for MCU operations.
+
+**What it fixes:**
+- `mt7925_mac_link_sta_add()` in main.c - Add NULL checks for `mlink` and `mconf`
+- `mt7925_conf_tx()` in main.c - Add NULL check for `mconf`
+- `mt7925_regd_update()` in init.c - Add error logging for MCU failures
+
+**Functions fixed:**
+- `mt7925_mac_link_sta_add()` - Check `mt792x_sta_to_link()` and `mt792x_vif_to_link()` results before use
+- `mt7925_conf_tx()` - Check `mt792x_vif_to_link()` result before use
+- `mt7925_regd_update()` - Log errors from `mt7925_mcu_set_clc()`, `mt7925_mcu_set_channel_domain()`, and `mt7925_set_tx_sar_pwr()`
+
+**What it fixes:**
+- Prevents kernel crashes from NULL pointer dereferences during MLO link operations
+- Helps diagnose regulatory domain update failures with error logging
+- Ensures proper error propagation in critical paths
+
+**Found by**: Static analysis review - identified missing NULL checks and unchecked MCU return values.
 
 ### Additional NULL Checks (patches/null-checks/)
 
@@ -451,6 +475,7 @@ All patches have been submitted upstream to the [OpenWrt mt76 repository](https:
 | 0014 | MCU function NULL checks for MLO | ✅ [OpenWrt PR #1039](https://github.com/openwrt/mt76/pull/1039) |
 | 0015 | Firmware reload after crash (mt792x) | ✅ [OpenWrt PR #1040](https://github.com/openwrt/mt76/pull/1040) |
 | 0016 | Resume path mutex protection | ⏳ Pending PR |
+| 0017 | NULL checks and error handling | ⏳ Pending PR |
 
 ### MT7921 Patches
 
