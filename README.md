@@ -24,7 +24,8 @@ patches/
 │   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
 │   ├── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
 │   ├── 0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-path.patch
-│   └── 0011-wifi-mt76-mt7925-add-lockdep-assertions-for-mutex-ve.patch
+│   ├── 0011-wifi-mt76-mt7925-add-lockdep-assertions-for-mutex-ve.patch
+│   └── 0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-roaming.patch
 ├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030, #1032)
 │   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
 │   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
