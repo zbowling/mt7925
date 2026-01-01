@@ -16,10 +16,13 @@ patches/
 │   ├── 0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
 │   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
 │   └── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
-├── null-checks/        # Additional defensive NULL checks
+├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030)
 │   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
 │   └── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
-└── error-handling/     # Future: MCU error return value checks
+└── error-handling/     # MCU return value error checking
+    ├── 0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-commands.patch
+    ├── 0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-sta_add.patch
+    └── 0008-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-key-setup.patch
 ```
 
 ## Problem Description
@@ -168,6 +171,47 @@ Adds comprehensive NULL checks throughout main.c.
 - `mt7925_mac_link_sta_remove()` - Check mlink and link_conf
 - `mt7925_change_vif_links()` - Check link_conf before adding BSS
 
+### MCU Error Handling (patches/error-handling/)
+
+#### Patch 6: AMPDU MCU Error Handling
+
+**File**: `0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-commands.patch`
+
+Checks return values of AMPDU (block aggregation) MCU commands.
+
+**Functions fixed:**
+- `mt7925_ampdu_action()` - Check `mt7925_mcu_uni_rx_ba()` and `mt7925_mcu_uni_tx_ba()` return values
+
+**What it fixes:**
+- Silent failures in block aggregation setup/teardown
+- Inconsistent state between driver and firmware for aggregation
+
+#### Patch 7: Station Add BSS Info Error Handling
+
+**File**: `0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-sta_add.patch`
+
+Checks return value of BSS info MCU command during station add.
+
+**Functions fixed:**
+- `mt7925_mac_link_sta_add()` - Check `mt7925_mcu_add_bss_info()` return value
+
+**What it fixes:**
+- Prevents station add from continuing if BSS info update fails
+- Avoids inconsistent state where station exists without proper BSS config
+
+#### Patch 8: Key Setup BSS Info Error Handling
+
+**File**: `0008-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-key-setup.patch`
+
+Checks return value of BSS info MCU command during cipher setup.
+
+**Functions fixed:**
+- `mt7925_set_key_link()` - Check `mt7925_mcu_add_bss_info()` when setting cipher
+
+**What it fixes:**
+- Prevents key programming if BSS cipher configuration fails
+- Ensures encryption is properly configured before keys are programmed
+
 ## How to Apply These Patches
 
 ### Method 1: Apply to Full Kernel Source Tree
@@ -235,8 +279,11 @@ dmesg | grep -i mt7925
 | 0001 | NULL pointer dereference fix | ✅ Submitted to LKML |
 | 0002 | Reset/ROC mutex fix | ✅ Submitted to LKML |
 | 0003 | Runtime PM/MLO PM mutex fix | ✅ Submitted to LKML |
-| 0004 | MCU STA TLV NULL checks | 📋 Ready for submission |
-| 0005 | Main.c link NULL checks | 📋 Ready for submission |
+| 0004 | MCU STA TLV NULL checks | ✅ OpenWrt PR #1030 |
+| 0005 | Main.c link NULL checks | ✅ OpenWrt PR #1030 |
+| 0006 | AMPDU MCU error handling | 📋 Ready for submission |
+| 0007 | Station add BSS info error handling | 📋 Ready for submission |
+| 0008 | Key setup BSS info error handling | 📋 Ready for submission |
 
 ## Related Issues
 
