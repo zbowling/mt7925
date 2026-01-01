@@ -15,7 +15,8 @@ patches/
 ├── critical/           # Most important fixes - submitted to LKML
 │   ├── 0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
 │   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
-│   └── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
+│   ├── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
+│   └── 0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-path.patch
 ├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030, #1032)
 │   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
 │   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
@@ -137,6 +138,34 @@ Adds mutex protection around interface iteration in reset and ROC abort paths.
 **Important**: Mutex is added at the *call site* in pci.c rather than inside `roc_abort_sync()` to avoid self-deadlock when called from station remove path (which already holds mutex).
 
 #### Patch 3: Runtime PM and MLO PM Mutex Fix
+
+**File**: `0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch`
+
+Fixes two additional code paths missing mutex protection.
+
+**Functions fixed:**
+- `mt7925_set_runtime_pm()` in main.c
+- `mt7925_mlo_pm_work()` in main.c
+- `mt7925_mlo_pm_iter()` in main.c (mutex moved from callback to caller)
+
+#### Patch 10: TX Path NULL Pointer Fix (mt792x_core.c)
+
+**File**: `0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-path.patch`
+
+**CRITICAL**: Fixes NULL pointer dereference in the shared TX path that affects both MT7921 and MT7925.
+
+**What it fixes:**
+- `mt792x_tx()` in mt792x_core.c - Check mlink before dereferencing wcid
+- Check RCU-dereferenced conf and link_sta before use
+- Prevents kernel crash when transmitting during link removal
+
+This race occurs when:
+1. A packet is queued for transmission
+2. Concurrently, the link is being removed
+3. `mt792x_sta_to_link()` returns NULL
+4. Kernel crashes on `wcid = &mlink->wcid`
+
+### Additional NULL Checks (patches/null-checks/)
 
 **File**: `0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch`
 
@@ -297,7 +326,8 @@ dmesg | grep -i mt7925
 | 0006 | AMPDU MCU error handling | ✅ OpenWrt PR #1031 |
 | 0007 | Station add BSS info error handling | ✅ OpenWrt PR #1031 |
 | 0008 | Key setup BSS info error handling | ✅ OpenWrt PR #1031 |
-| 0009 | MLO link/chanctx NULL checks | 📋 Ready for submission |
+| 0009 | MLO link/chanctx NULL checks | ✅ OpenWrt PR #1032 |
+| **0010** | **TX path NULL pointer fix (mt792x)** | 📋 **CRITICAL - Ready** |
 
 ## Related Issues
 
