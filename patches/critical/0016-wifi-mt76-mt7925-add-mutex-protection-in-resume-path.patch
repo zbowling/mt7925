@@ -1,0 +1,37 @@
+From e00f67c0827d93d6b55cfabb407fce9a7319cf24 Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
+Date: Thu, 1 Jan 2026 15:24:23 -0800
+Subject: [PATCH] wifi: mt76: mt7925: add mutex protection in resume path
+
+Add mutex protection around mt7925_mcu_set_deep_sleep() and
+mt7925_regd_update() calls in the resume path to prevent
+potential race conditions during resume operations.
+
+These MCU operations require serialization, and the resume
+path was the only call site missing mutex protection.
+
+Found by static analysis (sparse/coccinelle).
+---
+ drivers/net/wireless/mediatek/mt76/mt7925/pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
+index ca868619e1b7..b6c90c5f7e91 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
+@@ -583,10 +583,12 @@ static int _mt7925_pci_resume(struct device *device, bool restore)
+ 	}
+ 
+ 	/* restore previous ds setting */
++	mt792x_mutex_acquire(dev);
+ 	if (!pm->ds_enable)
+ 		mt7925_mcu_set_deep_sleep(dev, false);
+ 
+ 	mt7925_regd_update(dev);
++	mt792x_mutex_release(dev);
+ failed:
+ 	pm->suspended = false;
+ 
+-- 
+2.51.0
+
