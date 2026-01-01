@@ -4,7 +4,7 @@ This repository contains three critical fixes for the MediaTek MT7925 WiFi drive
 
 ## ⚠️ Disclaimer
 
-I am not an expert on the Linux kernel wireless subsystem or the MediaTek mt76 driver codebase. These fixes were developed through analysis of kernel panics and deadlock traces on my Framework Desktop, cross-referencing with similar code patterns in other drivers. However, based on the analysis below, these fixes appear sound and follow established patterns used by other wireless drivers in the kernel.
+I am not an expert on the MediaTek mt76 driver codebase. These fixes were developed through analysis of kernel panics and deadlock traces on my Framework Desktop, cross-referencing with similar code patterns in other drivers, and from looking at traces reported by other folks on mailing lists similar to mine suffering the same pain. However, based on the analysis below, these fixes appear sound and follow established patterns used by other wireless drivers in the kernel.
 
 **These bugs have existed since the MT7925 driver was added to the kernel tree (late 2023 / early 2024).** Given that the alternative is kernel panics and system-wide deadlocks requiring hard reboots, these fixes represent a significant improvement even if they're not perfect.
 
