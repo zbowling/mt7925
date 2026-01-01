@@ -138,7 +138,7 @@ detect_interface() {
 }
 
 check_driver() {
-    if ! lsmod | grep -q mt7925; then
+    if ! lsmod | grep -qE "mt7925e|mt7925_common"; then
         log ERROR "mt7925 driver not loaded"
         exit 1
     fi
