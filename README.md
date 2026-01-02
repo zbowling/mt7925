@@ -469,12 +469,12 @@ All patches have been submitted upstream to the [OpenWrt mt76 repository](https:
 | 0009 | MLO link/chanctx NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
 | 0010 | TX path NULL pointer fix (mt792x) | ✅ Submitted to LKML and [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
 | 0011 | lockdep assertions for debugging | ✅ Submitted to LKML and [OpenWrt PR #1035](https://github.com/openwrt/mt76/pull/1035) |
-| 0012 | Key removal failure during MLO roaming | ✅ [OpenWrt PR #1037](https://github.com/openwrt/mt76/pull/1037) |
-| 0013 | MLO ROC kernel warning fix (AP mode) | ✅ [OpenWrt PR #1038](https://github.com/openwrt/mt76/pull/1038) |
-| 0014 | MCU function NULL checks for MLO | ✅ [OpenWrt PR #1039](https://github.com/openwrt/mt76/pull/1039) |
-| 0015 | Firmware reload after crash (mt792x) | ✅ [OpenWrt PR #1040](https://github.com/openwrt/mt76/pull/1040) |
-| 0016 | Resume path mutex protection | ✅ [OpenWrt PR #1042](https://github.com/openwrt/mt76/pull/1042) |
-| 0017 | NULL checks and error handling | ✅ [OpenWrt PR #1041](https://github.com/openwrt/mt76/pull/1041) |
+| 0012 | Key removal failure during MLO roaming | ✅ Submitted to LKML and [OpenWrt PR #1037](https://github.com/openwrt/mt76/pull/1037) |
+| 0013 | MLO ROC kernel warning fix (AP mode) | ✅ Submitted to LKML and [OpenWrt PR #1038](https://github.com/openwrt/mt76/pull/1038) |
+| 0014 | MCU function NULL checks for MLO | ✅ Submitted to LKML and [OpenWrt PR #1039](https://github.com/openwrt/mt76/pull/1039) |
+| 0015 | Firmware reload after crash (mt792x) | ✅ Submitted to LKML and [OpenWrt PR #1040](https://github.com/openwrt/mt76/pull/1040) |
+| 0016 | Resume path mutex protection | ✅ Submitted to LKML and [OpenWrt PR #1042](https://github.com/openwrt/mt76/pull/1042) |
+| 0017 | NULL checks and error handling | ✅ Submitted to LKML and [OpenWrt PR #1041](https://github.com/openwrt/mt76/pull/1041) |
 
 ### MT7921 Patches
 
@@ -488,7 +488,8 @@ The MT7921 driver (predecessor to MT7925) has the same mutex bugs. These were in
 
 - [Framework Community Forum Discussion](https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301/9)
 - [Ubuntu Launchpad Bug #2137291](https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2137291)
-- [Linux Kernel Mailing List Thread](https://lore.kernel.org/all/CAA5_Hq7vNOy9oCGkkgyukq2OP=a5yL_3ZKBdmNtBXS+zp6byiQ@mail.gmail.com/T/#u)
+- [Linux Kernel Mailing List Thread (v1)](https://lore.kernel.org/linux-wireless/20260101062543.186499-1-zbowling@gmail.com/)
+- [Linux Kernel Mailing List Thread (v2)](https://lore.kernel.org/linux-wireless/20260102200315.290015-1-zbowling@gmail.com/)
 - [OpenWrt mt76 Issue #1027](https://github.com/openwrt/mt76/issues/1027)
 - [OpenWrt mt76 Issue #1036](https://github.com/openwrt/mt76/issues/1036) - MLO roaming firmware hang (partially mitigated)
 - [OpenWrt mt76 Issue #1014](https://github.com/openwrt/mt76/issues/1014) - MLO AP kernel oops (fixed by patch 0013)
