@@ -19,28 +19,22 @@ See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for ongoing issues that are **partially m
 
 ```
 patches/
-├── critical/           # Most important fixes - submitted to LKML
-│   ├── 0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
-│   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
-│   ├── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
-│   ├── 0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-path.patch
-│   ├── 0011-wifi-mt76-mt7925-add-lockdep-assertions-for-mutex-ve.patch
-│   ├── 0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-roaming.patch
-│   ├── 0013-wifi-mt76-mt7925-fix-kernel-warning-in-MLO-ROC-setup.patch
-│   ├── 0014-wifi-mt76-mt7925-add-NULL-checks-for-MLO-link-pointers-in-MCU.patch
-│   ├── 0015-wifi-mt76-mt792x-fix-firmware-reload-after-failed-load.patch
-│   ├── 0016-wifi-mt76-mt7925-add-mutex-protection-in-resume-path.patch
-│   └── 0017-wifi-mt76-mt7925-add-NULL-checks-and-error-handling.patch
-├── null-checks/        # Additional defensive NULL checks (OpenWrt PR #1030, #1032)
-│   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch
-│   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch
-│   └── 0009-wifi-mt76-mt7925-add-NULL-checks-in-MLO-link-and-chanctx.patch
-├── error-handling/     # MCU return value error checking
-│   ├── 0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-commands.patch
-│   ├── 0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-sta_add.patch
-│   └── 0008-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-key-setup.patch
-└── mt7921/             # Equivalent fixes for MT7921 (predecessor driver)
+├── mt7925/                 # All MT7925 driver fixes
+│   ├── mt7925_unified.patch   # ⭐ UNIFIED PATCH - Apply this for all fixes at once
+│   ├── 0001-...patch          # Individual patches (for selective application)
+│   ├── 0002-...patch
+│   ├── ...
+│   └── 0017-...patch
+└── mt7921/                 # Equivalent fixes for MT7921 (predecessor driver)
     └── 0001-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
+```
+
+### Quick Apply (Recommended)
+
+```bash
+# Apply all MT7925 fixes with a single patch:
+cd /path/to/linux-kernel-source
+patch -p1 < /path/to/mt7925/patches/mt7925/mt7925_unified.patch
 ```
 
 ## Problem Description
@@ -127,7 +121,9 @@ The mac80211 subsystem's `ieee80211_iterate_active_interfaces()` only protects t
 
 ## Patches
 
-### Critical Patches (patches/critical/)
+All patches are in `patches/mt7925/`. Use `mt7925_unified.patch` to apply all at once.
+
+### Individual Patch Details
 
 #### Patch 1: NULL Pointer Dereference Fix
 
@@ -244,19 +240,6 @@ The fix:
 
 **Found by**: Static analysis review - identified missing NULL checks and unchecked MCU return values.
 
-### Additional NULL Checks (patches/null-checks/)
-
-**File**: `0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch`
-
-Fixes two additional code paths missing mutex protection.
-
-**Functions fixed:**
-- `mt7925_set_runtime_pm()` in main.c
-- `mt7925_mlo_pm_work()` in main.c
-- `mt7925_mlo_pm_iter()` in main.c (mutex moved from callback to caller)
-
-### Additional NULL Checks (patches/null-checks/)
-
 #### Patch 4: MCU STA TLV NULL Checks
 
 **File**: `0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch`
@@ -291,8 +274,6 @@ Adds NULL pointer checks in MLO link selection and channel context functions.
 - `mt7925_link_info_changed()` - Check mconf before getting link_conf (prevents chain dereference)
 - `mt7925_assign_vif_chanctx()` - Check mconf before use, return -EINVAL if NULL
 - `mt7925_unassign_vif_chanctx()` - Check mconf during MLO cleanup
-
-### MCU Error Handling (patches/error-handling/)
 
 #### Patch 6: AMPDU MCU Error Handling
 
@@ -335,22 +316,42 @@ Checks return value of BSS info MCU command during cipher setup.
 
 ## How to Apply These Patches
 
-### Method 1: Apply to Full Kernel Source Tree
+### Method 1: Unified Patch (Recommended)
+
+Apply all fixes at once with the unified patch:
 
 ```bash
 cd /path/to/linux-kernel-source
 
-# Apply critical patches
-git apply /path/to/mt7925/patches/critical/*.patch
-
-# Optionally apply additional null-checks
-git apply /path/to/mt7925/patches/null-checks/*.patch
+# Apply the unified patch (includes all 17 fixes)
+patch -p1 < /path/to/mt7925/patches/mt7925/mt7925_unified.patch
 
 # Build just the mt76 modules
 make -j$(nproc) M=drivers/net/wireless/mediatek/mt76
 ```
 
-### Method 2: Build and Load Module Only (Quick Test)
+### Method 2: Individual Patches
+
+If you need selective application:
+
+```bash
+cd /path/to/linux-kernel-source
+
+# Apply all individual patches
+for patch in /path/to/mt7925/patches/mt7925/0*.patch; do
+    git apply "$patch"
+done
+
+# Or apply specific patches
+git apply /path/to/mt7925/patches/mt7925/0001-*.patch
+git apply /path/to/mt7925/patches/mt7925/0002-*.patch
+# etc.
+
+# Build
+make -j$(nproc) M=drivers/net/wireless/mediatek/mt76
+```
+
+### Method 3: Build and Load Module Only (Quick Test)
 
 ```bash
 # Install kernel headers
@@ -360,10 +361,8 @@ sudo apt-get install linux-headers-$(uname -r)
 apt-get source linux-image-$(uname -r)
 cd linux-*/
 
-# Apply patches
-for patch in /path/to/mt7925/patches/critical/*.patch; do
-    patch -p1 < "$patch"
-done
+# Apply unified patch
+patch -p1 < /path/to/mt7925/patches/mt7925/mt7925_unified.patch
 
 # Build just the mt76 modules
 make -j$(nproc) M=drivers/net/wireless/mediatek/mt76
