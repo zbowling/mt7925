@@ -491,9 +491,10 @@ MediaTek engineers are actively working on the same stability issues. These offi
 | LKML Patch | Description | Relation to Our Patches |
 |------------|-------------|------------------------|
 | [mt7925: fix potential deadlock in mt7925_roc_abort_sync](https://lore.kernel.org/linux-mediatek/20251216013849.17976-1-sean.wang@kernel.org/) | Sean Wang (MediaTek) - Changes `cancel_work_sync()` to `cancel_work()` to avoid deadlock in station removal path | **Supersedes our patch 0002** - Same deadlock, cleaner fix at the source |
-| [mt792x: Fix a potential deadlock in high-load situations](https://lore.kernel.org/linux-mediatek/CAFv23QnPqdw8v4_k2_sbxhb7p7ZR7fuDJ0CRij=9aX6EC3-4Mg@mail.gmail.com/) | Leon Yen (MediaTek) - Fixes deadlock between `ps_work` and `mac_work` | Complementary - Different deadlock path we didn't address |
+| [mt792x: Fix a potential deadlock in high-load situations (v2)](https://lore.kernel.org/linux-mediatek/20251215122231.3180648-1-leon.yen@mediatek.com/) | Leon Yen (MediaTek) - Fixes deadlock between `ps_work` and `mac_work` by using `cancel_delayed_work()` instead of `cancel_delayed_work_sync()` | Complementary - Different deadlock path we didn't address |
+| [mt7925: Fix incorrect MLO mode in firmware control](https://lore.kernel.org/linux-mediatek/20251211123836.4169436-1-leon.yen@mediatek.com/) | Leon Yen (MediaTek) - Fixes MLO mode selection to use STA capabilities instead of AP capabilities (fixes Xiaomi BE5000 WiFi7 router compatibility) | Complementary - Same function as patch 0013, different bug (logic vs crash) |
 
-When these patches are merged upstream, our patches 0002 may become redundant. The remaining patches (NULL checks, error handling, MLO fixes) address different issues not yet fixed by MediaTek.
+When these patches are merged upstream, our patch 0002 may become redundant. The remaining patches (NULL checks, error handling, MLO crash fixes) address different issues not yet fixed by MediaTek.
 
 ## Related Issues
 
