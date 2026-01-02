@@ -27,6 +27,10 @@ This documentation provides a comprehensive guide to understanding, navigating, 
 - **[MCU_PROTOCOL.md](MCU_PROTOCOL.md)** - MCU communication protocol, command format, and examples
 - **[MLO.md](MLO.md)** - Multi-Link Operation (MLO) architecture, data structures, and common bugs
 
+### Concurrency and Synchronization
+
+- **[LOCKING.md](LOCKING.md)** - Locking patterns, mutex usage, work queue interactions, and deadlock analysis
+
 ### Development Guides
 
 - **[NAVIGATION_GUIDE.md](NAVIGATION_GUIDE.md)** - How to navigate the codebase, trace features, and find related code
