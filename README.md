@@ -484,9 +484,11 @@ The MT7921 driver (predecessor to MT7925) has the same mutex bugs. These were in
 |-------|-------------|--------|
 | 0001 | Missing mutex protection in multiple paths | ✅ [OpenWrt PR #1034](https://github.com/openwrt/mt76/pull/1034) |
 
-## Upstream MediaTek Fixes
+## Upstream Fixes
 
-MediaTek engineers are actively working on the same stability issues. These official patches address some of the same problems:
+MediaTek engineers and community contributors are actively working on the same stability issues. These patches address some of the same problems:
+
+### MediaTek Official Patches
 
 | LKML Patch | Description | Relation to Our Patches |
 |------------|-------------|------------------------|
@@ -494,7 +496,13 @@ MediaTek engineers are actively working on the same stability issues. These offi
 | [mt792x: Fix a potential deadlock in high-load situations (v2)](https://lore.kernel.org/linux-mediatek/20251215122231.3180648-1-leon.yen@mediatek.com/) | Leon Yen (MediaTek) - Fixes deadlock between `ps_work` and `mac_work` by using `cancel_delayed_work()` instead of `cancel_delayed_work_sync()` | Complementary - Different deadlock path we didn't address |
 | [mt7925: Fix incorrect MLO mode in firmware control](https://lore.kernel.org/linux-mediatek/20251211123836.4169436-1-leon.yen@mediatek.com/) | Leon Yen (MediaTek) - Fixes MLO mode selection to use STA capabilities instead of AP capabilities (fixes Xiaomi BE5000 WiFi7 router compatibility) | Complementary - Same function as patch 0013, different bug (logic vs crash) |
 
-When these patches are merged upstream, our patch 0002 may become redundant. The remaining patches (NULL checks, error handling, MLO crash fixes) address different issues not yet fixed by MediaTek.
+### Community Patches
+
+| LKML Patch | Description | Relation to Our Patches |
+|------------|-------------|------------------------|
+| [mt76: fix deadlock in remain-on-channel](https://lore.kernel.org/linux-mediatek/3fceebb12dcb672cfae11f993a373b457a35e228.1765198130.git.chad@monroe.io/) | Chad Monroe - Fixes nested mutex deadlock in `channel.c` by using `__mt76_set_channel()` and canceling `mac_work` before acquiring mutex | Complementary - Core mt76 fix affecting all chipsets (MT7921, MT7925, etc.) |
+
+When these patches are merged upstream, our patch 0002 may become redundant. The remaining patches (NULL checks, error handling, MLO crash fixes) address different issues not yet fixed upstream.
 
 ## Related Issues
 
