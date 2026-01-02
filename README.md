@@ -8,6 +8,30 @@ I am not an expert on the MediaTek mt76 driver codebase. These fixes were develo
 
 **These bugs have existed since the MT7925 driver was added to the kernel tree (late 2023 / early 2024).** Given that the alternative is kernel panics and system-wide deadlocks requiring hard reboots, these fixes represent a significant improvement.
 
+## 🔄 Kernel Version & Lifecycle
+
+| Aspect | Version | Notes |
+|--------|---------|-------|
+| **Issues Discovered** | 6.17 | Ubuntu 25.10 stock kernel |
+| **Fixes Developed & Tested** | 6.18.2 | Current stable kernel |
+| **Target Release** | 6.19 | Patches submitted to LKML |
+
+### Repository Lifecycle
+
+These patches have been submitted to the Linux kernel mailing list (LKML) for inclusion in **kernel 6.19**. If merged into mainline:
+
+- **This repository may become defunct after 6.19 release** - the fixes will be available directly in the upstream kernel
+- Users on 6.19+ should not need these patches
+
+### Backporting
+
+This repository remains useful for:
+- **Ubuntu 25.10 users** stuck on kernel 6.17 who need immediate fixes
+- **Other LTS kernel users** who cannot upgrade to 6.19+
+- **Distribution maintainers** looking to backport fixes to stable branches
+
+The unified patch (`patches/mt7925/mt7925_unified.patch`) and individual patches can be applied to older kernels with minimal modification.
+
 ## 📋 Known Issues
 
 See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for ongoing issues that are **partially mitigated** by these patches but likely have root causes in the MediaTek firmware itself, including:
