@@ -1,0 +1,110 @@
+From 227190e87e0eb6dd12f0d38b7b35ac372f76afdf Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zbowling@gmail.com>
+Date: Sun, 4 Jan 2026 16:03:12 -0800
+Subject: [PATCH 01/17] wifi: mt76: mt7925: fix NULL pointer dereference in vif
+ iteration
+
+mt792x_vif_to_bss_conf() can return NULL when iterating over valid_links
+during HW reset or other state transitions, because the link configuration
+in mac80211 may not be set up yet even though the driver's valid_links
+bitmap has the link marked as valid.
+
+This causes a NULL pointer dereference in mt76_connac_mcu_uni_add_dev()
+when it tries to access bss_conf->vif->type, and similar crashes in other
+functions that use bss_conf without checking.
+
+This crash was observed on Framework Desktop (AMD Ryzen AI Max 300) with
+MT7925 (RZ717) running kernel 6.17. The panic occurs during BSSID roaming
+when the adapter attempts to switch to a better access point:
+
+  BUG: kernel NULL pointer dereference, address: 0000000000000010
+  CPU: 1 UID: 0 PID: 8362 Comm: kworker/u128:10 Tainted: G           OE
+  Workqueue: mt76 mt7925_mac_reset_work [mt7925_common]
+  RIP: 0010:mt76_connac_mcu_uni_add_dev+0x9c/0x780 [mt76_connac_lib]
+  Call Trace:
+   mt7925_vif_connect_iter+0xcb/0x240 [mt7925_common]
+   __iterate_interfaces+0x92/0x130 [mac80211]
+   ieee80211_iterate_interfaces+0x3d/0x60 [mac80211]
+   mt7925_mac_reset_work+0x105/0x190 [mt7925_common]
+   process_one_work+0x18b/0x370
+   worker_thread+0x317/0x450
+
+The issue manifests approximately every 5 minutes when the adapter tries
+to hop to a better BSSID, causing system-wide hangs where network commands
+(ip, ifconfig, etc.) hang indefinitely.
+
+Add NULL checks for bss_conf before using it in:
+- mt7925_vif_connect_iter()
+- mt7925_change_vif_links()
+- mt7925_mac_sta_assoc()
+- mt7925_mac_sta_remove_links()
+
+Link: https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301
+Reported-by: Zac Bowling <zac@zacbowling.com>
+Tested-by: Zac Bowling <zac@zacbowling.com>
+Signed-off-by: Zac Bowling <zac@zacbowling.com>
+---
+ drivers/net/wireless/mediatek/mt76/mt7925/mac.c  | 6 ++++++
+ drivers/net/wireless/mediatek/mt76/mt7925/main.c | 8 ++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
+index 871b67101976..184efe8afa10 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
+@@ -1271,6 +1271,12 @@ mt7925_vif_connect_iter(void *priv, u8 *mac,
+ 		bss_conf = mt792x_vif_to_bss_conf(vif, i);
+ 		mconf = mt792x_vif_to_link(mvif, i);
+ 
++		/* Skip links that don't have bss_conf set up yet in mac80211.
++		 * This can happen during HW reset when link state is inconsistent.
++		 */
++		if (!bss_conf)
++			continue;
++
+ 		mt76_connac_mcu_uni_add_dev(&dev->mphy, bss_conf, &mconf->mt76,
+ 					    &mvif->sta.deflink.wcid, true);
+ 		mt7925_mcu_set_tx(dev, bss_conf);
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
+index 2d358a96640c..3001a62a8b67 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
+@@ -1304,6 +1304,8 @@ mt7925_mlo_pm_iter(void *priv, u8 *mac, struct ieee80211_vif *vif)
+ 	mt792x_mutex_acquire(dev);
+ 	for_each_set_bit(i, &valid, IEEE80211_MLD_MAX_NUM_LINKS) {
+ 		bss_conf = mt792x_vif_to_bss_conf(vif, i);
++		if (!bss_conf)
++			continue;
+ 		mt7925_mcu_uni_bss_ps(dev, bss_conf);
+ 	}
+ 	mt792x_mutex_release(dev);
+@@ -1630,6 +1632,8 @@ static void mt7925_ipv6_addr_change(struct ieee80211_hw *hw,
+ 
+ 	for_each_set_bit(i, &valid, IEEE80211_MLD_MAX_NUM_LINKS) {
+ 		bss_conf = mt792x_vif_to_bss_conf(vif, i);
++		if (!bss_conf)
++			continue;
+ 		__mt7925_ipv6_addr_change(hw, bss_conf, idev);
+ 	}
+ }
+@@ -1861,6 +1865,8 @@ static void mt7925_vif_cfg_changed(struct ieee80211_hw *hw,
+ 	if (changed & BSS_CHANGED_ARP_FILTER) {
+ 		for_each_set_bit(i, &valid, IEEE80211_MLD_MAX_NUM_LINKS) {
+ 			bss_conf = mt792x_vif_to_bss_conf(vif, i);
++			if (!bss_conf)
++				continue;
+ 			mt7925_mcu_update_arp_filter(&dev->mt76, bss_conf);
+ 		}
+ 	}
+@@ -1876,6 +1882,8 @@ static void mt7925_vif_cfg_changed(struct ieee80211_hw *hw,
+ 			} else if (mvif->mlo_pm_state == MT792x_MLO_CHANGED_PS) {
+ 				for_each_set_bit(i, &valid, IEEE80211_MLD_MAX_NUM_LINKS) {
+ 					bss_conf = mt792x_vif_to_bss_conf(vif, i);
++					if (!bss_conf)
++						continue;
+ 					mt7925_mcu_uni_bss_ps(dev, bss_conf);
+ 				}
+ 			}
+-- 
+2.51.0
+

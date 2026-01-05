@@ -51,6 +51,12 @@ patches/
 │   └── 0017-...patch
 └── mt7921/                 # Equivalent fixes for MT7921 (predecessor driver)
     └── 0001-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
+
+nbd168-patches/             # ⭐ v3 PATCH SERIES - Based on wireless tree
+├── 0000-cover-letter.patch    # Cover letter with full description
+├── 0001-...patch              # Enhanced commit messages with dmesg/crash logs
+├── ...
+└── 0017-...patch
 ```
 
 ### Quick Apply (Recommended)
@@ -59,6 +65,22 @@ patches/
 # Apply all MT7925 fixes with a single patch:
 cd /path/to/linux-kernel-source
 patch -p1 < /path/to/mt7925/patches/mt7925/mt7925_unified.patch
+```
+
+### For Upstream Submission (Wireless Tree)
+
+The `nbd168-patches/` directory contains patches based on the wireless tree
+([nbd168/wireless.git](https://github.com/nbd168/wireless.git)) with enhanced
+commit messages including dmesg output and crash traces as requested by
+MediaTek maintainers.
+
+```bash
+# Clone the wireless tree
+git clone https://github.com/nbd168/wireless.git
+
+# Apply the v3 patch series
+cd wireless
+git am /path/to/mt7925/nbd168-patches/000*.patch
 ```
 
 ## Problem Description
