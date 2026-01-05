@@ -16,10 +16,10 @@ I am not an expert on the MediaTek mt76 driver codebase. These fixes were develo
 │   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
 │   ├── ...
 │   └── 0018-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
-├── patches/            # Legacy patches organized by category
-│   ├── mt7925/         # Older format patches
+├── patches/            # Original patches for 6.18.x and 6.17.x
+│   ├── mt7925/         # MT7925 specific fixes
 │   └── mt7921/         # MT7921 specific fixes
-├── nbd168-patches/     # Patches for nbd168/mt76 (OpenWrt)
+├── nbd168-patches/     # Patches for nbd168.git (the official Linux Wireless Development fork)
 ├── stress-test.sh      # WiFi stress testing script
 └── monitor.sh          # Driver monitoring script
 ```
