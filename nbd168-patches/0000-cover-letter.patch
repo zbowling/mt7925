@@ -43,10 +43,12 @@ with multiple access points.
 
 == Testing ==
 
+Stress tested by hammering the driver with custom test script.
+
 Tested on:
 - Framework Desktop (AMD Ryzen AI Max 300 Series) with MT7925 (RZ717)
-- Kernel 6.18.2 (custom build with these patches)
-- Enterprise WiFi environment with multiple APs
+- This whole patch series was tested on Kernel 6.18.2 and 6.17.12 (Ubuntu 25.10)
+- Enterprise WiFi environment with multiple WIFI 7 APs with MLO enabled
 
 Before patches: System hangs/panics every 5-15 minutes during BSSID roaming
 After patches: Stable for 24+ hours under continuous stress testing

@@ -26,6 +26,7 @@ The fix: When removing a key (cmd != SET_KEY), if the link state is
 already gone, return success (0) instead of error. The key is effectively
 removed when the link was torn down.
 
+Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 chips")
 Reported-by: Zac Bowling <zac@zacbowling.com>
 Tested-by: Zac Bowling <zac@zacbowling.com>
 Signed-off-by: Zac Bowling <zac@zacbowling.com>

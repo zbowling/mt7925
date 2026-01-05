@@ -39,6 +39,7 @@ Add NULL checks for bss_conf before using it in:
 - mt7925_mac_sta_assoc()
 - mt7925_mac_sta_remove_links()
 
+Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 chips")
 Link: https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301
 Reported-by: Zac Bowling <zac@zacbowling.com>
 Tested-by: Zac Bowling <zac@zacbowling.com>

@@ -26,7 +26,7 @@ Apply the same fix that was applied to MT7915 in commit 79dd14f:
 This fix applies to both MT7921 and MT7925 drivers which share the
 mt792x_load_firmware() function.
 
-Fixes: 'Failed to get patch semaphore' errors after firmware crash
+Fixes: 583204ae70f9 ("wifi: mt76: mt792x: move mt7921_load_firmware in mt792x-lib module")
 Link: https://github.com/openwrt/mt76/commit/79dd14f2e8161b656341b6653261779199aedbe4
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---

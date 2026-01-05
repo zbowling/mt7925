@@ -44,6 +44,7 @@ ROC path using cancel_delayed_work() instead of cancel_delayed_work_sync().
 Both approaches address the deadlock; this one adds explicit mutex
 protection which may be superseded by the upstream fix.
 
+Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 chips")
 Link: https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301
 Reported-by: Zac Bowling <zac@zacbowling.com>
 Tested-by: Zac Bowling <zac@zacbowling.com>

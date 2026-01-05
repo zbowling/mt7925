@@ -28,6 +28,7 @@ mt7925_set_runtime_pm().
 Found through static analysis (clang-tidy) and comparison with the
 MT7615 driver which correctly acquires mutex before interface iteration.
 
+Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 chips")
 Reported-by: Zac Bowling <zac@zacbowling.com>
 Tested-by: Zac Bowling <zac@zacbowling.com>
 Signed-off-by: Zac Bowling <zac@zacbowling.com>

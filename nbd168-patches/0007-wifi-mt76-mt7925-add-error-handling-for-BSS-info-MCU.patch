@@ -15,6 +15,7 @@ This can cause undefined behavior in the firmware, particularly during
 MLO link setup where multiple BSS configurations are being programmed.
 
 Reported-by: Zac Bowling <zac@zacbowling.com>
+Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 chips")
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
  drivers/net/wireless/mediatek/mt76/mt7925/main.c | 11 +++++++----

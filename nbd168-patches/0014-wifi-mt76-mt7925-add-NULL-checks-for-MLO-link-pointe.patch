@@ -26,6 +26,7 @@ These race conditions can occur during:
 Found through static analysis (clang-tidy) and pattern matching similar
 to fixes in mt7996 and ath12k drivers for MLO link state handling.
 
+Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 chips")
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
  drivers/net/wireless/mediatek/mt76/mt7925/mcu.c | 14 ++++++++++++--
