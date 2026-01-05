@@ -8,79 +8,58 @@ I am not an expert on the MediaTek mt76 driver codebase. These fixes were develo
 
 **These bugs have existed since the MT7925 driver was added to the kernel tree (late 2023 / early 2024).** Given that the alternative is kernel panics and system-wide deadlocks requiring hard reboots, these fixes represent a significant improvement.
 
-## 🔄 Kernel Version & Lifecycle
-
-| Aspect | Version | Notes |
-|--------|---------|-------|
-| **Issues Discovered** | 6.17 | Ubuntu 25.10 stock kernel |
-| **Fixes Developed & Tested** | 6.18.2 | Current stable kernel |
-| **Target Release** | 6.19 | Patches submitted to LKML |
-
-### Repository Lifecycle
-
-These patches have been submitted to the Linux kernel mailing list (LKML) for inclusion in **kernel 6.19**. If merged into mainline:
-
-- **This repository may become defunct after 6.19 release** - the fixes will be available directly in the upstream kernel
-- Users on 6.19+ should not need these patches
-
-### Backporting
-
-This repository remains useful for:
-- **Ubuntu 25.10 users** stuck on kernel 6.17 who need immediate fixes
-- **Other LTS kernel users** who cannot upgrade to 6.19+
-- **Distribution maintainers** looking to backport fixes to stable branches
-
-The unified patch (`patches/mt7925/mt7925_unified.patch`) and individual patches can be applied to older kernels with minimal modification.
-
-## 📋 Known Issues
-
-See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for ongoing issues that are **partially mitigated** by these patches but likely have root causes in the MediaTek firmware itself, including:
-- MCU timeout during MLO roaming
-- Performance degradation compared to Intel cards
-- Frequent deauthentication cycles
-
 ## Repository Structure
 
 ```
 patches/
-├── mt7925/                 # All MT7925 driver fixes
-│   ├── mt7925_unified.patch   # ⭐ UNIFIED PATCH - Apply this for all fixes at once
-│   ├── 0001-...patch          # Individual patches (for selective application)
-│   ├── 0002-...patch
-│   ├── ...
-│   └── 0017-...patch
-└── mt7921/                 # Equivalent fixes for MT7921 (predecessor driver)
+├── linux-6.19-rc4/     # ⭐ LATEST - All 18 patches for kernel 6.19-rc4
+│   ├── 0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
+│   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
+│   ├── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
+│   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-func.patch
+│   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-m.patch
+│   ├── 0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-co.patch
+│   ├── 0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-MCU.patch
+│   ├── 0008-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-.patch
+│   ├── 0009-wifi-mt76-mt7925-add-NULL-checks-in-MLO-link-and-cha.patch
+│   ├── 0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-.patch
+│   ├── 0011-wifi-mt76-mt7925-add-lockdep-assertions-for-mutex-ve.patch
+│   ├── 0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-.patch
+│   ├── 0013-wifi-mt76-mt7925-fix-kernel-warning-in-MLO-ROC-setup.patch
+│   ├── 0014-wifi-mt76-mt7925-add-NULL-checks-for-MLO-link-pointe.patch
+│   ├── 0015-wifi-mt76-mt792x-fix-firmware-reload-failure-after-p.patch
+│   ├── 0016-wifi-mt76-mt7925-add-mutex-protection-in-resume-path.patch
+│   ├── 0017-wifi-mt76-mt7925-add-NULL-checks-for-link-pointers-i.patch
+│   └── 0018-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
+├── mt7925/             # Legacy patches organized by category
+│   ├── 0001-0017 patches (older format)
+│   └── mt7925_unified.patch
+└── mt7921/             # MT7921 specific fixes
     └── 0001-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
-
-nbd168-patches/             # ⭐ v3 PATCH SERIES - Based on wireless tree
-├── 0000-cover-letter.patch    # Cover letter with full description
-├── 0001-...patch              # Enhanced commit messages with dmesg/crash logs
-├── ...
-└── 0017-...patch
 ```
 
-### Quick Apply (Recommended)
+## Quick Start (Kernel 6.19-rc4)
 
 ```bash
-# Apply all MT7925 fixes with a single patch:
-cd /path/to/linux-kernel-source
-patch -p1 < /path/to/mt7925/patches/mt7925/mt7925_unified.patch
-```
+# Clone the kernel and this repo
+git clone https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+cd linux
+git checkout v6.19-rc4
 
-### For Upstream Submission (Wireless Tree)
+# Apply all patches
+git am /path/to/mt7925/patches/linux-6.19-rc4/*.patch
 
-The `nbd168-patches/` directory contains patches based on the wireless tree
-([nbd168/wireless.git](https://github.com/nbd168/wireless.git)) with enhanced
-commit messages including dmesg output and crash traces as requested by
-MediaTek maintainers.
+# Configure and build (with ccache for faster rebuilds)
+cp /boot/config-$(uname -r) .config
+make olddefconfig
+make CC="ccache gcc" -j$(nproc)
+make CC="ccache gcc" modules -j$(nproc)
 
-```bash
-# Clone the wireless tree
-git clone https://github.com/nbd168/wireless.git
-
-# Apply the v3 patch series
-cd wireless
-git am /path/to/mt7925/nbd168-patches/000*.patch
+# Install
+sudo make modules_install
+sudo make install
+sudo update-initramfs -c -k 6.19.0-rc4-mt7925-fix+
+sudo update-grub
 ```
 
 ## Problem Description
@@ -92,6 +71,8 @@ The MT7925 WiFi driver (mt7925e) has several related bugs that cause system inst
 2. **Mutex Deadlock in Reset/ROC Paths**: System-wide hangs occur during WiFi network switching, BSSID roaming, or firmware recovery.
 
 3. **Mutex Deadlock in Power Management Paths**: Additional deadlocks occur when runtime PM settings change or during MLO (Multi-Link Operation) power save state transitions.
+
+4. **Missing Error Handling**: MCU command failures are silently ignored, leading to inconsistent driver/firmware state.
 
 ### Affected Hardware
 
@@ -109,6 +90,29 @@ The MT7925 WiFi driver (mt7925e) has several related bugs that cause system inst
 - System becomes completely unresponsive, requiring force reboot
 - Deadlock occurs every 5 minutes when adapter tries to hop to a better BSSID
 - Hangs during suspend/resume cycles
+
+## Patch Summary (18 patches for 6.19-rc4)
+
+| # | Patch | Category | Description |
+|---|-------|----------|-------------|
+| 01 | `0001-...-vif.patch` | Critical | NULL pointer dereference fix in vif iteration |
+| 02 | `0002-...-res.patch` | Critical | Missing mutex in reset and ROC abort |
+| 03 | `0003-...-run.patch` | Critical | Missing mutex in runtime PM and MLO PM |
+| 04 | `0004-...-func.patch` | NULL Checks | NULL checks in MCU STA TLV functions |
+| 05 | `0005-...-and-m.patch` | NULL Checks | NULL checks for link_conf and mlink |
+| 06 | `0006-...-co.patch` | Error Handling | Error handling for AMPDU MCU commands |
+| 07 | `0007-...-MCU.patch` | Error Handling | Error handling for BSS info in sta_add |
+| 08 | `0008-...-in-.patch` | Error Handling | Error handling for BSS info in key setup |
+| 09 | `0009-...-cha.patch` | NULL Checks | NULL checks in MLO link and chanctx |
+| 10 | `0010-...-TX-.patch` | Critical | NULL pointer fix in TX path (mt792x) |
+| 11 | `0011-...-ve.patch` | Debug | Lockdep assertions for mutex verification |
+| 12 | `0012-...-MLO-.patch` | MLO Fix | Key removal failure during MLO roaming |
+| 13 | `0013-...-setup.patch` | MLO Fix | Kernel warning in MLO ROC setup |
+| 14 | `0014-...-pointe.patch` | NULL Checks | NULL checks for MLO link pointers in MCU |
+| 15 | `0015-...-after-p.patch` | Recovery | Firmware reload after failed load (mt792x) |
+| 16 | `0016-...-path.patch` | Mutex | Mutex protection in resume path |
+| 17 | `0017-...-i.patch` | NULL Checks | NULL checks in sta_add and conf_tx |
+| 18 | `0018-...-mul.patch` | MT7921 | Missing mutex in MT7921 (same bugs) |
 
 ## Background & Analysis
 
@@ -136,11 +140,7 @@ void some_function(...) {
 
 ### Same Bugs Exist in MT7921
 
-The MT7925 driver was derived from MT7921 (previous generation chipset). **The MT7921 driver has identical bugs**:
-
-- `mt7921_roc_abort_sync()` - missing mutex protection ❌
-- `mt7921_set_runtime_pm()` - missing mutex protection ❌
-- Similar patterns throughout the codebase
+The MT7925 driver was derived from MT7921 (previous generation chipset). **The MT7921 driver has identical bugs** (fixed by patch 18).
 
 ### The Older MT7615 Driver Does It Correctly
 
@@ -165,239 +165,23 @@ This mutex pattern is consistent with how other major wireless drivers handle `i
 
 The mac80211 subsystem's `ieee80211_iterate_active_interfaces()` only protects the **interface list** with its internal mutex. It does **not** protect driver state.
 
-## Patches
-
-All patches are in `patches/mt7925/`. Use `mt7925_unified.patch` to apply all at once.
-
-### Individual Patch Details
-
-#### Patch 1: NULL Pointer Dereference Fix
-
-**File**: `0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch`
-
-Adds NULL checks for `bss_conf` in all loops that iterate over `valid_links` and call `mt792x_vif_to_bss_conf()`.
-
-**Functions fixed:**
-- `mt7925_vif_connect_iter()` in mac.c
-- `mt7925_mlo_pm_iter()` in main.c
-- `mt7925_ipv6_addr_change()` in main.c
-- `mt7925_vif_cfg_changed()` in main.c
-
-#### Patch 2: Reset and ROC Mutex Fix
-
-**File**: `0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch`
-
-Adds mutex protection around interface iteration in reset and ROC abort paths.
-
-**Functions/Paths fixed:**
-- `mt7925_mac_reset_work()` in mac.c
-- PCI suspend path in pci.c (wraps `mt7925_roc_abort_sync()` call)
-
-**Important**: Mutex is added at the *call site* in pci.c rather than inside `roc_abort_sync()` to avoid self-deadlock when called from station remove path (which already holds mutex).
-
-#### Patch 3: Runtime PM and MLO PM Mutex Fix
-
-**File**: `0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch`
-
-Fixes two additional code paths missing mutex protection.
-
-**Functions fixed:**
-- `mt7925_set_runtime_pm()` in main.c
-- `mt7925_mlo_pm_work()` in main.c
-- `mt7925_mlo_pm_iter()` in main.c (mutex moved from callback to caller)
-
-#### Patch 10: TX Path NULL Pointer Fix (mt792x_core.c)
-
-**File**: `0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-path.patch`
-
-**CRITICAL**: Fixes NULL pointer dereference in the shared TX path that affects both MT7921 and MT7925.
-
-**What it fixes:**
-- `mt792x_tx()` in mt792x_core.c - Check mlink before dereferencing wcid
-- Check RCU-dereferenced conf and link_sta before use
-- Prevents kernel crash when transmitting during link removal
-
-This race occurs when:
-1. A packet is queued for transmission
-2. Concurrently, the link is being removed
-3. `mt792x_sta_to_link()` returns NULL
-4. Kernel crashes on `wcid = &mlink->wcid`
-
-#### Patch 15: Firmware Reload After Crash Fix (mt792x)
-
-**File**: `0015-wifi-mt76-mt792x-fix-firmware-reload-after-failed-load.patch`
-
-**CRITICAL**: Fixes "Failed to get patch semaphore" errors that prevent WiFi recovery after firmware crashes.
-
-**What it fixes:**
-- `mt792x_load_firmware()` in mt792x_core.c - Release semaphore and restart MCU before loading
-
-This is the same fix applied to MT7915 in commit 79dd14f. When firmware loading crashes mid-way (after acquiring semaphore but before releasing it), subsequent load attempts fail because the semaphore is still held. This manifests as:
-- Devices becoming unusable after suspend/resume failures
-- WiFi not recovering after firmware crashes
-- Requires full hardware reboot to recover
-
-The fix:
-1. Release patch semaphore (cleanup from any failed previous attempt)
-2. Restart MCU to ensure clean state
-3. Wait for MCU to be ready
-4. Proceed with normal firmware load
-
-#### Patch 16: Resume Path Mutex Protection
-
-**File**: `0016-wifi-mt76-mt7925-add-mutex-protection-in-resume-path.patch`
-
-**CRITICAL**: Fixes missing mutex protection in resume path that could cause race conditions.
-
-**What it fixes:**
-- `_mt7925_pci_resume()` in pci.c - Add mutex protection around MCU calls during resume
-
-**Functions fixed:**
-- `mt7925_mcu_set_deep_sleep()` - Now protected during resume
-- `mt7925_regd_update()` - Now protected during resume
-
-**What it fixes:**
-- Prevents race conditions during resume when MCU operations occur concurrently
-- Ensures MCU operations are properly serialized during power management transitions
-- Matches the protection pattern used elsewhere in the codebase (e.g., `init.c:202`)
-
-**Found by**: Static analysis (sparse/coccinelle) - identified as the only call site missing mutex protection for these MCU functions.
-
-#### Patch 17: NULL Checks and Error Handling
-
-**File**: `0017-wifi-mt76-mt7925-add-NULL-checks-and-error-handling.patch`
-
-**CRITICAL**: Adds missing NULL pointer checks and error handling for MCU operations.
-
-**What it fixes:**
-- `mt7925_mac_link_sta_add()` in main.c - Add NULL checks for `mlink` and `mconf`
-- `mt7925_conf_tx()` in main.c - Add NULL check for `mconf`
-- `mt7925_regd_update()` in init.c - Add error logging for MCU failures
-
-**Functions fixed:**
-- `mt7925_mac_link_sta_add()` - Check `mt792x_sta_to_link()` and `mt792x_vif_to_link()` results before use
-- `mt7925_conf_tx()` - Check `mt792x_vif_to_link()` result before use
-- `mt7925_regd_update()` - Log errors from `mt7925_mcu_set_clc()`, `mt7925_mcu_set_channel_domain()`, and `mt7925_set_tx_sar_pwr()`
-
-**What it fixes:**
-- Prevents kernel crashes from NULL pointer dereferences during MLO link operations
-- Helps diagnose regulatory domain update failures with error logging
-- Ensures proper error propagation in critical paths
-
-**Found by**: Static analysis review - identified missing NULL checks and unchecked MCU return values.
-
-#### Patch 4: MCU STA TLV NULL Checks
-
-**File**: `0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-functions.patch`
-
-Adds NULL pointer checks in MCU station TLV building functions.
-
-**Functions fixed:**
-- `mt7925_mcu_sta_phy_tlv()` in mcu.c
-- `mt7925_mcu_sta_rate_ctrl_tlv()` in mcu.c
-
-#### Patch 5: Main.c Link NULL Checks
-
-**File**: `0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-mlink.patch`
-
-Adds comprehensive NULL checks throughout main.c.
-
-**Functions fixed:**
-- `mt7925_set_key()` - Check link_conf, mconf, and mlink
-- `mt7925_mac_link_sta_add()` - Check link_conf before BSS info update
-- `mt7925_mac_link_sta_assoc()` - Check mlink and link_conf
-- `mt7925_mac_link_sta_remove()` - Check mlink and link_conf
-- `mt7925_change_vif_links()` - Check link_conf before adding BSS
-
-#### Patch 9: MLO Link and Chanctx NULL Checks
-
-**File**: `0009-wifi-mt76-mt7925-add-NULL-checks-in-MLO-link-and-chanctx.patch`
-
-Adds NULL pointer checks in MLO link selection and channel context functions.
-
-**Functions fixed:**
-- `mt7925_mac_set_links()` - Check primary and secondary link_conf before band selection
-- `mt7925_link_info_changed()` - Check mconf before getting link_conf (prevents chain dereference)
-- `mt7925_assign_vif_chanctx()` - Check mconf before use, return -EINVAL if NULL
-- `mt7925_unassign_vif_chanctx()` - Check mconf during MLO cleanup
-
-#### Patch 6: AMPDU MCU Error Handling
-
-**File**: `0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-commands.patch`
-
-Checks return values of AMPDU (block aggregation) MCU commands.
-
-**Functions fixed:**
-- `mt7925_ampdu_action()` - Check `mt7925_mcu_uni_rx_ba()` and `mt7925_mcu_uni_tx_ba()` return values
-
-**What it fixes:**
-- Silent failures in block aggregation setup/teardown
-- Inconsistent state between driver and firmware for aggregation
-
-#### Patch 7: Station Add BSS Info Error Handling
-
-**File**: `0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-sta_add.patch`
-
-Checks return value of BSS info MCU command during station add.
-
-**Functions fixed:**
-- `mt7925_mac_link_sta_add()` - Check `mt7925_mcu_add_bss_info()` return value
-
-**What it fixes:**
-- Prevents station add from continuing if BSS info update fails
-- Avoids inconsistent state where station exists without proper BSS config
-
-#### Patch 8: Key Setup BSS Info Error Handling
-
-**File**: `0008-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-key-setup.patch`
-
-Checks return value of BSS info MCU command during cipher setup.
-
-**Functions fixed:**
-- `mt7925_set_key_link()` - Check `mt7925_mcu_add_bss_info()` when setting cipher
-
-**What it fixes:**
-- Prevents key programming if BSS cipher configuration fails
-- Ensures encryption is properly configured before keys are programmed
-
 ## How to Apply These Patches
 
-### Method 1: Unified Patch (Recommended)
-
-Apply all fixes at once with the unified patch:
+### Method 1: Apply to Kernel 6.19-rc4 (Recommended)
 
 ```bash
 cd /path/to/linux-kernel-source
+git checkout v6.19-rc4
 
-# Apply the unified patch (includes all 17 fixes)
-patch -p1 < /path/to/mt7925/patches/mt7925/mt7925_unified.patch
+# Apply all 18 patches
+git am /path/to/mt7925/patches/linux-6.19-rc4/*.patch
 
-# Build just the mt76 modules
-make -j$(nproc) M=drivers/net/wireless/mediatek/mt76
+# Build with ccache for faster rebuilds
+make CC="ccache gcc" -j$(nproc)
+make CC="ccache gcc" modules -j$(nproc)
 ```
 
-### Method 2: Individual Patches
-
-If you need selective application:
-
-```bash
-cd /path/to/linux-kernel-source
-
-# Apply all individual patches
-for patch in /path/to/mt7925/patches/mt7925/0*.patch; do
-    git apply "$patch"
-done
-
-# Or apply specific patches
-git apply /path/to/mt7925/patches/mt7925/0001-*.patch
-git apply /path/to/mt7925/patches/mt7925/0002-*.patch
-# etc.
-
-# Build
-make -j$(nproc) M=drivers/net/wireless/mediatek/mt76
-```
-
-### Method 3: Build and Load Module Only (Quick Test)
+### Method 2: Build Module Only (Quick Test)
 
 ```bash
 # Install kernel headers
@@ -407,21 +191,42 @@ sudo apt-get install linux-headers-$(uname -r)
 apt-get source linux-image-$(uname -r)
 cd linux-*/
 
-# Apply unified patch
-patch -p1 < /path/to/mt7925/patches/mt7925/mt7925_unified.patch
+# Apply patches (adjust paths for your kernel version)
+for patch in /path/to/mt7925/patches/linux-6.19-rc4/*.patch; do
+    patch -p1 < "$patch" || echo "Patch may need manual adjustment: $patch"
+done
 
 # Build just the mt76 modules
-make -j$(nproc) M=drivers/net/wireless/mediatek/mt76
+make CC="ccache gcc" -j$(nproc) M=drivers/net/wireless/mediatek/mt76
 
 # Unload old modules
-sudo modprobe -r mt7925e mt7925_common
+sudo modprobe -r mt7925e mt7925_common mt792x_lib mt76_connac_lib mt76
 
 # Load new modules
-sudo insmod drivers/net/wireless/mediatek/mt76/mt7925/mt7925-common.ko
-sudo insmod drivers/net/wireless/mediatek/mt76/mt7925/mt7925e.ko
+cd drivers/net/wireless/mediatek/mt76
+sudo insmod mt76.ko
+sudo insmod mt76-connac-lib.ko
+sudo insmod mt792x-lib.ko
+sudo insmod mt7925/mt7925-common.ko
+sudo insmod mt7925/mt7925e.ko
+```
 
-# Verify modules are loaded
-lsmod | grep mt7925
+### Using ccache for Faster Builds
+
+Install and enable ccache:
+
+```bash
+# Install ccache
+sudo apt install ccache
+
+# Add to your shell rc file (~/.bashrc or ~/.zshrc)
+export PATH="/usr/lib/ccache:$PATH"
+
+# Build kernel with ccache
+make CC="ccache gcc" -j$(nproc)
+
+# Check ccache stats
+ccache -s
 ```
 
 ## Verification
@@ -438,127 +243,43 @@ dmesg | grep -i mt7925
 # The system should no longer hang or panic
 ```
 
-## Stress Testing
-
-This repository includes scripts to help validate the fixes by triggering the race conditions that cause crashes on unpatched kernels.
-
-### Quick Start
-
-```bash
-# Monitor kernel logs in real-time (run in separate terminal)
-sudo ./monitor.sh
-
-# Run all stress tests (5 minutes total)
-sudo ./stress-test.sh -s "YourSSID" -p "YourPassword" -d 300
-
-# Run specific test types
-sudo ./stress-test.sh -s "YourSSID" -p "YourPassword" -t roam -d 60
-sudo ./stress-test.sh -s "YourSSID" -p "YourPassword" -t reconnect -d 60
-sudo ./stress-test.sh -t scan -d 60  # No credentials needed for scan test
-```
-
-### Available Tests
-
-| Test | Description | Triggers |
-|------|-------------|----------|
-| `scan` | Rapid WiFi scan start/abort cycles | Race conditions in scan state machine |
-| `reconnect` | Connect/disconnect cycles | `vif_connect_iter()` NULL dereference |
-| `roam` | Force BSSID roaming (needs multiple APs) | MLO link state transitions |
-| `suspend` | Suspend/resume cycles | PM path races |
-| `interface` | Interface up/down cycles | Driver initialization races |
-| `combined` | Mix of all operations | Multiple race conditions |
-| `all` | Run all tests sequentially | Comprehensive coverage |
-
-### Test Options
-
-```
--i, --interface IFACE   WiFi interface (default: auto-detect)
--s, --ssid SSID         Target SSID for connection tests
--p, --password PASS     WiFi password
--d, --duration SECS     Test duration in seconds (default: 300)
--t, --test TEST         Test type: all|roam|reconnect|suspend|scan|interface|combined
--v, --verbose           Verbose output
--l, --log FILE          Log file (default: /tmp/mt7925-stress.log)
---dry-run               Show what would be done without executing
-```
-
-### Expected Results
-
-- **Unpatched kernel**: Expect kernel panics within minutes, especially during roam and reconnect tests
-- **Patched kernel**: All tests should complete without kernel errors
-
-### Interpreting Results
-
-The stress test monitors `dmesg` for errors. Check the log file for:
-```bash
-cat /tmp/mt7925-stress.log | grep -i error
-```
-
-If you see NULL pointer dereferences or BUG messages, the driver needs patching.
-
 ## Status
 
-All patches have been submitted upstream to the [OpenWrt mt76 repository](https://github.com/openwrt/mt76).
+| Patch | Description | Status / Reference |
+|-------|-------------|-------------------|
+| 0001 | NULL pointer dereference fix | ✅ Submitted to LKML / [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
+| 0002 | Reset/ROC mutex fix          | ✅ Submitted to LKML / [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
+| 0003 | Runtime PM/MLO PM mutex fix  | ✅ Submitted to LKML / [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
+| 0004 | MCU STA TLV NULL checks      | ✅ [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
+| 0005 | Main.c link NULL checks      | ✅ [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
+| 0006 | AMPDU MCU error handling     | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0007 | Station add BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0008 | Key setup BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0009 | MLO link/chanctx NULL checks | ✅ [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
+| 0010 | TX path NULL pointer fix (mt792x) | ✅ [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
+| 0011 | Lockdep assertions           | 🔄 Testing |
+| 0012 | MLO roaming key removal fix  | 🔄 Testing |
+| 0013 | MLO ROC setup warning fix    | 🔄 Testing |
+| 0014 | MCU MLO link NULL checks     | 🔄 Testing |
+| 0015 | Firmware reload fix (mt792x) | 🔄 Testing |
+| 0016 | Resume path mutex fix        | 🔄 Testing |
+| 0017 | sta_add/conf_tx NULL checks  | 🔄 Testing |
+| 0018 | MT7921 mutex fixes           | 🔄 Testing |
 
-### MT7925 Patches
+## Tested Kernels
 
-| Patch | Description | Status |
-|-------|-------------|--------|
-| 0001 | NULL pointer dereference fix | ✅ Submitted to LKML and [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
-| 0002 | Reset/ROC mutex fix | ✅ Submitted to LKML and [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
-| 0003 | Runtime PM/MLO PM mutex fix | ✅ Submitted to LKML and [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
-| 0004 | MCU STA TLV NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
-| 0005 | Main.c link NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
-| 0006 | AMPDU MCU error handling | ✅ Submitted to LKML and [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0007 | Station add BSS info error handling | ✅ Submitted to LKML and [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0008 | Key setup BSS info error handling | ✅ Submitted to LKML and [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0009 | MLO link/chanctx NULL checks | ✅ Submitted to LKML and [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
-| 0010 | TX path NULL pointer fix (mt792x) | ✅ Submitted to LKML and [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
-| 0011 | lockdep assertions for debugging | ✅ Submitted to LKML and [OpenWrt PR #1035](https://github.com/openwrt/mt76/pull/1035) |
-| 0012 | Key removal failure during MLO roaming | ✅ Submitted to LKML and [OpenWrt PR #1037](https://github.com/openwrt/mt76/pull/1037) |
-| 0013 | MLO ROC kernel warning fix (AP mode) | ✅ Submitted to LKML and [OpenWrt PR #1038](https://github.com/openwrt/mt76/pull/1038) |
-| 0014 | MCU function NULL checks for MLO | ✅ Submitted to LKML and [OpenWrt PR #1039](https://github.com/openwrt/mt76/pull/1039) |
-| 0015 | Firmware reload after crash (mt792x) | ✅ Submitted to LKML and [OpenWrt PR #1040](https://github.com/openwrt/mt76/pull/1040) |
-| 0016 | Resume path mutex protection | ✅ Submitted to LKML and [OpenWrt PR #1042](https://github.com/openwrt/mt76/pull/1042) |
-| 0017 | NULL checks and error handling | ✅ Submitted to LKML and [OpenWrt PR #1041](https://github.com/openwrt/mt76/pull/1041) |
-
-### MT7921 Patches
-
-The MT7921 driver (predecessor to MT7925) has the same mutex bugs. These were inherited when MT7925 was forked.
-
-| Patch | Description | Status |
-|-------|-------------|--------|
-| 0001 | Missing mutex protection in multiple paths | ✅ [OpenWrt PR #1034](https://github.com/openwrt/mt76/pull/1034) |
-
-## Upstream Fixes
-
-MediaTek engineers and community contributors are actively working on the same stability issues. These patches address some of the same problems:
-
-### MediaTek Official Patches
-
-| LKML Patch | Description | Relation to Our Patches |
-|------------|-------------|------------------------|
-| [mt7925: fix potential deadlock in mt7925_roc_abort_sync](https://lore.kernel.org/linux-mediatek/20251216013849.17976-1-sean.wang@kernel.org/) | Sean Wang (MediaTek) - Changes `cancel_work_sync()` to `cancel_work()` to avoid deadlock in station removal path | **Supersedes our patch 0002** - Same deadlock, cleaner fix at the source |
-| [mt792x: Fix a potential deadlock in high-load situations (v2)](https://lore.kernel.org/linux-mediatek/20251215122231.3180648-1-leon.yen@mediatek.com/) | Leon Yen (MediaTek) - Fixes deadlock between `ps_work` and `mac_work` by using `cancel_delayed_work()` instead of `cancel_delayed_work_sync()` | Complementary - Different deadlock path we didn't address |
-| [mt7925: Fix incorrect MLO mode in firmware control](https://lore.kernel.org/linux-mediatek/20251211123836.4169436-1-leon.yen@mediatek.com/) | Leon Yen (MediaTek) - Fixes MLO mode selection to use STA capabilities instead of AP capabilities (fixes Xiaomi BE5000 WiFi7 router compatibility) | Complementary - Same function as patch 0013, different bug (logic vs crash) |
-
-### Community Patches
-
-| LKML Patch | Description | Relation to Our Patches |
-|------------|-------------|------------------------|
-| [mt76: fix deadlock in remain-on-channel](https://lore.kernel.org/linux-mediatek/3fceebb12dcb672cfae11f993a373b457a35e228.1765198130.git.chad@monroe.io/) | Chad Monroe - Fixes nested mutex deadlock in `channel.c` by using `__mt76_set_channel()` and canceling `mac_work` before acquiring mutex | Complementary - Core mt76 fix affecting all chipsets (MT7921, MT7925, etc.) |
-
-When these patches are merged upstream, our patch 0002 may become redundant. The remaining patches (NULL checks, error handling, MLO crash fixes) address different issues not yet fixed upstream.
+| Kernel | Status | Notes |
+|--------|--------|-------|
+| 6.18.2 (custom build) | ✅ Working | Stable with all patches |
+| 6.19-rc4 | ✅ Building | 18 patches applied cleanly |
+| 6.17.0 (Ubuntu) | ✅ Working | Tested with earlier patch set |
 
 ## Related Issues
 
 - [Framework Community Forum Discussion](https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301/9)
 - [Ubuntu Launchpad Bug #2137291](https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2137291)
-- [Linux Kernel Mailing List Thread (v1)](https://lore.kernel.org/linux-wireless/20260101062543.186499-1-zbowling@gmail.com/)
-- [Linux Kernel Mailing List Thread (v2)](https://lore.kernel.org/linux-wireless/20260102200315.290015-1-zbowling@gmail.com/)
+- [Linux Kernel Mailing List Thread](https://lore.kernel.org/all/CAA5_Hq7vNOy9oCGkkgyukq2OP=a5yL_3ZKBdmNtBXS+zp6byiQ@mail.gmail.com/T/#u)
 - [OpenWrt mt76 Issue #1027](https://github.com/openwrt/mt76/issues/1027)
-- [OpenWrt mt76 Issue #1036](https://github.com/openwrt/mt76/issues/1036) - MLO roaming firmware hang (partially mitigated)
-- [OpenWrt mt76 Issue #1014](https://github.com/openwrt/mt76/issues/1014) - MLO AP kernel oops (fixed by patch 0013)
 
 ## Contributing
 
@@ -569,4 +290,4 @@ If you encounter issues or have improvements, please help by:
 
 ## License
 
-These patches are provided under the same license as the Linux kernel (GPL v2) and BSD 3-Clause.
+These patches are provided under the same license as the Linux kernel (GPL v2).

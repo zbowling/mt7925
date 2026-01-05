@@ -51,7 +51,8 @@ Tested on:
 - Enterprise WiFi environment with multiple WIFI 7 APs with MLO enabled
 
 Before patches: System hangs/panics every 5-15 minutes during BSSID roaming
-After patches: Stable for 24+ hours under continuous stress testing
+After patches: Stable for 24+ hours under continuous stress testing forcing
+roaming, interface up/down, and suspend/resumes.
 
 == Crash Traces Fixed ==
 
