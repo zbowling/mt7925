@@ -11,31 +11,17 @@ I am not an expert on the MediaTek mt76 driver codebase. These fixes were develo
 ## Repository Structure
 
 ```
-patches/
 ├── linux-6.19-rc4/     # ⭐ LATEST - All 18 patches for kernel 6.19-rc4
 │   ├── 0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
 │   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
-│   ├── 0003-wifi-mt76-mt7925-fix-missing-mutex-protection-in-run.patch
-│   ├── 0004-wifi-mt76-mt7925-add-NULL-checks-in-MCU-STA-TLV-func.patch
-│   ├── 0005-wifi-mt76-mt7925-add-NULL-checks-for-link_conf-and-m.patch
-│   ├── 0006-wifi-mt76-mt7925-add-error-handling-for-AMPDU-MCU-co.patch
-│   ├── 0007-wifi-mt76-mt7925-add-error-handling-for-BSS-info-MCU.patch
-│   ├── 0008-wifi-mt76-mt7925-add-error-handling-for-BSS-info-in-.patch
-│   ├── 0009-wifi-mt76-mt7925-add-NULL-checks-in-MLO-link-and-cha.patch
-│   ├── 0010-wifi-mt76-mt792x-fix-NULL-pointer-dereference-in-TX-.patch
-│   ├── 0011-wifi-mt76-mt7925-add-lockdep-assertions-for-mutex-ve.patch
-│   ├── 0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-.patch
-│   ├── 0013-wifi-mt76-mt7925-fix-kernel-warning-in-MLO-ROC-setup.patch
-│   ├── 0014-wifi-mt76-mt7925-add-NULL-checks-for-MLO-link-pointe.patch
-│   ├── 0015-wifi-mt76-mt792x-fix-firmware-reload-failure-after-p.patch
-│   ├── 0016-wifi-mt76-mt7925-add-mutex-protection-in-resume-path.patch
-│   ├── 0017-wifi-mt76-mt7925-add-NULL-checks-for-link-pointers-i.patch
+│   ├── ...
 │   └── 0018-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
-├── mt7925/             # Legacy patches organized by category
-│   ├── 0001-0017 patches (older format)
-│   └── mt7925_unified.patch
-└── mt7921/             # MT7921 specific fixes
-    └── 0001-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
+├── patches/            # Legacy patches organized by category
+│   ├── mt7925/         # Older format patches
+│   └── mt7921/         # MT7921 specific fixes
+├── nbd168-patches/     # Patches for nbd168/mt76 (OpenWrt)
+├── stress-test.sh      # WiFi stress testing script
+└── monitor.sh          # Driver monitoring script
 ```
 
 ## Quick Start (Kernel 6.19-rc4)
@@ -47,7 +33,7 @@ cd linux
 git checkout v6.19-rc4
 
 # Apply all patches
-git am /path/to/mt7925/patches/linux-6.19-rc4/*.patch
+git am /path/to/mt7925/linux-6.19-rc4/*.patch
 
 # Configure and build (with ccache for faster rebuilds)
 cp /boot/config-$(uname -r) .config
@@ -174,7 +160,7 @@ cd /path/to/linux-kernel-source
 git checkout v6.19-rc4
 
 # Apply all 18 patches
-git am /path/to/mt7925/patches/linux-6.19-rc4/*.patch
+git am /path/to/mt7925/linux-6.19-rc4/*.patch
 
 # Build with ccache for faster rebuilds
 make CC="ccache gcc" -j$(nproc)
@@ -192,7 +178,7 @@ apt-get source linux-image-$(uname -r)
 cd linux-*/
 
 # Apply patches (adjust paths for your kernel version)
-for patch in /path/to/mt7925/patches/linux-6.19-rc4/*.patch; do
+for patch in /path/to/mt7925/linux-6.19-rc4/*.patch; do
     patch -p1 < "$patch" || echo "Patch may need manual adjustment: $patch"
 done
 
