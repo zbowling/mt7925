@@ -1,8 +1,8 @@
-From ef41fcd0bcf0df29263026ce1f84855379200093 Mon Sep 17 00:00:00 2001
-From: Zac Bowling <zac@zacbowling.com>
+From 98175b0fa30d17f3afa3ca393cf6422e8587e033 Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zbowling@gmail.com>
 Date: Wed, 31 Dec 2025 21:29:32 -0800
-Subject: [PATCH] wifi: mt76: mt7921: fix missing mutex protection in multiple
- paths
+Subject: [PATCH] wifi: mt76: mt7921: fix missing mutex protection in
+ multiple paths
 
 The MT7921 driver has the same mutex protection bugs as MT7925 - they were
 inherited when MT7925 was forked from MT7921. Several code paths iterate
@@ -43,7 +43,7 @@ Note: Suspend paths (pci.c, sdio.c) that currently wrap mt7921_roc_abort_sync()
 with mutex should be updated to remove the outer mutex to avoid deadlock,
 since mt7921_roc_abort_sync() now handles mutex internally.
 
-Signed-off-by: Zac Bowling <zac@zacbowling.com>
+Signed-off-by: Zac Bowling <zbowling@gmail.com>
 ---
  drivers/net/wireless/mediatek/mt76/mt7921/mac.c  | 2 ++
  drivers/net/wireless/mediatek/mt76/mt7921/main.c | 6 ++++
@@ -112,3 +112,4 @@ index 5fae9a6e273c..05793a786644 100644
  
 -- 
 2.51.0
+
