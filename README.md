@@ -243,14 +243,14 @@ dmesg | grep -i mt7925
 | 0008 | Key setup BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
 | 0009 | MLO link/chanctx NULL checks | ✅ [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
 | 0010 | TX path NULL pointer fix (mt792x) | ✅ [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
-| 0011 | Lockdep assertions           | 🔄 Testing |
-| 0012 | MLO roaming key removal fix  | 🔄 Testing |
-| 0013 | MLO ROC setup warning fix    | 🔄 Testing |
-| 0014 | MCU MLO link NULL checks     | 🔄 Testing |
-| 0015 | Firmware reload fix (mt792x) | 🔄 Testing |
-| 0016 | Resume path mutex fix        | 🔄 Testing |
-| 0017 | sta_add/conf_tx NULL checks  | 🔄 Testing |
-| 0018 | MT7921 mutex fixes           | 🔄 Testing |
+| 0011 | Lockdep assertions           | ✅ Submitted to LKML |
+| 0012 | MLO roaming key removal fix  | ✅ Submitted to LKML |
+| 0013 | MLO ROC setup warning fix    | ✅ Submitted to LKML |
+| 0014 | MCU MLO link NULL checks     | ✅ Submitted to LKML |
+| 0015 | Firmware reload fix (mt792x) | ✅ Submitted to LKML |
+| 0016 | Resume path mutex fix        | ✅ Submitted to LKML |
+| 0017 | sta_add/conf_tx NULL checks  | ✅ Submitted to LKML |
+| 0018 | MT7921 mutex fixes           | ✅ Submitted to LKML |
 
 ## Tested Kernels
 
