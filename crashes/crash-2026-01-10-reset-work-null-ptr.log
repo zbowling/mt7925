@@ -1,0 +1,66 @@
+Jan 10 18:38:57 zcache kernel: wlan0: RX ReassocResp from d8:b3:70:f8:9e:7b (capab=0x1111 status=30 aid=0)
+Jan 10 18:38:57 zcache kernel: wlan0: d8:b3:70:f8:9e:7b rejected association temporarily; comeback duration 895 TU (916 ms)
+Jan 10 18:38:57 zcache kernel: wlan0: RX ReassocResp from d8:b3:70:f8:9e:7b (capab=0x1111 status=30 aid=0)
+Jan 10 18:38:57 zcache kernel: wlan0: d8:b3:70:f8:9e:7b rejected association temporarily; comeback duration 794 TU (813 ms)
+Jan 10 18:38:57 zcache kernel: wlan0: association with d8:b3:70:f8:9e:7b timed out
+Jan 10 18:39:01 zcache kernel: mt7925e 0000:bf:00.0: Message 00020002 (seq 11) timeout
+Jan 10 18:39:07 zcache kernel: mt7925e 0000:bf:00.0: Message 00020003 (seq 12) timeout
+Jan 10 18:39:10 zcache kernel: mt7925e 0000:bf:00.0: Message 00020002 (seq 13) timeout
+Jan 10 18:39:13 zcache kernel: mt7925e 0000:bf:00.0: Message 00020002 (seq 14) timeout
+Jan 10 18:39:16 zcache kernel: mt7925e 0000:bf:00.0: Message 00020001 (seq 15) timeout
+Jan 10 18:39:16 zcache kernel: mt7925e 0000:bf:00.0: HW/SW Version: 0x8a108a10, Build Time: 20251015212927a
+Jan 10 18:39:16 zcache kernel: mt7925e 0000:bf:00.0: WM Firmware Version: ____000000, Build Time: 20251015213023
+Jan 10 18:39:17 zcache kernel: BUG: kernel NULL pointer dereference, address: 0000000000000000
+Jan 10 18:39:17 zcache kernel: #PF: supervisor read access in kernel mode
+Jan 10 18:39:17 zcache kernel: #PF: error_code(0x0000) - not-present page
+Jan 10 18:39:17 zcache kernel: PGD 0 P4D 0 
+Jan 10 18:39:17 zcache kernel: Oops: Oops: 0000 [#1] SMP NOPTI
+Jan 10 18:39:17 zcache kernel: CPU: 0 UID: 0 PID: 42446 Comm: kworker/u96:0 Tainted: G           O        6.18.4-2-cachyos #1 PREEMPT(full)  b0274bd1b2c7bedbf3a9a6159178cc392f0fdb5c
+Jan 10 18:39:17 zcache kernel: Tainted: [O]=OOT_MODULE
+Jan 10 18:39:17 zcache kernel: Hardware name: Framework Laptop 16 (AMD Ryzen AI 300 Series)/FRANMHCP09, BIOS 03.04 11/06/2025
+Jan 10 18:39:17 zcache kernel: Workqueue: mt76 mt7925_mac_reset_work [mt7925_common]
+Jan 10 18:39:17 zcache kernel: RIP: 0010:mt76_connac_mcu_uni_add_dev+0xf1/0x210 [mt76_connac_lib]
+Jan 10 18:39:17 zcache kernel: Code: 0f b7 89 b8 00 00 00 66 89 4c 24 1c c7 44 24 1e 00 00 00 00 66 89 4c 24 22 66 c7 44 24 24 00 00 c6 44 24 26 00 44 88 4c 24 27 <48> 8b 0e 8b 09 83 f9 05 7f 11 83 f9 01 74 2f 83 f9 02 74 3c 83 f9
+Jan 10 18:39:17 zcache kernel: RSP: 0018:ffffccb5e1d17cb0 EFLAGS: 00010282
+Jan 10 18:39:17 zcache kernel: RAX: ffffccb5e1d17ce2 RBX: ffff8a0f37682060 RCX: 0000000000000013
+Jan 10 18:39:17 zcache kernel: RDX: ffff8a0f0cd12588 RSI: 0000000000000000 RDI: 0000000000000000
+Jan 10 18:39:17 zcache kernel: RBP: 0000000000000001 R08: 0000000000000000 R09: 0000000000000000
+Jan 10 18:39:17 zcache kernel: R10: 0000000000000000 R11: ffffffff999362b0 R12: 0000000000000001
+Jan 10 18:39:17 zcache kernel: R13: 0000000000000000 R14: ffff8a0f37682060 R15: ffff8a0f0cd12588
+Jan 10 18:39:17 zcache kernel: FS:  0000000000000000(0000) GS:ffff8a12b18fe000(0000) knlGS:0000000000000000
+Jan 10 18:39:17 zcache kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Jan 10 18:39:17 zcache kernel: CR2: 0000000000000000 CR3: 00000003f0a12000 CR4: 0000000000f50ef0
+Jan 10 18:39:17 zcache kernel: PKRU: 55555554
+Jan 10 18:39:17 zcache kernel: Call Trace:
+Jan 10 18:39:17 zcache kernel:  <TASK>
+Jan 10 18:39:17 zcache kernel:  mt7925_vif_connect_iter+0x95/0x190 [mt7925_common dc0066c6b1da3a3d20cb990f664250b31cf0a3c5]
+Jan 10 18:39:17 zcache kernel:  __iterate_interfaces+0x55/0x130 [mac80211 9bef1c01c9f6e23856cab5358ede5658fefb3669]
+Jan 10 18:39:17 zcache kernel:  ? __pfx_mt7925_vif_connect_iter+0x10/0x10 [mt7925_common dc0066c6b1da3a3d20cb990f664250b31cf0a3c5]
+Jan 10 18:39:17 zcache kernel:  ? __pfx_mt7925_vif_connect_iter+0x10/0x10 [mt7925_common dc0066c6b1da3a3d20cb990f664250b31cf0a3c5]
+Jan 10 18:39:17 zcache kernel:  ieee80211_iterate_interfaces+0x3b/0x50 [mac80211 9bef1c01c9f6e23856cab5358ede5658fefb3669]
+Jan 10 18:39:17 zcache kernel:  mt7925_mac_reset_work+0x2a3/0x360 [mt7925_common dc0066c6b1da3a3d20cb990f664250b31cf0a3c5]
+Jan 10 18:39:17 zcache kernel:  ? enable_work+0x2b/0xd0
+Jan 10 18:39:17 zcache kernel:  process_scheduled_works+0x24b/0x5a0
+Jan 10 18:39:17 zcache kernel:  worker_thread+0x188/0x360
+Jan 10 18:39:17 zcache kernel:  ? __pfx_worker_thread+0x10/0x10
+Jan 10 18:39:17 zcache kernel:  kthread+0x217/0x250
+Jan 10 18:39:17 zcache kernel:  ? __pfx_kthread+0x10/0x10
+Jan 10 18:39:17 zcache kernel:  ret_from_fork+0xf1/0x1f0
+Jan 10 18:39:17 zcache kernel:  ? __pfx_kthread+0x10/0x10
+Jan 10 18:39:17 zcache kernel:  ret_from_fork_asm+0x1a/0x30
+Jan 10 18:39:17 zcache kernel:  </TASK>
+Jan 10 18:39:17 zcache kernel: Modules linked in: overlay tcp_diag inet_diag ccm snd_seq_dummy snd_hrtimer rfcomm snd_seq snd_seq_device tun cmac algif_hash algif_skcipher af_alg bnep snd_ctl_led vfat fat snd_acp_legacy_mach snd_acp_mach snd_soc_nau8821 snd_acp3x_rn snd_acp70 snd_acp_pdm snd_acp_i2s snd_soc_dmic snd_acp_pcm snd_sof_amd_acp70 snd_sof_amd_acp63 snd_sof_amd_vangogh snd_sof_amd_rembrandt snd_sof_amd_renoir snd_sof_amd_acp snd_sof_pci snd_sof_xtensa_dsp snd_sof snd_sof_utils snd_pci_ps snd_soc_acpi_amd_match soundwire_amd soundwire_generic_allocation snd_amd_sdw_acpi snd_hda_codec_alc269 soundwire_bus intel_rapl_msr amd_atl snd_hda_scodec_component snd_soc_sdca intel_rapl_common snd_hda_codec_realtek_lib mt7925e snd_soc_core snd_hda_codec_generic mt7925_common snd_hda_codec_atihdmi ac97_bus snd_hda_codec_nvhdmi mt792x_lib snd_pcm_dmaengine snd_hda_codec_hdmi snd_compress mt76_connac_lib snd_rpl_pci_acp6x mt76 hid_sensor_als snd_acp_pci hid_sensor_trigger snd_hda_intel snd_amd_acpi_mach industrialio_triggered_buffer uvcvideo
+Jan 10 18:39:17 zcache kernel:  uvc mac80211 snd_acp_legacy_common kfifo_buf videobuf2_vmalloc mousedev snd_hda_codec kvm_amd hid_sensor_iio_common snd_pci_acp6x leds_cros_ec videobuf2_memops btusb btmtk ucsi_acpi snd_pci_acp5x snd_hda_core videobuf2_v4l2 industrialio cros_ec_sysfs cros_charge_control cros_ec_debugfs gpio_cros_ec led_class_multicolor videobuf2_common cros_ec_chardev cros_ec_hwmon typec_ucsi snd_rn_pci_acp3x amd_pmf btbcm snd_intel_dspcfg kvm cfg80211 snd_intel_sdw_acpi ip6t_REJECT typec amdtee snd_acp_config btintel snd_hwdep spd5118 videodev nf_reject_ipv6 hid_sensor_hub amd_sfh cros_ec_dev hid_multitouch irqbypass btrtl snd_soc_acpi roles snd_pcm polyval_clmulni platform_profile cros_ec_lpcs mc ccp snd_pci_acp3x snd_timer bluetooth ghash_clmulni_intel joydev xt_hl aesni_intel snd cros_ec i2c_piix4 thunderbolt rfkill i2c_hid_acpi ip6t_rt tee 8250_dw amd_pmc soundcore cros_ec_proto amdxdna wmi_bmof pcspkr k10temp nvidia_wmi_ec_backlight rapl i2c_smbus libarc4 i2c_hid mac_hid ipt_REJECT nf_reject_ipv4 xt_LOG
+Jan 10 18:39:17 zcache kernel:  nf_log_syslog nft_limit xt_limit xt_addrtype xt_tcpudp xt_conntrack nf_conntrack nf_defrag_ipv6 nf_defrag_ipv4 nft_compat x_tables nf_tables dm_mod pkcs8_key_parser crypto_user ntsync i2c_dev nfnetlink zram 842_compress 842_decompress lz4hc_compress lz4_compress nvidia_uvm(O) amdgpu nvidia_drm(O) nvidia_modeset(O) drm_panel_backlight_quirks drm_buddy drm_suballoc_helper drm_exec nvme i2c_algo_bit gpu_sched nvme_core amdxcp nvme_keyring drm_display_helper nvme_auth cec hkdf nvidia(O) drm_ttm_helper video ttm wmi
+Jan 10 18:39:17 zcache kernel: CR2: 0000000000000000
+Jan 10 18:39:17 zcache kernel: ---[ end trace 0000000000000000 ]---
+Jan 10 18:39:17 zcache kernel: RIP: 0010:mt76_connac_mcu_uni_add_dev+0xf1/0x210 [mt76_connac_lib]
+Jan 10 18:39:17 zcache kernel: Code: 0f b7 89 b8 00 00 00 66 89 4c 24 1c c7 44 24 1e 00 00 00 00 66 89 4c 24 22 66 c7 44 24 24 00 00 c6 44 24 26 00 44 88 4c 24 27 <48> 8b 0e 8b 09 83 f9 05 7f 11 83 f9 01 74 2f 83 f9 02 74 3c 83 f9
+Jan 10 18:39:17 zcache kernel: RSP: 0018:ffffccb5e1d17cb0 EFLAGS: 00010282
+Jan 10 18:39:17 zcache kernel: RAX: ffffccb5e1d17ce2 RBX: ffff8a0f37682060 RCX: 0000000000000013
+Jan 10 18:39:17 zcache kernel: RDX: ffff8a0f0cd12588 RSI: 0000000000000000 RDI: 0000000000000000
+Jan 10 18:39:17 zcache kernel: RBP: 0000000000000001 R08: 0000000000000000 R09: 0000000000000000
+Jan 10 18:39:17 zcache kernel: R10: 0000000000000000 R11: ffffffff999362b0 R12: 0000000000000001
+Jan 10 18:39:17 zcache kernel: R13: 0000000000000000 R14: ffff8a0f37682060 R15: ffff8a0f0cd12588
+Jan 10 18:39:17 zcache kernel: FS:  0000000000000000(0000) GS:ffff8a12b18fe000(0000) knlGS:0000000000000000
+Jan 10 18:39:17 zcache kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
