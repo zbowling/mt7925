@@ -1,0 +1,140 @@
+# MT7925 Crash Report: NULL pointer dereference in mt7925_mac_reset_work
+# Date: 2026-01-10 21:12:53 PST
+# Kernel: 6.18.4-2-cachyos (CachyOS)
+# Hardware: Framework Laptop 16 (AMD Ryzen AI 300 Series)
+
+## Summary
+
+NULL pointer dereference during firmware reset recovery path. The crash occurs
+in mt76_connac_mcu_uni_add_dev() when called from mt7925_vif_connect_iter()
+during the reset work handler. The vif->bss_conf.chanctx_conf pointer (RSI)
+is NULL when accessed.
+
+This is a repeat of the earlier crash today (18:39:17) - same root cause,
+triggered by AP roaming during MCU message timeouts leading to reset.
+
+## Root Cause Analysis
+
+The crash occurs because mt7925_vif_connect_iter() iterates over interfaces
+during reset recovery, but one or more vifs have been disconnected/disassociated
+(chanctx_conf is NULL) before the reset work runs. The code path does not
+check for NULL chanctx_conf before passing it to mt76_connac_mcu_uni_add_dev().
+
+Call chain:
+  mt7925_mac_reset_work()
+    -> ieee80211_iterate_interfaces()
+      -> mt7925_vif_connect_iter()
+        -> mt76_connac_mcu_uni_add_dev()  <-- crash here, RSI=NULL
+
+## Hardware/Firmware Info
+
+Device: mt7925e 0000:bf:00.0
+ASIC revision: 79250000
+HW/SW Version: 0x8a108a10
+Build Time: 20251015212927a
+WM Firmware Version: ____000000
+Firmware Build Time: 20251015213023
+
+## Driver Info
+
+Kernel module: mt7925e.ko.zst
+Module srcversion: E7532F02E6B22FB512BD1DB
+Kernel: 6.18.4-2-cachyos
+
+## Events Leading to Crash
+
+System was connected via MLO (WiFi 7) to AP. User roamed between APs,
+triggering disconnect/reconnect sequence. During authentication phase,
+MCU messages began timing out, triggering firmware reset recovery.
+
+### Timeline:
+
+18:47:17 - Driver initialized, connected to AP d8:b3:70:f8:89:4f (MLO link 0+1)
+...
+21:12:30 - Disconnect from AP d8:b3:70:f8:9e:7b for new auth to d8:b3:70:f8:89:4f
+21:12:31 - Authentication with d8:b3:70:f8:89:4f, authenticated
+21:12:37 - Message 00020002 (seq 6) timeout  <-- MCU communication failure begins
+21:12:43 - Message 00020003 (seq 7) timeout
+21:12:46 - Message 00020002 (seq 8) timeout
+21:12:49 - Message 00020002 (seq 9) timeout
+21:12:52 - Message 00020001 (seq 10) timeout
+21:12:52 - Firmware reload: HW/SW Version: 0x8a108a10
+21:12:53 - CRASH: NULL pointer dereference in mt76_connac_mcu_uni_add_dev()
+
+## Full Crash Dump
+
+BUG: kernel NULL pointer dereference, address: 0000000000000000
+#PF: supervisor read access in kernel mode
+#PF: error_code(0x0000) - not-present page
+PGD 0 P4D 0
+Oops: Oops: 0000 [#1] SMP NOPTI
+CPU: 14 UID: 0 PID: 22340 Comm: kworker/u96:1 Tainted: G           OE       6.18.4-2-cachyos #1 PREEMPT(full)  b0274bd1b2c7bedbf3a9a6159178cc392f0fdb5c
+Tainted: [O]=OOT_MODULE, [E]=UNSIGNED_MODULE
+Hardware name: Framework Laptop 16 (AMD Ryzen AI 300 Series)/FRANMHCP09, BIOS 03.04 11/06/2025
+Workqueue: mt76 mt7925_mac_reset_work [mt7925_common]
+RIP: 0010:mt76_connac_mcu_uni_add_dev+0xf1/0x210 [mt76_connac_lib]
+Code: 0f b7 89 b8 00 00 00 66 89 4c 24 1c c7 44 24 1e 00 00 00 00 66 89 4c 24 22 66 c7 44 24 24 00 00 c6 44 24 26 00 44 88 4c 24 27 <48> 8b 0e 8b 09 83 f9 05 7f 11 83 f9 01 74 2f 83 f9 02 74 3c 83 f9
+RSP: 0018:ffffcc58e2d07cb0 EFLAGS: 00010282
+RAX: ffffcc58e2d07ce2 RBX: ffff8bf709ae2060 RCX: 0000000000000013
+RDX: ffff8bf70b20e588 RSI: 0000000000000000 RDI: 0000000000000000
+RBP: 0000000000000001 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: ffffffffa81362b0 R12: 0000000000000002
+R13: 0000000000000000 R14: ffff8bf709ae2060 R15: ffff8bf70b20e588
+FS:  0000000000000000(0000) GS:ffff8bfaa347e000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 0000000197c12000 CR4: 0000000000f50ef0
+PKRU: 55555554
+Call Trace:
+ <TASK>
+ mt7925_vif_connect_iter+0x95/0x190 [mt7925_common dc0066c6b1da3a3d20cb990f664250b31cf0a3c5]
+ __iterate_interfaces+0x55/0x130 [mac80211 9bef1c01c9f6e23856cab5358ede5658fefb3669]
+ ? __pfx_mt7925_vif_connect_iter+0x10/0x10 [mt7925_common dc0066c6b1da3a3d20cb990f664250b31cf0a3c5]
+ ? __pfx_mt7925_vif_connect_iter+0x10/0x10 [mt7925_common dc0066c6b1da3a3d20cb990f664250b31cf0a3c5]
+ ieee80211_iterate_interfaces+0x3b/0x50 [mac80211 9bef1c01c9f6e23856cab5358ede5658fefb3669]
+ mt7925_mac_reset_work+0x2a3/0x360 [mt7925_common dc0066c6b1da3a3d20cb990f664250b31cf0a3c5]
+ ? enable_work+0x2b/0xd0
+ process_scheduled_works+0x24b/0x5a0
+ worker_thread+0x188/0x360
+ ? __pfx_worker_thread+0x10/0x10
+ kthread+0x217/0x250
+ ? __pfx_kthread+0x10/0x10
+ ret_from_fork+0xf1/0x1f0
+ ? __pfx_kthread+0x10/0x10
+ ret_from_fork_asm+0x1a/0x30
+ </TASK>
+
+## Register Analysis
+
+Key registers at crash:
+- RSI (chanctx_conf): 0x0000000000000000  <-- NULL pointer being dereferenced
+- RDI: 0x0000000000000000
+- CR2 (fault address): 0x0000000000000000
+- R13: 0x0000000000000000
+
+The crash instruction "48 8b 0e" is "mov rcx, [rsi]" - dereferencing NULL RSI.
+
+## Modules at Crash Time
+
+mt7925e mt7925_common mt792x_lib mt76_connac_lib mt76 mac80211 cfg80211
+
+## Suggested Fix
+
+In mt7925_vif_connect_iter(), add NULL check for vif->bss_conf.chanctx_conf
+before proceeding with the add_dev call. Interfaces that have been disconnected
+during the reset window should be skipped.
+
+Example:
+  if (!vif->bss_conf.chanctx_conf)
+      return;
+
+## Reproduction
+
+1. Connect to WiFi 7 AP with MLO enabled
+2. Roam between APs or trigger disconnect/reconnect
+3. If MCU message timeouts occur during auth/assoc, reset work triggers crash
+
+## Related Issues
+
+This is the same bug class as crash-2026-01-10-reset-work-null-ptr.log from
+earlier today (18:39:17). Both occur during reset recovery when vif state
+has changed between timeout detection and reset work execution.

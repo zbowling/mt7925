@@ -1,0 +1,53 @@
+# MT7925 System Hang - MLO Roaming Issue
+# Date: 2026-01-11 18:19:26 PST
+# Kernel: 6.18.4-2-cachyos-wifi-fix (with 3 of 18 patches applied)
+# System: ASUS laptop with AMD Ryzen AI 300 series + RTX 5070
+
+## Summary
+System hung during WiFi roaming/authentication. Hard reboot required.
+Logs stop abruptly at 18:19:34 - no kernel panic captured (silent hang/deadlock).
+
+## Root Cause
+MLO (Multi-Link Operation / WiFi 7) authentication failure during roaming.
+The kernel was missing patches 0012-0018 which address MLO-related issues.
+
+## Last WiFi Activity Before Hang
+Jan 11 18:19:26 wpa_supplicant[1367]: wlan0: SME: Trying to authenticate with d8:b3:70:f8:89:52 (SSID='Pfizer 5G Implant' freq=6135 MHz)
+Jan 11 18:19:26 wpa_supplicant[1367]: nl80211: kernel reports: link ID must for MLO group key
+
+## Earlier MLO Errors in Same Boot
+Jan 11 18:14:14 wpa_supplicant[1367]: nl80211: kernel reports: link ID must for MLO group key
+Jan 11 18:14:14 wpa_supplicant[1367]: nl80211: kernel reports: link ID must for MLO group key
+Jan 11 18:14:14 wpa_supplicant[1367]: nl80211: kernel reports: link ID must for MLO group key
+Jan 11 18:14:15 wpa_supplicant[1367]: nl80211: kernel reports: Error fetching BSS for link
+Jan 11 18:14:17 wpa_supplicant[1367]: bgscan simple: Failed to enable signal strength monitoring
+
+## WiFi Hardware Info
+mt7925e 0000:bf:00.0: ASIC revision: 79250000
+mt7925e 0000:bf:00.0: HW/SW Version: 0x8a108a10, Build Time: 20251015212927a
+mt7925e 0000:bf:00.0: WM Firmware Version: ____000000, Build Time: 20251015213023
+
+## Access Point
+BSSID: d8:b3:70:f8:89:52
+SSID: Pfizer 5G Implant
+Frequency: 6135 MHz (6 GHz band - WiFi 7)
+
+## Missing Patches (needed for MLO stability)
+The kernel build only had patches 0001-0003 applied. These patches were missing:
+- 0012-wifi-mt76-mt7925-fix-key-removal-failure-during-MLO-.patch
+- 0013-wifi-mt76-mt7925-fix-kernel-warning-in-MLO-ROC-setup.patch
+- 0014-wifi-mt76-mt7925-add-NULL-checks-for-MLO-link-pointe.patch
+- 0016-wifi-mt76-mt7925-add-mutex-protection-in-resume-path.patch
+- 0017-wifi-mt76-mt7925-add-NULL-checks-for-link-pointers-i.patch
+
+## Full Journal Excerpt (last 60 seconds before hang)
+Jan 11 18:18:34 kdeconnectd[4553]: No uuids found for "08:81:DE:6C:BC:2C"
+Jan 11 18:18:43 kernel: [UFW BLOCK] IN=wlan0 ...
+Jan 11 18:19:13 kernel: [UFW BLOCK] IN=wlan0 ...
+Jan 11 18:19:26 wpa_supplicant[1367]: wlan0: SME: Trying to authenticate with d8:b3:70:f8:89:52 (SSID='Pfizer 5G Implant' freq=6135 MHz)
+Jan 11 18:19:26 wpa_supplicant[1367]: nl80211: kernel reports: link ID must for MLO group key
+Jan 11 18:19:34 kdeconnectd[4553]: No uuids found for "79:24:11:42:A9:F3"
+[SYSTEM HUNG - NO FURTHER LOG ENTRIES]
+
+## Resolution
+Rebuild kernel with all 18 patches from linux-6.19-rc4/ directory.

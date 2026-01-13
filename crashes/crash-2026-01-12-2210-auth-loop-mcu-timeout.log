@@ -1,0 +1,96 @@
+# WiFi Authentication Loop and MCU Timeout Investigation
+# Date: 2026-01-12 22:10
+# Kernel: 6.18.4-3-cachyos-wifi-fix (with 17 MT7925 patches)
+# Status: SUSPICIOUS - No crash but unusual behavior
+
+## Summary
+After booting into patched kernel 6.18.4-3-cachyos-wifi-fix, WiFi entered an
+authentication failure loop. MCU timeout occurred but recovered gracefully.
+No kernel panic or NULL pointer crash (patches appear to be working).
+
+## Key Observations
+1. MCU command timeout occurred at ~1447s after boot
+2. Driver recovered by reloading firmware automatically
+3. Authentication failures with status 37 (SAE/WPA3 rejection)
+4. Association denied (code=1) on some APs
+5. Connection profile had pinned BSSID to weaker AP
+
+## What Fixed It
+- Cleared pinned BSSID from connection profile:
+  nmcli connection modify "Bowling IoT Devices" 802-11-wireless.bssid ""
+- Connected to stronger AP (DE:B3:70:F8:9E:7C on channel 6)
+- WiFi working with excellent signal (-26 dBm)
+
+## Suspicious Aspects
+- Why did MCU timeout occur?
+- Why were multiple APs rejecting authentication with status 37?
+- Was there firmware/driver state corruption?
+- Should investigate if this is related to roaming logic
+
+## Kernel Messages (dmesg)
+
+[    5.159547] mt7925e 0000:bf:00.0: ASIC revision: 79250000
+[    5.340808] mt7925e 0000:bf:00.0: HW/SW Version: 0x8a108a10, Build Time: 20251015212927a
+[    5.680193] mt7925e 0000:bf:00.0: WM Firmware Version: ____000000, Build Time: 20251015213023
+[ 1447.723320] mt7925e 0000:bf:00.0: Message 00020016 (seq 3) timeout
+[ 1447.908809] mt7925e 0000:bf:00.0: HW/SW Version: 0x8a108a10, Build Time: 20251015212927a
+[ 1448.248563] mt7925e 0000:bf:00.0: WM Firmware Version: ____000000, Build Time: 20251015213023
+[ 1503.604643] mt7925e 0000:bf:00.0: ASIC revision: 79250000
+[ 1503.787376] mt7925e 0000:bf:00.0: HW/SW Version: 0x8a108a10, Build Time: 20251015212927a
+[ 1504.143395] mt7925e 0000:bf:00.0: WM Firmware Version: ____000000, Build Time: 20251015213023
+
+## Authentication Failures (dmesg)
+
+[  435.304506] wlan0: authenticate with de:b3:70:f8:9e:7c (local address=f4:28:9d:8d:13:ff)
+[  435.423412] wlan0: send auth to de:b3:70:f8:9e:7c (try 1/3)
+[  435.428808] wlan0: de:b3:70:f8:9e:7c denied authentication (status 37)
+[  435.809094] wlan0: authenticate with de:b3:70:f8:89:50 (local address=f4:28:9d:8d:13:ff)
+[  435.932854] wlan0: send auth to de:b3:70:f8:89:50 (try 1/3)
+[  435.939982] wlan0: authenticated
+[  435.953851] wlan0: associate with de:b3:70:f8:89:50 (try 1/3)
+[  436.003804] wlan0: RX AssocResp from de:b3:70:f8:89:50 (capab=0x1431 status=0 aid=2)
+[  436.037548] wlan0: associated
+[  439.896012] wlan0: deauthenticating from de:b3:70:f8:89:50 by local choice (Reason: 3=DEAUTH_LEAVING)
+[  441.087041] wlan0: authenticate with d8:b3:70:f8:89:4f (local address=9a:d8:5b:83:d8:e1)
+[  441.289378] wlan0: d8:b3:70:f8:89:4f denied association (code=1)
+[  444.385989] wlan0: d8:b3:70:f8:9e:7b denied authentication (status 37)
+[  445.328221] wlan0: d8:b3:70:f8:9e:7b denied authentication (status 37)
+[  448.722596] wlan0: d8:b3:70:f8:9e:7b denied authentication (status 37)
+
+## NetworkManager Logs (excerpt)
+
+Jan 12 22:01:05 zcache NetworkManager[1257]: <warn>  [1768284065.8886] device (wlan0): link timed out.
+Jan 12 22:01:05 zcache NetworkManager[1257]: <info>  [1768284065.8887] device (wlan0): state change: activated -> failed (reason 'supplicant-timeout', managed-type: 'full')
+Jan 12 22:10:58 zcache NetworkManager[1257]: <info>  [1768284658.4767] device (wlan0): Activation: (wifi) connection 'Bowling IoT Devices' has security, and secrets exist.
+Jan 12 22:10:58 zcache NetworkManager[1257]: <info>  [1768284658.4767] Config: added 'bssid' value 'DE:B3:70:F8:89:50'
+Jan 12 22:10:58 zcache NetworkManager[1257]: <info>  [1768284658.4767] Config: added 'key_mgmt' value 'WPA-PSK WPA-PSK-SHA256 FT-PSK SAE FT-SAE'
+Jan 12 22:10:58 zcache NetworkManager[1257]: <info>  [1768284658.9514] device (wlan0): supplicant interface state: authenticating -> disconnected
+Jan 12 22:11:23 zcache NetworkManager[1257]: <warn>  [1768284683.8882] device (wlan0): Activation: (wifi) association took too long, failing activation
+Jan 12 22:11:23 zcache NetworkManager[1257]: <info>  [1768284683.8882] device (wlan0): state change: config -> failed (reason 'ssid-not-found', managed-type: 'full')
+
+## Connection Profile Issue
+The connection had a pinned BSSID:
+802-11-wireless.bssid: DE:B3:70:F8:89:50
+
+This AP (channel 1, 90% signal) was having issues while a stronger AP
+(DE:B3:70:F8:9E:7C, channel 6, 100% signal) was available.
+
+## Resolution
+Cleared BSSID and reconnected:
+$ nmcli connection modify "Bowling IoT Devices" 802-11-wireless.bssid ""
+$ nmcli device wifi connect "Bowling IoT Devices" bssid DE:B3:70:F8:9E:7C
+
+## Final State
+Connected to de:b3:70:f8:9e:7c (on wlan0)
+    SSID: Bowling IoT Devices
+    freq: 2437.0
+    signal: -26 dBm
+    tx bitrate: 130.0 MBit/s MCS 15
+
+Ping to 8.8.8.8: 2/2 packets received, ~100ms RTT
+
+## Notes for Future Investigation
+- Status 37 = SAE hash-to-element rejection (WPA3 issue?)
+- MCU timeout Message 00020016 - what command is this?
+- Consider if roaming between APs triggered the timeout
+- Patches prevented crash but didn't prevent the timeout itself

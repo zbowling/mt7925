@@ -1,0 +1,54 @@
+# MT7925 WiFi Authentication Failures - 2026-01-12 19:59
+
+## System Info
+- Kernel: 6.18.4-2-cachyos-wifi-fix
+- Driver: mt7925e
+- ASIC: 79250000
+- Firmware: 20251015213023
+
+## Symptoms
+- WiFi connection dropped
+- Multiple authentication failures when trying to reconnect
+- Had to reboot to restore connectivity
+
+## Key Errors
+
+### Authentication request failed
+```
+Jan 12 19:59:51 wlan0: SME: Authentication request to the driver failed
+```
+
+### Deauthentication - Class 2 frame from non-authenticated station
+```
+Jan 12 19:59:55 wlan0: deauthenticated from de:b3:70:f8:89:51 while associating (Reason: 6=CLASS2_FRAME_FROM_NONAUTH_STA)
+```
+
+### Deauthentication - 4-way handshake timeout
+```
+Jan 12 19:59:59 wlan0: deauthenticated from de:b3:70:f8:9e:7d (Reason: 15=4WAY_HANDSHAKE_TIMEOUT)
+Jan 12 20:00:12 wlan0: deauthenticated from de:b3:70:f8:89:51 (Reason: 15=4WAY_HANDSHAKE_TIMEOUT)
+```
+
+## Timeline
+1. 19:59:51 - Tried to authenticate with AP on 6135 MHz (WiFi 6E)
+2. 19:59:51 - "Authentication request to the driver failed"
+3. 19:59:54 - Tried different AP on 5280 MHz
+4. 19:59:54 - AP rejected association temporarily (comeback duration 1024ms)
+5. 19:59:55 - Deauth: CLASS2_FRAME_FROM_NONAUTH_STA
+6. 19:59:59 - Deauth: 4WAY_HANDSHAKE_TIMEOUT
+7. 20:00:12 - More 4WAY_HANDSHAKE_TIMEOUT failures
+8. 20:01:14 - System rebooted
+
+## Analysis
+The driver appears to have gotten into a bad state where it couldn't complete authentication. The "Authentication request to the driver failed" suggests an internal driver issue, not an AP-side problem.
+
+This is likely related to:
+- MLO (Multi-Link Operation) state corruption
+- WiFi 6E band switching issues
+- Driver state machine getting stuck
+
+## Related Patches
+The kernel being built should include patches for:
+- NULL pointer dereference fixes in vif/link handling
+- Mutex protection for concurrent operations
+- Better error handling in authentication paths
