@@ -1,0 +1,116 @@
+# MCU Timeout Recovery - Patches Working
+# Date: 2026-01-13 00:30
+# Kernel: 6.18.4-3-cachyos-wifi-fix (with 17 MT7925 patches)
+# Status: RECOVERED - No crash, patches prevented kernel panic
+
+## Summary
+Multiple MCU command timeouts occurred during reassociation. The patched kernel
+recovered gracefully by reloading firmware and reconnecting. NO KERNEL PANIC.
+This demonstrates the patches are working as intended.
+
+## Trigger
+AP temporarily rejected reassociation (status 30 = comeback later), followed by
+association timeout, which triggered a cascade of MCU timeouts.
+
+## Key Observation
+- 5 consecutive MCU timeouts
+- Firmware auto-reloaded
+- Brief reconnection dance with fallback AP
+- Successfully reconnected to MLD AP with both links
+- **NO CRASH** - on unpatched kernel this would have caused NULL pointer panic
+
+## Bluetooth Impact
+The MT7925 combo chip's Bluetooth side also experienced errors during recovery:
+  Opcode 0x2041 failed: -16 (start background scanning failed)
+This suggests the MCU timeout affects both WiFi and BT subsystems.
+
+## Timeline
+1. AP rejected reassociation temporarily (comeback 898 TU)
+2. Association timed out
+3. MCU timeouts began (5 in succession)
+4. Firmware reloaded
+5. Brief auth/deauth dance with fallback AP
+6. Successfully reconnected to main MLD AP
+7. Both links established (2.4GHz + 5GHz)
+
+## Final State After Recovery
+Connected to d8:b3:70:f8:9e:7b (MLD AP)
+  Link 0: d8:b3:70:f8:9e:7c @ 2437 MHz
+  Link 1: d8:b3:70:f8:9e:7d @ 5765 MHz
+  Signal: -39 dBm
+  TX: 1200.9 Mbit/s EHT-MCS 11
+  Ping: 0% packet loss
+
+================================================================================
+KERNEL MESSAGES (dmesg)
+================================================================================
+
+## Association Rejection and Timeout (trigger)
+
+[88076.687545] wlan0: RX ReassocResp from d8:b3:70:f8:9e:7b (capab=0x1111 status=30 aid=0)
+[88076.687558] wlan0: d8:b3:70:f8:9e:7b rejected association temporarily; comeback duration 898 TU (919 ms)
+[88076.687565] wlan0: RX ReassocResp from d8:b3:70:f8:9e:7b (capab=0x1111 status=30 aid=4)
+[88076.687568] wlan0: d8:b3:70:f8:9e:7b rejected association temporarily; comeback duration 796 TU (815 ms)
+[88077.503763] wlan0: association with d8:b3:70:f8:9e:7b timed out
+
+## MCU Timeouts (5 consecutive)
+
+[88080.576214] mt7925e 0000:bf:00.0: Message 00020002 (seq 14) timeout
+[88086.590573] mt7925e 0000:bf:00.0: Message 00020003 (seq 15) timeout
+[88089.727361] mt7925e 0000:bf:00.0: Message 00020002 (seq 1) timeout
+[88092.734252] mt7925e 0000:bf:00.0: Message 00020002 (seq 2) timeout
+[88095.742137] mt7925e 0000:bf:00.0: Message 00020001 (seq 3) timeout
+
+## Firmware Reload (automatic recovery)
+
+[88095.934834] mt7925e 0000:bf:00.0: HW/SW Version: 0x8a108a10, Build Time: 20251015212927a
+[88096.273512] mt7925e 0000:bf:00.0: WM Firmware Version: ____000000, Build Time: 20251015213023
+
+## Disconnection and Reconnection Attempts
+
+[88096.836615] wlan0: Driver requested disconnection from AP d8:b3:70:f8:9e:7b
+[88097.972613] wlan0: authenticate with d8:b3:70:f8:89:4f (local address=0e:78:2c:b8:0d:b0)
+[88098.108623] wlan0: send auth to d8:b3:70:f8:89:4f (try 1/3)
+[88098.132870] wlan0: authenticate with d8:b3:70:f8:89:4f (local address=0e:78:2c:b8:0d:b0)
+[88098.132875] wlan0: send auth to d8:b3:70:f8:89:4f (try 1/3)
+[88098.150127] wlan0: authenticated
+[88098.152622] wlan0: aborting authentication with d8:b3:70:f8:89:4f by local choice (Reason: 3=DEAUTH_LEAVING)
+[88098.365603] wlan0: authenticate with d8:b3:70:f8:89:4f (local address=9e:ae:64:fc:2a:93)
+[88098.375597] wlan0: send auth to d8:b3:70:f8:89:4f (try 1/3)
+[88098.382213] wlan0: authenticated
+[88098.385976] wlan0: associate with d8:b3:70:f8:89:4f (try 1/3)
+[88098.502988] wlan0: associate with d8:b3:70:f8:89:4f (try 2/3)
+[88099.094948] wlan0: associate with d8:b3:70:f8:89:4f (try 3/3)
+[88099.301794] wlan0: deauthenticated from d8:b3:70:f8:89:4f while associating (Reason: 6=CLASS2_FRAME_FROM_NONAUTH_STA)
+
+## Successful Reconnection to MLD AP
+
+[88112.393646] wlan0: authenticate with d8:b3:70:f8:9e:7b (local address=d2:af:22:1f:d6:1e)
+[88112.526090] wlan0: send auth to d8:b3:70:f8:9e:7b (try 1/3)
+[88112.548955] wlan0: authenticate with d8:b3:70:f8:9e:7b (local address=d2:af:22:1f:d6:1e)
+[88112.548962] wlan0: send auth to d8:b3:70:f8:9e:7b (try 1/3)
+[88112.565814] wlan0: authenticated
+[88112.569578] wlan0: associate with d8:b3:70:f8:9e:7b (try 1/3)
+[88112.617288] wlan0: RX AssocResp from d8:b3:70:f8:9e:7b (capab=0x1111 status=0 aid=6)
+[88112.633572] wlan0: [link 0] local address 92:e7:f0:a2:ed:10, AP link address d8:b3:70:f8:9e:7c
+[88112.633645] wlan0: [link 1] local address d2:af:22:1f:d6:1e, AP link address d8:b3:70:f8:9e:7d (assoc)
+[88112.670592] wlan0: associated
+[88112.672107] wlan0: Limiting TX power to 30 (30 - 0) dBm as advertised by d8:b3:70:f8:9e:7d
+
+## Bluetooth Errors During Event
+
+[88088.734726] Bluetooth: hci0: Opcode 0x2041 failed: -16
+[88088.734739] Bluetooth: hci0: start background scanning failed: -16
+[88099.055560] Bluetooth: hci0: Opcode 0x2041 failed: -16
+[88099.055570] Bluetooth: hci0: start background scanning failed: -16
+[88108.154026] Bluetooth: hci0: Opcode 0x2041 failed: -16
+[88108.154033] Bluetooth: hci0: start background scanning failed: -16
+
+## Notes
+- MCU message types observed:
+  - 00020001: Unknown (possibly scan related)
+  - 00020002: Unknown (possibly state change)
+  - 00020003: Unknown (possibly config)
+- Status 30 = ASSOC_DENIED_TEMPORARILY (comeback mechanism)
+- Reason 6 = CLASS2_FRAME_FROM_NONAUTH_STA (AP rejected unauth frame)
+- The patches allow the driver to recover from MCU timeouts without crashing

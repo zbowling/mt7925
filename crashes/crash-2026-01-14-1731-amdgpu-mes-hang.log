@@ -1,0 +1,79 @@
+# AMD GPU MES Hang - System Freeze
+# Date: 2026-01-14 17:31
+# Kernel: 6.18.4-3-cachyos-wifi-fix
+# Status: SYSTEM FREEZE - Required force reboot
+
+## Summary
+System froze approximately 2 minutes after resume from sleep. AMD discrete GPU's
+MES (Micro Engine Scheduler) failed to respond, causing complete system hang.
+This is NOT a WiFi issue - MT7925 had no errors at time of freeze.
+
+## Root Cause
+AMD GPU MES failure after suspend/resume:
+  amdgpu 0000:c2:00.0: amdgpu: MES failed to respond to msg=MISC (WAIT_REG_MEM)
+
+## Timeline
+- 17:29:46 - System resumed from sleep
+- 17:29:46 - GPU re-initialized (ring assignments logged)
+- 17:29:48 - WiFi reconnected successfully
+- 17:31:46 - GPU MES failure (WAIT_REG_MEM timeout)
+- 17:32:07 - Chrome detected GPU state invalid
+- 17:32:14 - Chrome GPU process crashed (exit_code=512)
+- After 17:32:14 - System completely frozen, required force reboot
+
+## Related Issues During Session
+- Bluetooth hci0 errors (Opcode 0x2041 failed: -16) - ongoing, unrelated to freeze
+- Touchpad jump warnings from libinput - cosmetic
+- kwin output configuration failed - display manager issue
+
+## Hardware
+- GPU: AMD discrete (0000:c2:00.0) - likely RX 7000 series in Framework 16
+- This is the discrete GPU, not the integrated Radeon 890M
+
+================================================================================
+KERNEL MESSAGES (dmesg from previous boot)
+================================================================================
+
+## GPU Re-initialization After Resume (17:29:46)
+
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring comp_1.3.0 uses VM inv eng 7 on hub 0
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring comp_1.0.1 uses VM inv eng 8 on hub 0
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring comp_1.1.1 uses VM inv eng 9 on hub 0
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring comp_1.2.1 uses VM inv eng 10 on hub 0
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring comp_1.3.1 uses VM inv eng 11 on hub 0
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring sdma0 uses VM inv eng 12 on hub 0
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring vcn_unified_0 uses VM inv eng 0 on hub 8
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring jpeg_dec_0 uses VM inv eng 1 on hub 8
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring mes_kiq_3.1.0 uses VM inv eng 13 on hub 0
+Jan 14 17:29:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: ring vpe uses VM inv eng 4 on hub 8
+
+## GPU MES Failure (17:31:46)
+
+Jan 14 17:31:46 zcache kernel: amdgpu 0000:c2:00.0: amdgpu: MES failed to respond to msg=MISC (WAIT_REG_MEM)
+
+## Chrome GPU Process Crash
+
+Jan 14 17:32:07 zcache google-chrome-stable[4893]: [41579:10:0114/173207.362464:ERROR:gpu/ipc/client/command_buffer_proxy_impl.cc:321] GPU state invalid after WaitForGetOffsetInRange.
+Jan 14 17:32:14 zcache google-chrome-stable[4893]: [4870:4870:0114/173214.876847:ERROR:content/browser/gpu/gpu_process_host.cc:1005] GPU process exited unexpectedly: exit_code=512
+
+## Bluetooth Errors (ongoing, unrelated)
+
+Jan 14 17:31:28 zcache kernel: Bluetooth: hci0: Opcode 0x2041 failed: -16
+Jan 14 17:31:28 zcache kernel: Bluetooth: hci0: start background scanning failed: -16
+Jan 14 17:31:38 zcache kernel: Bluetooth: hci0: Opcode 0x2041 failed: -16
+Jan 14 17:31:38 zcache kernel: Bluetooth: hci0: start background scanning failed: -16
+
+## Notes
+- MES = Micro Engine Scheduler - handles GPU command scheduling
+- WAIT_REG_MEM = GPU waiting for register/memory operation that never completed
+- This is a known issue with AMD GPUs after suspend/resume
+- Possible mitigations:
+  - Update to latest linux-firmware
+  - Try kernel parameter: amdgpu.dpm=0 (disable power management)
+  - Try kernel parameter: amdgpu.runpm=0 (disable runtime PM)
+  - Check for BIOS/EC updates for Framework 16
+
+## WiFi Status at Time of Freeze
+- MT7925: NO ERRORS - WiFi was working normally
+- Last MT7925 event was hours earlier (Jan 13 22:10)
+- This crash is unrelated to WiFi patches
