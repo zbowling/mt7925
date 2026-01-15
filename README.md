@@ -44,7 +44,7 @@ sudo make modules_install install
 
 ### Option 3: DKMS Package (Beta - Kernel 6.17+ Only)
 
-> **Warning:** The DKMS package requires kernel 6.17 or newer. It will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs (`pp_page_to_nmdesc`, `alloc_netdev_dummy`).
+> **Warning:** The DKMS package requires kernel 6.17 or newer. It will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs.
 
 ```bash
 cd dkms

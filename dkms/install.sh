@@ -34,6 +34,27 @@ check_root() {
     fi
 }
 
+check_kernel_version() {
+    log_info "Checking kernel version..."
+
+    KVER=$(uname -r)
+    # Extract major.minor version
+    MAJOR=$(echo "$KVER" | cut -d. -f1)
+    MINOR=$(echo "$KVER" | cut -d. -f2)
+
+    if [[ "$MAJOR" -lt 6 ]] || [[ "$MAJOR" -eq 6 && "$MINOR" -lt 17 ]]; then
+        log_error "Kernel $KVER is too old. This DKMS package requires kernel 6.17+"
+        log_error "The mt76 source uses APIs not available in older kernels."
+        log_error "Options:"
+        echo "  1. Upgrade to a newer kernel (6.12+)"
+        echo "  2. Apply patches directly to your kernel source"
+        echo "     See kernels/ directory for version-specific patches"
+        exit 1
+    fi
+
+    log_info "Kernel version $KVER is supported"
+}
+
 check_dependencies() {
     log_info "Checking dependencies..."
 
@@ -71,6 +92,13 @@ check_dependencies() {
             exit 1
         fi
         log_info "LLVM toolchain (clang + lld) found - Makefile will auto-detect"
+    fi
+
+    # Check for firmware files
+    FW_DIR="/lib/firmware/mediatek"
+    if [[ ! -d "$FW_DIR/mt7925" ]] && [[ ! -f "$FW_DIR/mt7925_firmware.bin" ]]; then
+        log_warn "MT7925 firmware not found in $FW_DIR"
+        log_warn "Install linux-firmware package if WiFi doesn't work after installation"
     fi
 
     log_info "Dependencies satisfied"
@@ -171,6 +199,7 @@ main() {
     echo ""
 
     check_root
+    check_kernel_version
     check_dependencies
     remove_existing
     unload_modules
