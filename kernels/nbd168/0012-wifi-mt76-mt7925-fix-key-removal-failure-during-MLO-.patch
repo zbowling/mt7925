@@ -1,7 +1,7 @@
-From 8284efe65c22b41474d2ed382e36b5641b602cc7 Mon Sep 17 00:00:00 2001
+From 111c5d704b904a7598e0db226314238de65fd062 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:05:11 -0800
-Subject: [PATCH 12/17] wifi: mt76: mt7925: fix key removal failure during MLO
+Subject: [PATCH 12/18] wifi: mt76: mt7925: fix key removal failure during MLO
  roaming
 
 During MLO roaming, mac80211 may request key removal after the link state
@@ -35,7 +35,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 852cf8ff842f..7cf6faa1f6f4 100644
+index 852cf8ff84..7cf6faa1f6 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -605,8 +605,15 @@ static int mt7925_set_link_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
@@ -56,5 +56,5 @@ index 852cf8ff842f..7cf6faa1f6f4 100644
  	wcid = &mlink->wcid;
  	wcid_keyidx = &wcid->hw_key_idx;
 -- 
-2.51.0
+2.52.0
 

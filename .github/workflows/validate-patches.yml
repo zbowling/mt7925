@@ -24,12 +24,19 @@ jobs:
           - name: "6.17.13"
             tag: "v6.17.13"
             patches: "kernels/6.17"
+            repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
           - name: "6.18.5"
             tag: "v6.18.5"
             patches: "kernels/6.18"
+            repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
           - name: "6.19-rc5"
             tag: "v6.19-rc5"
             patches: "kernels/6.19-rc"
+            repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
+          - name: "nbd168"
+            tag: "mt76"
+            patches: "kernels/nbd168"
+            repo: "https://github.com/nbd168/wireless.git"
 
     steps:
       - name: Checkout repository
@@ -38,9 +45,10 @@ jobs:
       - name: Clone Linux kernel (sparse checkout)
         env:
           KERNEL_TAG: ${{ matrix.kernel.tag }}
+          KERNEL_REPO: ${{ matrix.kernel.repo }}
         run: |
           git clone --depth 1 --filter=blob:none --sparse \
-            https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
+            "$KERNEL_REPO" \
             -b "$KERNEL_TAG" linux-src
           cd linux-src
           git sparse-checkout set drivers/net/wireless/mediatek/mt76
@@ -81,7 +89,7 @@ jobs:
           - name: "6.18.5"
             tag: "v6.18.5"
             patches: "kernels/6.18"
-            config: "x86_64_defconfig"
+            repo: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
 
     steps:
       - name: Checkout repository
@@ -98,22 +106,19 @@ jobs:
             libssl-dev \
             libelf-dev \
             bc \
-            dwarves
+            dwarves \
+            pahole
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.4
 
-      - name: Configure sccache
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
-          echo "CC=sccache gcc" >> "$GITHUB_ENV"
-
       - name: Clone Linux kernel
         env:
           KERNEL_TAG: ${{ matrix.kernel.tag }}
+          KERNEL_REPO: ${{ matrix.kernel.repo }}
         run: |
           git clone --depth 1 \
-            https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
+            "$KERNEL_REPO" \
             -b "$KERNEL_TAG" linux-src
 
       - name: Apply patches to kernel
@@ -129,30 +134,43 @@ jobs:
           done
 
       - name: Configure kernel for module build
-        env:
-          KERNEL_CONFIG: ${{ matrix.kernel.config }}
         run: |
           cd linux-src
-          make "$KERNEL_CONFIG"
-          # Enable MT76 modules
-          scripts/config --module CONFIG_WLAN
-          scripts/config --module CONFIG_WLAN_VENDOR_MEDIATEK
+          # Start with defconfig
+          make defconfig
+
+          # Enable wireless subsystem
+          scripts/config --enable CONFIG_WIRELESS
+          scripts/config --module CONFIG_CFG80211
+          scripts/config --module CONFIG_MAC80211
+
+          # Enable PCI
+          scripts/config --enable CONFIG_PCI
+
+          # Enable MT76 driver stack
+          scripts/config --enable CONFIG_WLAN
+          scripts/config --enable CONFIG_WLAN_VENDOR_MEDIATEK
           scripts/config --module CONFIG_MT76_CORE
           scripts/config --module CONFIG_MT76_CONNAC_LIB
           scripts/config --module CONFIG_MT792x_LIB
-          scripts/config --module CONFIG_MT792x_USB
-          scripts/config --module CONFIG_MT7921_COMMON
-          scripts/config --module CONFIG_MT7921E
           scripts/config --module CONFIG_MT7925_COMMON
           scripts/config --module CONFIG_MT7925E
+
+          # Regenerate config
           make olddefconfig
 
       - name: Build mt76 modules
+        env:
+          SCCACHE_GHA_ENABLED: "true"
         run: |
           cd linux-src
-          # Prepare headers
-          make modules_prepare
-          # Build only mt76 modules
+          # Use sccache for compilation
+          export CC="sccache gcc"
+
+          # Prepare for module builds
+          make modules_prepare -j$(nproc)
+
+          # Build mt76 modules
           make M=drivers/net/wireless/mediatek/mt76 -j$(nproc)
 
       - name: Verify built modules
@@ -161,12 +179,9 @@ jobs:
           echo "Built modules:"
           find . -name "*.ko" -exec ls -la {} \;
           echo ""
-          echo "Module info:"
-          for ko in $(find . -name "*.ko"); do
-            modinfo "$ko" | head -5
-            echo "---"
-          done
+          echo "Module count:"
+          find . -name "*.ko" | wc -l
 
-      - name: Cache sccache stats
+      - name: Show sccache stats
         run: |
           sccache --show-stats

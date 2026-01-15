@@ -1,7 +1,7 @@
-From 4aaf99407ca10a23acd45dd6b1839f0609c8b375 Mon Sep 17 00:00:00 2001
+From c53665aef9bf3e471a5e527a47e11ab37be6969a Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:05:04 -0800
-Subject: [PATCH 11/17] wifi: mt76: mt7925: add lockdep assertions for mutex
+Subject: [PATCH 11/18] wifi: mt76: mt7925: add lockdep assertions for mutex
  verification
 
 Add lockdep_assert_held() calls to critical MCU functions to help catch
@@ -26,7 +26,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
-index d61a7fbda745..958ff9da9f01 100644
+index d61a7fbda7..958ff9da9f 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1527,6 +1527,8 @@ int mt7925_mcu_uni_bss_ps(struct mt792x_dev *dev,
@@ -57,5 +57,5 @@ index d61a7fbda745..958ff9da9f01 100644
  					 MT7925_BSS_UPDATE_MAX_SIZE);
  	if (IS_ERR(skb))
 -- 
-2.51.0
+2.52.0
 

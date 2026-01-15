@@ -1,7 +1,7 @@
-From 391512e114c3db3872d4d133398cbefe659bd1c8 Mon Sep 17 00:00:00 2001
+From 0f10073ce4f7aab49fc2b82440ce8d54b369b243 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:04:05 -0800
-Subject: [PATCH 05/17] wifi: mt76: mt7925: add NULL checks for link_conf and
+Subject: [PATCH 05/18] wifi: mt76: mt7925: add NULL checks for link_conf and
  mlink in main.c
 
 Add NULL pointer checks throughout main.c for functions that call
@@ -39,7 +39,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 23 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 9f17b21aef1c..7d3322461bcf 100644
+index 9f17b21aef..7d3322461b 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -604,6 +604,10 @@ static int mt7925_set_link_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
@@ -132,5 +132,5 @@ index 9f17b21aef1c..7d3322461bcf 100644
  		rcu_assign_pointer(mvif->sta.link[link_id], mlink);
  
 -- 
-2.51.0
+2.52.0
 

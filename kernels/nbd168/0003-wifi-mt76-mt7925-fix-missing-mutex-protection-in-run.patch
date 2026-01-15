@@ -1,7 +1,7 @@
-From 8824e3ca22a7dad708253fd3db907de1af80ea47 Mon Sep 17 00:00:00 2001
+From 869ebcdd2def88368106b5fa1c91d4702d59508d Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:03:43 -0800
-Subject: [PATCH 03/17] wifi: mt76: mt7925: fix missing mutex protection in
+Subject: [PATCH 03/18] wifi: mt76: mt7925: fix missing mutex protection in
  runtime PM and MLO PM
 
 Two additional code paths iterate over active interfaces and call MCU
@@ -37,7 +37,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 3001a62a8b67..9f17b21aef1c 100644
+index 3001a62a8b..9f17b21aef 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -751,9 +751,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)
@@ -80,5 +80,5 @@ index 3001a62a8b67..9f17b21aef1c 100644
  
  void mt7925_scan_work(struct work_struct *work)
 -- 
-2.51.0
+2.52.0
 

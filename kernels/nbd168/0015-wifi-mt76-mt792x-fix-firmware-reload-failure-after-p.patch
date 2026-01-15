@@ -1,7 +1,7 @@
-From 872e9d7788204c56f3e18f98a92894315036c1e5 Mon Sep 17 00:00:00 2001
+From 66162b691f13dc7a0e60e981c898e202b492a9a1 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:07:57 -0800
-Subject: [PATCH 15/17] wifi: mt76: mt792x: fix firmware reload failure after
+Subject: [PATCH 15/18] wifi: mt76: mt792x: fix firmware reload failure after
  previous load crash
 
 If the firmware loading process crashes or is interrupted after
@@ -34,7 +34,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt792x_core.c b/drivers/net/wireless/mediatek/mt76/mt792x_core.c
-index 9dc768aa8b9c..05598202b488 100644
+index 9dc768aa8b..05598202b4 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt792x_core.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt792x_core.c
 @@ -936,6 +936,20 @@ int mt792x_load_firmware(struct mt792x_dev *dev)
@@ -59,5 +59,5 @@ index 9dc768aa8b9c..05598202b488 100644
  	if (ret)
  		return ret;
 -- 
-2.51.0
+2.52.0
 

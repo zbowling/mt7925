@@ -1,7 +1,7 @@
-From 0a9f548fa8967a5ed519591bbc45e6330e6af9dd Mon Sep 17 00:00:00 2001
+From 417184f357cf785bbeeedb5d5fd8109dd496cce3 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:04:46 -0800
-Subject: [PATCH 09/17] wifi: mt76: mt7925: add NULL checks in MLO link and
+Subject: [PATCH 09/18] wifi: mt76: mt7925: add NULL checks in MLO link and
  chanctx functions
 
 Add NULL pointer checks for mconf and link_conf in several functions
@@ -32,7 +32,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 32 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 058394b2e067..852cf8ff842f 100644
+index 058394b2e0..852cf8ff84 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -1006,18 +1006,29 @@ mt7925_mac_set_links(struct mt76_dev *mdev, struct ieee80211_vif *vif)
@@ -48,13 +48,13 @@ index 058394b2e067..852cf8ff842f 100644
 +	enum nl80211_band band, secondary_band;
 +	u16 sel_links;
 +	u8 secondary_link_id;
-+
-+	link_conf = mt792x_vif_to_bss_conf(vif, mvif->deflink_id);
-+	if (!link_conf)
-+		return;
  
 -	u16 sel_links = mt76_select_links(vif, 2);
 -	u8 secondary_link_id = __ffs(~BIT(mvif->deflink_id) & sel_links);
++	link_conf = mt792x_vif_to_bss_conf(vif, mvif->deflink_id);
++	if (!link_conf)
++		return;
++
 +	chandef = &link_conf->chanreq.oper;
 +	band = chandef->chan->band;
 +
@@ -112,5 +112,5 @@ index 058394b2e067..852cf8ff842f 100644
  		if (vif->type == NL80211_IFTYPE_STATION &&
  		    mconf == &mvif->bss_conf)
 -- 
-2.51.0
+2.52.0
 

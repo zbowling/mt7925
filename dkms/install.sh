@@ -1,0 +1,175 @@
+#!/bin/bash
+# MT7925 DKMS Installer
+# Installs the patched MT7925 WiFi driver via DKMS
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PACKAGE_NAME="mt76-mt7925"
+PACKAGE_VERSION="1.0.0"
+DKMS_SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        log_error "This script must be run as root (use sudo)"
+        exit 1
+    fi
+}
+
+check_dependencies() {
+    log_info "Checking dependencies..."
+
+    if ! command -v dkms &> /dev/null; then
+        log_error "DKMS is not installed. Please install it first:"
+        echo "  Arch/Manjaro: sudo pacman -S dkms"
+        echo "  Ubuntu/Debian: sudo apt install dkms"
+        echo "  Fedora: sudo dnf install dkms"
+        exit 1
+    fi
+
+    if [[ ! -d "/lib/modules/$(uname -r)/build" ]]; then
+        log_error "Kernel headers not found for $(uname -r). Please install them:"
+        echo "  Arch/Manjaro: sudo pacman -S linux-headers"
+        echo "  Ubuntu/Debian: sudo apt install linux-headers-$(uname -r)"
+        echo "  Fedora: sudo dnf install kernel-devel"
+        exit 1
+    fi
+
+    log_info "Dependencies satisfied"
+}
+
+remove_existing() {
+    if dkms status | grep -q "${PACKAGE_NAME}"; then
+        log_info "Removing existing ${PACKAGE_NAME} installation..."
+        dkms remove "${PACKAGE_NAME}/${PACKAGE_VERSION}" --all 2>/dev/null || true
+    fi
+
+    if [[ -d "$DKMS_SRC" ]]; then
+        log_info "Removing existing source directory..."
+        rm -rf "$DKMS_SRC"
+    fi
+}
+
+unload_modules() {
+    log_info "Unloading existing mt76 modules..."
+
+    # Unload in reverse dependency order
+    for mod in mt7925e mt7925_common mt7925-common mt792x_lib mt792x-lib \
+               mt76_connac_lib mt76-connac-lib mt76; do
+        if lsmod | grep -q "^${mod//-/_}"; then
+            rmmod "${mod//-/_}" 2>/dev/null || true
+        fi
+    done
+}
+
+blacklist_stock_modules() {
+    log_info "Blacklisting stock mt76 modules..."
+
+    cat > /etc/modprobe.d/mt76-dkms-blacklist.conf << 'EOF'
+# Blacklist stock mt76 modules to use DKMS version
+# Created by mt7925 DKMS installer
+blacklist mt7925e
+blacklist mt7925_common
+blacklist mt792x_lib
+blacklist mt792x_usb
+blacklist mt76_connac_lib
+blacklist mt76_usb
+blacklist mt76_sdio
+# Don't blacklist mt76 core as DKMS version will replace it
+EOF
+
+    log_info "Stock modules blacklisted in /etc/modprobe.d/mt76-dkms-blacklist.conf"
+}
+
+install_dkms() {
+    log_info "Installing DKMS source to ${DKMS_SRC}..."
+
+    mkdir -p "$DKMS_SRC"
+    cp -r "$SCRIPT_DIR/src" "$DKMS_SRC/"
+    cp "$SCRIPT_DIR/dkms.conf" "$DKMS_SRC/"
+
+    log_info "Adding to DKMS..."
+    dkms add "${PACKAGE_NAME}/${PACKAGE_VERSION}"
+
+    log_info "Building modules for kernel $(uname -r)..."
+    dkms build "${PACKAGE_NAME}/${PACKAGE_VERSION}"
+
+    log_info "Installing modules..."
+    dkms install "${PACKAGE_NAME}/${PACKAGE_VERSION}"
+}
+
+load_modules() {
+    log_info "Loading new modules..."
+
+    modprobe mt76
+    modprobe mt76-connac-lib
+    modprobe mt792x-lib
+    modprobe mt7925-common
+    modprobe mt7925e
+
+    log_info "Modules loaded successfully"
+}
+
+verify_installation() {
+    log_info "Verifying installation..."
+
+    echo ""
+    echo "DKMS Status:"
+    dkms status | grep "${PACKAGE_NAME}" || true
+
+    echo ""
+    echo "Loaded modules:"
+    lsmod | grep -E "mt76|mt792|mt7925" || echo "No mt76 modules loaded"
+
+    echo ""
+    echo "WiFi interfaces:"
+    ip link show | grep -E "wlan|wlp" || echo "No WiFi interfaces found (may need reboot)"
+}
+
+main() {
+    echo "========================================"
+    echo "MT7925 DKMS Installer"
+    echo "========================================"
+    echo ""
+
+    check_root
+    check_dependencies
+    remove_existing
+    unload_modules
+    blacklist_stock_modules
+    install_dkms
+    load_modules
+    verify_installation
+
+    echo ""
+    echo "========================================"
+    log_info "Installation complete!"
+    echo "========================================"
+    echo ""
+    echo "The patched MT7925 driver is now installed via DKMS."
+    echo "It will be automatically rebuilt when you update your kernel."
+    echo ""
+    echo "If WiFi doesn't work, try rebooting."
+    echo "To check status: dkms status"
+    echo "To uninstall: sudo ./uninstall.sh"
+}
+
+main "$@"
