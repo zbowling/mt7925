@@ -203,3 +203,93 @@ jobs:
           fi
 
           echo "All modules built successfully!"
+
+  # Job 3: Static analysis for lock correctness and code quality
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    needs: validate-patches
+    container:
+      image: "archlinux:latest"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install analysis tools
+        run: |
+          pacman -Syu --noconfirm \
+            gcc make linux linux-headers \
+            sparse clang clang-tools-extra \
+            python python-pip
+
+      - name: Find kernel headers
+        id: kernel
+        run: |
+          KDIR=$(find /usr/lib/modules -maxdepth 2 -type l -name "build" | head -1)
+          KDIR=$(readlink -f "$KDIR")
+          echo "Found kernel headers: $KDIR"
+          echo "kdir=$KDIR" >> $GITHUB_OUTPUT
+
+      - name: Run sparse (kernel static analyzer)
+        env:
+          KDIR: ${{ steps.kernel.outputs.kdir }}
+        run: |
+          cd dkms/src
+          echo "Running sparse static analysis..."
+          echo "================================="
+
+          # Build with sparse checking (C=2 means always run sparse)
+          # Sparse checks: locking, context, types, pointers
+          make KDIR="$KDIR" C=2 CF="-D__CHECK_ENDIAN__" 2>&1 | tee sparse-output.txt || true
+
+          # Extract warnings (sparse prefixes with file:line:)
+          echo ""
+          echo "Sparse warnings summary:"
+          echo "========================"
+          grep -E "warning:|error:" sparse-output.txt | head -50 || echo "No warnings found"
+
+          # Count warnings
+          WARNINGS=$(grep -c "warning:" sparse-output.txt || echo 0)
+          ERRORS=$(grep -c "error:" sparse-output.txt || echo 0)
+          echo ""
+          echo "Total: $WARNINGS warnings, $ERRORS errors"
+
+          # Save as artifact
+          if [ -s sparse-output.txt ]; then
+            echo "sparse_warnings=$WARNINGS" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run clang-tidy
+        env:
+          KDIR: ${{ steps.kernel.outputs.kdir }}
+        continue-on-error: true
+        run: |
+          cd dkms/src
+          echo "Running clang-tidy analysis..."
+          echo "=============================="
+
+          # Generate compile_commands.json
+          make KDIR="$KDIR" clean 2>/dev/null || true
+
+          # Run clang-tidy on mt7921 files for lock analysis
+          # Focus on concurrency checks
+          CHECKS="-checks=-*,concurrency-*,bugprone-*,misc-*"
+
+          for f in mt7921/*.c mt7925/*.c; do
+            if [ -f "$f" ]; then
+              echo "Checking: $f"
+              clang-tidy "$f" $CHECKS \
+                -- -I. -I"$KDIR/include" -I"$KDIR/arch/x86/include" \
+                -D__KERNEL__ -DMODULE 2>&1 | head -20 || true
+            fi
+          done
+
+      - name: Upload analysis results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: static-analysis-results
+          path: |
+            dkms/src/sparse-output.txt
+          retention-days: 14
