@@ -53,6 +53,20 @@ check_dependencies() {
         exit 1
     fi
 
+    # Check if kernel was built with clang
+    if grep -q "clang" "/lib/modules/$(uname -r)/build/.config" 2>/dev/null || \
+       grep -q "clang" "/lib/modules/$(uname -r)/build/Makefile" 2>/dev/null; then
+        log_info "Detected clang-built kernel"
+        if ! command -v clang &> /dev/null; then
+            log_error "Kernel was built with clang but clang is not installed"
+            echo "  Arch/Manjaro: sudo pacman -S clang lld"
+            echo "  Ubuntu/Debian: sudo apt install clang lld"
+            echo "  Fedora: sudo dnf install clang lld"
+            exit 1
+        fi
+        USE_LLVM=1
+    fi
+
     log_info "Dependencies satisfied"
 }
 
