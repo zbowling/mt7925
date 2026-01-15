@@ -53,10 +53,9 @@ check_dependencies() {
         exit 1
     fi
 
-    # Check if kernel was built with clang
-    if grep -q "clang" "/lib/modules/$(uname -r)/build/.config" 2>/dev/null || \
-       grep -q "clang" "/lib/modules/$(uname -r)/build/Makefile" 2>/dev/null; then
-        log_info "Detected clang-built kernel"
+    # Check if kernel was built with clang (CONFIG_CC_IS_CLANG=y)
+    if grep -q "CONFIG_CC_IS_CLANG=y" "/lib/modules/$(uname -r)/build/.config" 2>/dev/null; then
+        log_info "Detected clang-built kernel (CONFIG_CC_IS_CLANG=y)"
         if ! command -v clang &> /dev/null; then
             log_error "Kernel was built with clang but clang is not installed"
             echo "  Arch/Manjaro: sudo pacman -S clang lld"
@@ -64,7 +63,14 @@ check_dependencies() {
             echo "  Fedora: sudo dnf install clang lld"
             exit 1
         fi
-        USE_LLVM=1
+        if ! command -v ld.lld &> /dev/null; then
+            log_error "Kernel was built with clang but lld (LLVM linker) is not installed"
+            echo "  Arch/Manjaro: sudo pacman -S lld"
+            echo "  Ubuntu/Debian: sudo apt install lld"
+            echo "  Fedora: sudo dnf install lld"
+            exit 1
+        fi
+        log_info "LLVM toolchain (clang + lld) found - Makefile will auto-detect"
     fi
 
     log_info "Dependencies satisfied"

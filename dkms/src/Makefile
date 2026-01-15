@@ -4,6 +4,16 @@
 KDIR ?= /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
 
+# Auto-detect clang-built kernels and use LLVM toolchain
+# Check for CONFIG_CC_IS_CLANG in kernel config
+CLANG_FLAGS :=
+ifneq ($(wildcard $(KDIR)/.config),)
+  ifneq ($(shell grep -s "CONFIG_CC_IS_CLANG=y" $(KDIR)/.config),)
+    $(info Detected clang-built kernel, using LLVM toolchain)
+    CLANG_FLAGS := CC=clang LD=ld.lld LLVM=1
+  endif
+endif
+
 # Include paths
 ccflags-y += -I$(src)
 
@@ -35,7 +45,7 @@ mt7925e-y := mt7925/pci.o mt7925/pci_mac.o mt7925/pci_mcu.o
 
 # Build targets
 all:
-	$(MAKE) -C $(KDIR) M=$(PWD) modules
+	$(MAKE) -C $(KDIR) M=$(PWD) $(CLANG_FLAGS) modules
 
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
@@ -43,7 +53,7 @@ clean:
 	rm -f mt7925/*.o mt7925/.*.cmd
 
 install:
-	$(MAKE) -C $(KDIR) M=$(PWD) modules_install
+	$(MAKE) -C $(KDIR) M=$(PWD) $(CLANG_FLAGS) modules_install
 	depmod -a
 
 unload:
