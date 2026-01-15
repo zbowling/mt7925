@@ -6,7 +6,7 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 **Patches:** All 18 patches tested and submitted to LKML for upstream inclusion.
 
-**DKMS:** Beta - requires kernel 6.12+ (uses APIs not available in older kernels)
+**DKMS:** Beta - requires kernel 6.17+ (uses APIs not available in older kernels)
 
 ## Quick Start
 
@@ -38,9 +38,9 @@ make -j$(nproc)
 sudo make modules_install install
 ```
 
-### Option 3: DKMS Package (Beta - Kernel 6.12+ Only)
+### Option 3: DKMS Package (Beta - Kernel 6.17+ Only)
 
-> **Warning:** The DKMS package requires kernel 6.12 or newer. It will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs (`pp_page_to_nmdesc`, `alloc_netdev_dummy`).
+> **Warning:** The DKMS package requires kernel 6.17 or newer. It will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs (`pp_page_to_nmdesc`, `alloc_netdev_dummy`).
 
 ```bash
 cd dkms
@@ -71,7 +71,7 @@ mt7925/
 │   ├── dkms.conf               # DKMS configuration
 │   └── src/                    # Pre-patched mt76 source from 6.18
 ├── crashes/                    # Crash logs for debugging
-├── docs/
+├── docs/                       # Documenting the design of all the mt76 drivers
 │   ├── BUILD_ARCH.md           # Arch/CachyOS build guide
 │   ├── BUILD_UBUNTU.md         # Ubuntu/Pop_OS build guide
 │   └── PATCH_DIFFERENCES.md    # Version differences
@@ -96,7 +96,7 @@ Base tags are pushed for easy comparison: `git diff v6.18.5..mt7925-fixes-v6.18.
 
 ### Requirements
 
-- **Kernel 6.12 or newer** (won't build on older kernels)
+- **Kernel 6.17 or newer** (won't build on older kernels)
 - DKMS installed
 - Kernel headers for your running kernel
 - Clang + lld (if your kernel was built with clang)
