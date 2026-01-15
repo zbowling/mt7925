@@ -1,0 +1,172 @@
+name: Validate and Build MT7925 Patches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kernels/**/*.patch'
+      - '.github/workflows/validate-patches.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'kernels/**/*.patch'
+      - '.github/workflows/validate-patches.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-patches:
+    name: Validate Patches - ${{ matrix.kernel.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kernel:
+          - name: "6.17.13"
+            tag: "v6.17.13"
+            patches: "kernels/6.17"
+          - name: "6.18.5"
+            tag: "v6.18.5"
+            patches: "kernels/6.18"
+          - name: "6.19-rc5"
+            tag: "v6.19-rc5"
+            patches: "kernels/6.19-rc"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone Linux kernel (sparse checkout)
+        env:
+          KERNEL_TAG: ${{ matrix.kernel.tag }}
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
+            -b "$KERNEL_TAG" linux-src
+          cd linux-src
+          git sparse-checkout set drivers/net/wireless/mediatek/mt76
+
+      - name: Apply patches
+        env:
+          PATCHES_DIR: ${{ matrix.kernel.patches }}
+        run: |
+          cd linux-src
+          FAILED=0
+          for patch in ../"$PATCHES_DIR"/*.patch; do
+            if [ -f "$patch" ]; then
+              echo "Applying: $(basename "$patch")"
+              if git apply --check "$patch" 2>/dev/null; then
+                git apply "$patch"
+                echo "  OK"
+              else
+                echo "  FAILED"
+                git apply --check "$patch" 2>&1 || true
+                FAILED=$((FAILED + 1))
+              fi
+            fi
+          done
+          if [ $FAILED -gt 0 ]; then
+            echo "::error::$FAILED patches failed to apply"
+            exit 1
+          fi
+          echo "All patches applied successfully!"
+
+  build-module:
+    name: Build Module - ${{ matrix.kernel.name }}
+    runs-on: ubuntu-latest
+    needs: validate-patches
+    strategy:
+      fail-fast: false
+      matrix:
+        kernel:
+          - name: "6.18.5"
+            tag: "v6.18.5"
+            patches: "kernels/6.18"
+            config: "x86_64_defconfig"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libncurses-dev \
+            bison \
+            flex \
+            libssl-dev \
+            libelf-dev \
+            bc \
+            dwarves
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.4
+
+      - name: Configure sccache
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+          echo "CC=sccache gcc" >> "$GITHUB_ENV"
+
+      - name: Clone Linux kernel
+        env:
+          KERNEL_TAG: ${{ matrix.kernel.tag }}
+        run: |
+          git clone --depth 1 \
+            https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
+            -b "$KERNEL_TAG" linux-src
+
+      - name: Apply patches to kernel
+        env:
+          PATCHES_DIR: ${{ matrix.kernel.patches }}
+        run: |
+          cd linux-src
+          for patch in ../"$PATCHES_DIR"/*.patch; do
+            if [ -f "$patch" ]; then
+              echo "Applying: $(basename "$patch")"
+              git apply "$patch"
+            fi
+          done
+
+      - name: Configure kernel for module build
+        env:
+          KERNEL_CONFIG: ${{ matrix.kernel.config }}
+        run: |
+          cd linux-src
+          make "$KERNEL_CONFIG"
+          # Enable MT76 modules
+          scripts/config --module CONFIG_WLAN
+          scripts/config --module CONFIG_WLAN_VENDOR_MEDIATEK
+          scripts/config --module CONFIG_MT76_CORE
+          scripts/config --module CONFIG_MT76_CONNAC_LIB
+          scripts/config --module CONFIG_MT792x_LIB
+          scripts/config --module CONFIG_MT792x_USB
+          scripts/config --module CONFIG_MT7921_COMMON
+          scripts/config --module CONFIG_MT7921E
+          scripts/config --module CONFIG_MT7925_COMMON
+          scripts/config --module CONFIG_MT7925E
+          make olddefconfig
+
+      - name: Build mt76 modules
+        run: |
+          cd linux-src
+          # Prepare headers
+          make modules_prepare
+          # Build only mt76 modules
+          make M=drivers/net/wireless/mediatek/mt76 -j$(nproc)
+
+      - name: Verify built modules
+        run: |
+          cd linux-src/drivers/net/wireless/mediatek/mt76
+          echo "Built modules:"
+          find . -name "*.ko" -exec ls -la {} \;
+          echo ""
+          echo "Module info:"
+          for ko in $(find . -name "*.ko"); do
+            modinfo "$ko" | head -5
+            echo "---"
+          done
+
+      - name: Cache sccache stats
+        run: |
+          sccache --show-stats

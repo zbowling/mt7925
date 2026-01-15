@@ -1,0 +1,72 @@
+From 14dfa70268689065cb65df2cb4e5d50acc081606 Mon Sep 17 00:00:00 2001
+From: Zac <zac@zacbowling.com>
+Date: Wed, 14 Jan 2026 19:58:05 -0800
+Subject: [PATCH 16/17] wifi: mt76: mt7921: fix missing mutex protection in
+ multiple paths
+
+Add mt792x_mutex_acquire/release around ieee80211_iterate_active_interfaces()
+and ieee80211_iterate_interfaces() calls in mt7921 driver to prevent race
+conditions:
+
+- mt7921_roc_abort_sync(): protect ROC abort iteration
+- mt7921_set_runtime_pm(): protect runtime PM iteration
+- mt7921_mac_reset_work(): protect vif reconnect iteration after reset
+
+These paths were missing the mutex protection that is required when
+calling ieee80211_iterate_* functions with ITER_RESUME_ALL flag.
+
+Signed-off-by: Zac Bowling <zac@zacbowling.com>
+---
+ drivers/net/wireless/mediatek/mt76/mt7921/mac.c  | 3 +++
+ drivers/net/wireless/mediatek/mt76/mt7921/main.c | 4 ++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/mac.c b/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
+index bce26389a..566a37894 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
+@@ -693,9 +693,12 @@ void mt7921_mac_reset_work(struct work_struct *work)
+ 	clear_bit(MT76_RESET, &dev->mphy.state);
+ 	pm->suspended = false;
+ 	ieee80211_wake_queues(hw);
++
++	mt792x_mutex_acquire(dev);
+ 	ieee80211_iterate_active_interfaces(hw,
+ 					    IEEE80211_IFACE_ITER_RESUME_ALL,
+ 					    mt7921_vif_connect_iter, NULL);
++	mt792x_mutex_release(dev);
+ 	mt76_connac_power_save_sched(&dev->mt76.phy, pm);
+ }
+ 
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/main.c b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
+index 67383c41a..d45d5a32b 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
+@@ -373,10 +373,12 @@ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
+ 
+ 	timer_delete_sync(&phy->roc_timer);
+ 	cancel_work_sync(&phy->roc_work);
++	mt792x_mutex_acquire(dev);
+ 	if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
+ 		ieee80211_iterate_interfaces(mt76_hw(dev),
+ 					     IEEE80211_IFACE_ITER_RESUME_ALL,
+ 					     mt7921_roc_iter, (void *)phy);
++	mt792x_mutex_release(dev);
+ }
+ EXPORT_SYMBOL_GPL(mt7921_roc_abort_sync);
+ 
+@@ -619,9 +621,11 @@ void mt7921_set_runtime_pm(struct mt792x_dev *dev)
+ 	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
+ 
+ 	pm->enable = pm->enable_user && !monitor;
++	mt792x_mutex_acquire(dev);
+ 	ieee80211_iterate_active_interfaces(hw,
+ 					    IEEE80211_IFACE_ITER_RESUME_ALL,
+ 					    mt7921_pm_interface_iter, dev);
++	mt792x_mutex_release(dev);
+ 	pm->ds_enable = pm->ds_enable_user && !monitor;
+ 	mt76_connac_mcu_set_deep_sleep(&dev->mt76, pm->ds_enable);
+ }
+-- 
+2.52.0
+

@@ -1,0 +1,36 @@
+From 89caa94bbe7ec10a885cfa065f3fa2013c8fcb15 Mon Sep 17 00:00:00 2001
+From: Zac <zac@zacbowling.com>
+Date: Wed, 14 Jan 2026 20:02:04 -0800
+Subject: [PATCH 17/17] wifi: mt76: mt7925: fix missing mutex protection in
+ reset and ROC abort
+
+Add missing mt792x_mutex_acquire/release calls around
+ieee80211_iterate_active_interfaces() in mt7925_mac_reset_work()
+to prevent potential race conditions during chip reset recovery.
+
+Signed-off-by: Zac Bowling <zac@zacbowling.com>
+---
+ drivers/net/wireless/mediatek/mt76/mt7925/mac.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
+index 3f7f974a5..2a38b7597 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
+@@ -1331,10 +1331,13 @@ void mt7925_mac_reset_work(struct work_struct *work)
+ 	dev->hw_full_reset = false;
+ 	pm->suspended = false;
+ 	ieee80211_wake_queues(hw);
++
++	mt792x_mutex_acquire(dev);
+ 	ieee80211_iterate_active_interfaces(hw,
+ 					    IEEE80211_IFACE_ITER_RESUME_ALL,
+ 					    mt7925_vif_connect_iter, NULL);
+ 	mt76_connac_power_save_sched(&dev->mt76.phy, pm);
++	mt792x_mutex_release(dev);
+ }
+ 
+ void mt7925_coredump_work(struct work_struct *work)
+-- 
+2.52.0
+
