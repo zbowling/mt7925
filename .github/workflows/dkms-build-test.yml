@@ -14,113 +14,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-dkms:
-    name: DKMS Build - ${{ matrix.distro.name }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        distro:
-          - name: "Arch Linux"
-            image: "archlinux:latest"
-            install_deps: |
-              pacman -Syu --noconfirm
-              pacman -S --noconfirm base-devel linux-headers dkms clang lld
-            kernel_headers: "/usr/lib/modules/*/build"
-          - name: "Fedora 41"
-            image: "fedora:41"
-            install_deps: |
-              dnf install -y kernel-devel dkms gcc make clang lld
-            kernel_headers: "/usr/src/kernels/*"
-          - name: "Ubuntu 24.04"
-            image: "ubuntu:24.04"
-            install_deps: |
-              apt-get update
-              apt-get install -y build-essential dkms linux-headers-generic clang lld
-            kernel_headers: "/usr/src/linux-headers-*-generic"
-          - name: "Debian Bookworm"
-            image: "debian:bookworm"
-            install_deps: |
-              apt-get update
-              apt-get install -y build-essential dkms linux-headers-amd64 clang lld
-            kernel_headers: "/usr/src/linux-headers-*-amd64"
-
-    container:
-      image: ${{ matrix.distro.image }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        env:
-          INSTALL_SCRIPT: ${{ matrix.distro.install_deps }}
-        run: |
-          eval "$INSTALL_SCRIPT"
-
-      - name: Find kernel headers
-        id: headers
-        env:
-          HEADER_PATTERN: ${{ matrix.distro.kernel_headers }}
-        run: |
-          KDIR=$(ls -d $HEADER_PATTERN 2>/dev/null | head -1 || echo "")
-          if [ -z "$KDIR" ]; then
-            echo "No kernel headers found, listing available:"
-            find /usr/src -maxdepth 2 -type d -name "linux-*" 2>/dev/null || true
-            find /usr/lib/modules -maxdepth 2 -type d -name "build" 2>/dev/null || true
-            echo "headers_found=false" >> $GITHUB_OUTPUT
-          else
-            echo "Found kernel headers: $KDIR"
-            echo "kdir=$KDIR" >> $GITHUB_OUTPUT
-            echo "headers_found=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build DKMS modules (GCC)
-        if: steps.headers.outputs.headers_found == 'true'
-        env:
-          KDIR: ${{ steps.headers.outputs.kdir }}
-        run: |
-          cd dkms/src
-          echo "Building with GCC against kernel headers: $KDIR"
-          make KDIR="$KDIR" clean || true
-          make KDIR="$KDIR" -j$(nproc) 2>&1 | tail -50
-          ls -la *.ko 2>/dev/null || echo "No .ko files built"
-        continue-on-error: true
-
-      - name: Build DKMS modules (Clang/LLVM)
-        if: steps.headers.outputs.headers_found == 'true'
-        env:
-          KDIR: ${{ steps.headers.outputs.kdir }}
-        run: |
-          cd dkms/src
-          echo "Building with Clang/LLVM against kernel headers: $KDIR"
-          make KDIR="$KDIR" clean || true
-          make KDIR="$KDIR" CC=clang LD=ld.lld LLVM=1 -j$(nproc) 2>&1 | tail -50
-          ls -la *.ko 2>/dev/null || echo "No .ko files built"
-        continue-on-error: true
-
-      - name: Check built modules
-        if: steps.headers.outputs.headers_found == 'true'
-        run: |
-          echo "Looking for built kernel modules..."
-          find dkms/src -name "*.ko" -exec ls -la {} \; 2>/dev/null || echo "No modules found"
-
-          echo ""
-          echo "Expected modules:"
-          echo "  - mt76.ko (core)"
-          echo "  - mt76-connac-lib.ko (connac library)"
-          echo "  - mt792x-lib.ko (MT792x shared)"
-          echo "  - mt7925-common.ko (MT7925 common)"
-          echo "  - mt7925e.ko (MT7925 PCIe)"
-
-      - name: Skip notice (no headers)
-        if: steps.headers.outputs.headers_found == 'false'
-        run: |
-          echo "::notice::Kernel headers not available in container - build test skipped"
-          echo "This is expected for minimal container images."
-          echo "DKMS builds require matching kernel headers."
-
-  # Syntax validation - always runs
+  # Syntax and structure validation - the reliable test
   validate-dkms-config:
     name: Validate DKMS Configuration
     runs-on: ubuntu-latest
@@ -132,37 +26,57 @@ jobs:
       - name: Validate dkms.conf syntax
         run: |
           echo "Checking dkms.conf..."
-          if [ -f dkms/dkms.conf ]; then
-            # Basic syntax check - source the file in bash
-            bash -n dkms/dkms.conf && echo "dkms.conf syntax OK" || echo "dkms.conf has syntax errors"
-
-            # Check required fields
-            grep -q "PACKAGE_NAME" dkms/dkms.conf && echo "PACKAGE_NAME found" || echo "WARNING: PACKAGE_NAME missing"
-            grep -q "PACKAGE_VERSION" dkms/dkms.conf && echo "PACKAGE_VERSION found" || echo "WARNING: PACKAGE_VERSION missing"
-            grep -q "BUILT_MODULE_NAME" dkms/dkms.conf && echo "BUILT_MODULE_NAME found" || echo "WARNING: BUILT_MODULE_NAME missing"
-          else
+          if [ ! -f dkms/dkms.conf ]; then
             echo "ERROR: dkms/dkms.conf not found"
+            exit 1
+          fi
+
+          if ! bash -n dkms/dkms.conf; then
+            echo "ERROR: dkms.conf has syntax errors"
+            exit 1
+          fi
+          echo "dkms.conf syntax OK"
+
+          MISSING=0
+          for field in PACKAGE_NAME PACKAGE_VERSION BUILT_MODULE_NAME; do
+            if grep -q "$field" dkms/dkms.conf; then
+              echo "  $field: found"
+            else
+              echo "  $field: MISSING"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+
+          if [ $MISSING -gt 0 ]; then
+            echo "ERROR: Missing required dkms.conf fields"
             exit 1
           fi
 
       - name: Validate Makefile
         run: |
           echo "Checking Makefile..."
-          if [ -f dkms/src/Makefile ]; then
-            # Check for required targets
-            grep -q "^all:" dkms/src/Makefile && echo "all target found" || echo "WARNING: all target missing"
-            grep -q "^clean:" dkms/src/Makefile && echo "clean target found" || echo "WARNING: clean target missing"
-
-            # Check for module definitions
-            grep -q "obj-m" dkms/src/Makefile && echo "Module objects defined" || echo "WARNING: No obj-m found"
-          else
+          if [ ! -f dkms/src/Makefile ]; then
             echo "ERROR: dkms/src/Makefile not found"
             exit 1
           fi
 
-      - name: Check source files
+          for target in "^all:" "^clean:"; do
+            if grep -q "$target" dkms/src/Makefile; then
+              echo "  $target target found"
+            else
+              echo "ERROR: $target target missing"
+              exit 1
+            fi
+          done
+
+          if ! grep -q "obj-m" dkms/src/Makefile; then
+            echo "ERROR: No obj-m module definitions found"
+            exit 1
+          fi
+          echo "Makefile validation OK"
+
+      - name: Check required source files
         run: |
-          echo "Checking for required source files..."
           REQUIRED_FILES=(
             "dkms/src/mt76.h"
             "dkms/src/mt792x.h"
@@ -187,17 +101,118 @@ jobs:
             echo "ERROR: $MISSING required files missing"
             exit 1
           fi
-          echo "All required source files present"
 
-      - name: Check install scripts
+      - name: Check install scripts syntax
         run: |
-          echo "Checking install scripts..."
           for script in dkms/install.sh dkms/uninstall.sh; do
             if [ -f "$script" ]; then
-              echo "  Checking $script..."
-              bash -n "$script" && echo "    Syntax OK" || echo "    Syntax ERROR"
-              [ -x "$script" ] && echo "    Executable OK" || echo "    WARNING: Not executable"
-            else
-              echo "  WARNING: $script not found"
+              if ! bash -n "$script"; then
+                echo "ERROR: $script has syntax errors"
+                exit 1
+              fi
+              echo "$script: syntax OK"
             fi
           done
+
+  # Build test with recent kernel headers
+  # Uses newest distro versions to get kernel 6.12+ headers
+  build-dkms:
+    name: DKMS Build - ${{ matrix.distro.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          # Ubuntu 25.10 has kernel 6.17 headers
+          - name: "Ubuntu 25.10"
+            image: "ubuntu:25.10"
+            install_deps: |
+              apt-get update
+              apt-get install -y build-essential linux-headers-generic
+            kernel_headers: "/usr/src/linux-headers-*-generic"
+          # Fedora 42 has recent kernel headers
+          - name: "Fedora 42"
+            image: "fedora:42"
+            install_deps: |
+              dnf install -y kernel-devel gcc make
+            kernel_headers: "/usr/src/kernels/*"
+          # Arch Linux rolling has the newest
+          - name: "Arch Linux"
+            image: "archlinux:latest"
+            install_deps: |
+              pacman -Syu --noconfirm
+              pacman -S --noconfirm base-devel linux-headers
+            kernel_headers: "/usr/lib/modules/*/build"
+
+    container:
+      image: ${{ matrix.distro.image }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        env:
+          INSTALL_SCRIPT: ${{ matrix.distro.install_deps }}
+        run: |
+          eval "$INSTALL_SCRIPT"
+
+      - name: Find kernel headers
+        id: headers
+        env:
+          HEADER_PATTERN: ${{ matrix.distro.kernel_headers }}
+        run: |
+          KDIR=$(ls -d $HEADER_PATTERN 2>/dev/null | sort -V | tail -1 || echo "")
+          if [ -z "$KDIR" ] || [ ! -d "$KDIR" ]; then
+            echo "No kernel headers found"
+            find /usr/src -maxdepth 2 -type d -name "linux-*" 2>/dev/null || true
+            find /usr/lib/modules -maxdepth 2 -type d -name "build" 2>/dev/null || true
+            echo "headers_found=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "Found kernel headers: $KDIR"
+
+          # Extract kernel version
+          KVER=$(basename "$KDIR" | sed 's/linux-headers-//' | sed 's/build//' || echo "unknown")
+          echo "Kernel version: $KVER"
+
+          echo "kdir=$KDIR" >> $GITHUB_OUTPUT
+          echo "headers_found=true" >> $GITHUB_OUTPUT
+
+      - name: Build DKMS modules
+        if: steps.headers.outputs.headers_found == 'true'
+        env:
+          KDIR: ${{ steps.headers.outputs.kdir }}
+        run: |
+          cd dkms/src
+          echo "Building against kernel headers: $KDIR"
+          make KDIR="$KDIR" clean || true
+          make KDIR="$KDIR" -j$(nproc)
+
+      - name: Verify built modules
+        if: steps.headers.outputs.headers_found == 'true'
+        run: |
+          cd dkms/src
+          echo "Checking for built modules..."
+
+          EXPECTED="mt76.ko mt76-connac-lib.ko mt792x-lib.ko mt7925-common.ko mt7925e.ko"
+          MISSING=0
+
+          for mod in $EXPECTED; do
+            if [ -f "$mod" ]; then
+              SIZE=$(ls -lh "$mod" | awk '{print $5}')
+              echo "  OK: $mod ($SIZE)"
+            else
+              echo "  MISSING: $mod"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+
+          if [ $MISSING -gt 0 ]; then
+            echo ""
+            echo "ERROR: $MISSING modules failed to build"
+            exit 1
+          fi
+
+          echo ""
+          echo "All 5 modules built successfully!"
