@@ -187,19 +187,13 @@ make CC=clang LD=ld.lld LLVM=1 -j$(nproc) M=drivers/net/wireless/mediatek/mt76
 
 ## Upstream Status
 
-| Patches | Status |
-|---------|--------|
-| 0001-0003 | Submitted to LKML, [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
-| 0004-0005 | [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
-| 0006-0008 | [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0009-0018 | Submitted to LKML |
+All patches submitted to LKML for upstream inclusion. Also submitted to [OpenWrt mt76](https://github.com/openwrt/mt76).
 
 ## Related Issues
 
 - [Framework Community Forum](https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301/9)
 - [Ubuntu Bug #2137291](https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2137291)
 - [LKML Thread](https://lore.kernel.org/all/CAA5_Hq7vNOy9oCGkkgyukq2OP=a5yL_3ZKBdmNtBXS+zp6byiQ@mail.gmail.com/T/#u)
-- [OpenWrt mt76 Issue #1027](https://github.com/openwrt/mt76/issues/1027)
 
 ## Contributing
 
@@ -209,4 +203,4 @@ make CC=clang LD=ld.lld LLVM=1 -j$(nproc) M=drivers/net/wireless/mediatek/mt76
 
 ## License
 
-GPL v2 (same as Linux kernel)
+BSD-2-Clause-Clear AND GPL-2.0-only (dual licensed, same as mt76 driver)
