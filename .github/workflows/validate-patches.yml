@@ -1,19 +1,22 @@
-name: Validate MT7925 Patches
+name: Validate and Build MT7925 Patches
 
 on:
   push:
     branches: [main]
     paths:
       - 'kernels/**/*.patch'
+      - 'dkms/**'
       - '.github/workflows/validate-patches.yml'
   pull_request:
     branches: [main]
     paths:
       - 'kernels/**/*.patch'
+      - 'dkms/**'
       - '.github/workflows/validate-patches.yml'
   workflow_dispatch:
 
 jobs:
+  # Job 1: Validate patches apply cleanly
   validate-patches:
     name: Validate Patches - ${{ matrix.kernel.name }}
     runs-on: ubuntu-latest
@@ -80,4 +83,116 @@ jobs:
             echo "::error::$FAILED patches failed to apply"
             exit 1
           fi
-          echo "All patches applied successfully!"
+
+  # Job 2: Build test in containers with real kernel headers
+  # Based on DKMS project CI pattern
+  build-module:
+    name: Build - ${{ matrix.distro.name }}
+    runs-on: ubuntu-latest
+    needs: validate-patches
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          # Ubuntu 25.10 - kernel 6.17
+          - name: "Ubuntu 25.10"
+            image: "ubuntu:25.10"
+            install: |
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -q
+              apt-get install -qy gcc make linux-headers-generic linux-image-generic patch
+            headers_path: "/usr/src"
+            headers_pattern: "linux-headers-*-generic"
+          # Fedora 42 - kernel 6.14+
+          - name: "Fedora 42"
+            image: "registry.fedoraproject.org/fedora:42"
+            install: |
+              dnf install -y gcc kernel kernel-devel make patch
+            headers_path: "/usr/src/kernels"
+            headers_pattern: "*"
+          # Arch Linux - rolling (latest kernel)
+          - name: "Arch Linux"
+            image: "archlinux:latest"
+            install: |
+              pacman -Syu --noconfirm gcc make linux linux-headers patch
+            headers_path: "/usr/lib/modules"
+            headers_pattern: "*/build"
+
+    container:
+      image: ${{ matrix.distro.image }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        env:
+          INSTALL_CMD: ${{ matrix.distro.install }}
+        run: |
+          eval "$INSTALL_CMD"
+
+      - name: Find kernel version
+        id: kernel
+        env:
+          HEADERS_PATH: ${{ matrix.distro.headers_path }}
+          HEADERS_PATTERN: ${{ matrix.distro.headers_pattern }}
+        run: |
+          # Find the kernel headers directory
+          KDIR=$(find "$HEADERS_PATH" -maxdepth 2 -type d -path "$HEADERS_PATH/$HEADERS_PATTERN" 2>/dev/null | sort -V | tail -1)
+
+          if [ -z "$KDIR" ] || [ ! -d "$KDIR" ]; then
+            echo "Error: No kernel headers found"
+            echo "Searching in $HEADERS_PATH for pattern $HEADERS_PATTERN"
+            find "$HEADERS_PATH" -maxdepth 3 -type d 2>/dev/null | head -20
+            exit 1
+          fi
+
+          # Handle Arch's /usr/lib/modules/*/build symlink structure
+          if [ -L "$KDIR" ]; then
+            KDIR=$(readlink -f "$KDIR")
+          fi
+
+          echo "Found kernel headers: $KDIR"
+          echo "kdir=$KDIR" >> $GITHUB_OUTPUT
+
+          # Extract version for logging
+          KVER=$(basename "$(dirname "$KDIR")" 2>/dev/null || basename "$KDIR")
+          echo "Kernel version: $KVER"
+
+      - name: Build mt76 modules
+        env:
+          KDIR: ${{ steps.kernel.outputs.kdir }}
+        run: |
+          cd dkms/src
+          echo "Building against: $KDIR"
+          make KDIR="$KDIR" -j$(nproc) 2>&1
+
+      - name: Verify modules built
+        run: |
+          cd dkms/src
+          echo "Checking for built modules..."
+
+          EXPECTED="mt76.ko mt76-connac-lib.ko mt792x-lib.ko mt7925-common.ko mt7925e.ko"
+          MISSING=0
+          FOUND=0
+
+          for mod in $EXPECTED; do
+            if [ -f "$mod" ]; then
+              SIZE=$(ls -lh "$mod" | awk '{print $5}')
+              echo "  OK: $mod ($SIZE)"
+              FOUND=$((FOUND + 1))
+            else
+              echo "  MISSING: $mod"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+
+          echo ""
+          echo "Built $FOUND/5 modules"
+
+          if [ $MISSING -gt 0 ]; then
+            echo "::error::$MISSING modules failed to build"
+            exit 1
+          fi
+
+          echo "All modules built successfully!"

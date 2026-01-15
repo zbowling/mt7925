@@ -14,10 +14,14 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ```bash
 # Get kernel source matching your version
+# Ideally google how to fetch your linux kernel sources for your distro with all the your distro patches and config.
+
+
+# Or check out vanilla linux kernel
 git clone --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git -b v6.18.5
 cd linux
 
-# Apply patches
+# Apply patches (use the folder for your kenrel version, 6.17/6.18/6.19-rc, etc)
 git am /path/to/mt7925/kernels/6.18/*.patch
 
 # Build and install
@@ -26,7 +30,7 @@ make -j$(nproc)
 sudo make modules_install install
 ```
 
-### Option 2: Use Pre-Patched Kernel Fork
+### Option 2: Use Pre-Patched Kernel
 
 ```bash
 git clone https://github.com/zbowling/linux-wifi.git
