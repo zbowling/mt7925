@@ -1,7 +1,7 @@
 From c53665aef9bf3e471a5e527a47e11ab37be6969a Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:05:04 -0800
-Subject: [PATCH 11/18] wifi: mt76: mt7925: add lockdep assertions for mutex
+Subject: [PATCH 11/19] wifi: mt76: mt7925: add lockdep assertions for mutex
  verification
 
 Add lockdep_assert_held() calls to critical MCU functions to help catch

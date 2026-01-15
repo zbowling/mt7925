@@ -24,7 +24,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
-index 838efd186..072b10b74 100644
+index 838efd1862..072b10b740 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1036,6 +1036,8 @@ mt7925_mcu_sta_hdr_trans_tlv(struct sk_buff *skb,

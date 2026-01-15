@@ -1,7 +1,7 @@
 From 86505e27d2a81391e884cce56a7363ac46b854e6 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:21:51 -0800
-Subject: [PATCH 06/18] wifi: mt76: mt7925: add error handling for BSS info in
+Subject: [PATCH 06/19] wifi: mt76: mt7925: add error handling for BSS info in
  key setup
 
 Check return value of mt7925_mcu_add_bss_info() in mt7925_set_key_link()
@@ -19,7 +19,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 790634768..ae1b9e51e 100644
+index 790634768c..ae1b9e51e7 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -637,8 +637,10 @@ static int mt7925_set_link_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,

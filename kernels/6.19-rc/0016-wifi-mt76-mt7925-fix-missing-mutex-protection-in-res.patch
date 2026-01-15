@@ -1,7 +1,7 @@
 From 3d276d26935256750b5abc0eae6e6a5f73afa92d Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:06:37 -0800
-Subject: [PATCH 16/18] wifi: mt76: mt7925: fix missing mutex protection in
+Subject: [PATCH 16/19] wifi: mt76: mt7925: fix missing mutex protection in
  reset and ROC abort
 
 Add missing mt792x_mutex_acquire/release calls around
@@ -14,7 +14,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
-index 184efe8af..0aeced62b 100644
+index 184efe8afa..0aeced62b9 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 @@ -1331,12 +1331,14 @@ void mt7925_mac_reset_work(struct work_struct *work)

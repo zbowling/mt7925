@@ -1,7 +1,7 @@
 From 43f80a21459ef105d3eaacfb01613894bb4b31e6 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Thu, 1 Jan 2026 12:36:10 -0800
-Subject: [PATCH 11/18] wifi: mt76: mt7925: fix kernel warning in MLO ROC setup
+Subject: [PATCH 11/19] wifi: mt76: mt7925: fix kernel warning in MLO ROC setup
  when channel not configured
 
 mt7925_mcu_set_mlo_roc() uses WARN_ON_ONCE() to check if link_conf or
@@ -27,7 +27,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
-index 958ff9da9..8080fea30 100644
+index 958ff9da9f..8080fea30d 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1337,15 +1337,23 @@ int mt7925_mcu_set_mlo_roc(struct mt792x_bss_conf *mconf, u16 sel_links,

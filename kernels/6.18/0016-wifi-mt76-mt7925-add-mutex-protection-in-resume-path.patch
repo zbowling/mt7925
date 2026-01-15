@@ -16,7 +16,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
-index 8eb1fe108..30d4f83c4 100644
+index 8eb1fe1082..30d4f83c46 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
 @@ -581,10 +581,12 @@ static int _mt7925_pci_resume(struct device *device, bool restore)

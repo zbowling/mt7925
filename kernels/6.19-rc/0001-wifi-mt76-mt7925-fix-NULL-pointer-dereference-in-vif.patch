@@ -1,7 +1,7 @@
 From d82df79a7f21ac8b14a6c249794484cf5a3282d8 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 15:42:18 -0800
-Subject: [PATCH 01/18] wifi: mt76: mt7925: fix NULL pointer dereference in vif
+Subject: [PATCH 01/19] wifi: mt76: mt7925: fix NULL pointer dereference in vif
  iteration
 
 mt792x_vif_to_bss_conf() can return NULL when iterating over valid_links
@@ -28,7 +28,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  2 files changed, 14 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
-index 871b67101..184efe8af 100644
+index 871b671019..184efe8afa 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 @@ -1271,6 +1271,12 @@ mt7925_vif_connect_iter(void *priv, u8 *mac,
@@ -45,7 +45,7 @@ index 871b67101..184efe8af 100644
  					    &mvif->sta.deflink.wcid, true);
  		mt7925_mcu_set_tx(dev, bss_conf);
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 2d358a966..3001a62a8 100644
+index 2d358a9664..3001a62a8b 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -1304,6 +1304,8 @@ mt7925_mlo_pm_iter(void *priv, u8 *mac, struct ieee80211_vif *vif)

@@ -1,7 +1,7 @@
 From d4a8a6cbb31d1695637709565db5568b0df40a0d Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 5 Jan 2026 13:17:14 -0800
-Subject: [PATCH 12/17] wifi: mt76: mt7925: add NULL checks for MLO link
+Subject: [PATCH 12/18] wifi: mt76: mt7925: add NULL checks for MLO link
  pointers in MCU functions
 
 Several MCU functions dereference pointers returned by mt792x_sta_to_link()
@@ -24,7 +24,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
-index 737641e25..76bb0726c 100644
+index 737641e257..76bb0726c8 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1037,6 +1037,8 @@ mt7925_mcu_sta_hdr_trans_tlv(struct sk_buff *skb,

@@ -1,7 +1,7 @@
 From fb6f9f0fda6eb84cca35663600ff1d2a7ae45f88 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:10:32 -0800
-Subject: [PATCH 17/18] wifi: mt76: mt7925: add mutex protection in runtime PM
+Subject: [PATCH 17/19] wifi: mt76: mt7925: add mutex protection in runtime PM
  iteration
 
 Add mt792x_mutex_acquire/release around ieee80211_iterate_active_interfaces()
@@ -14,7 +14,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 03fbbd488..d687eda4e 100644
+index 03fbbd4880..d687eda4e1 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -764,9 +764,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)

@@ -1,7 +1,7 @@
 From a1faacf59e42830b5b64acb1f9aaa95e25dfd5d8 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:04:25 -0800
-Subject: [PATCH 07/18] wifi: mt76: mt7925: add error handling for BSS info MCU
+Subject: [PATCH 07/19] wifi: mt76: mt7925: add error handling for BSS info MCU
  command in sta_add
 
 Check return value of mt7925_mcu_add_bss_info() in mt7925_mac_link_sta_add()

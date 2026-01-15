@@ -1,7 +1,7 @@
 From 7304d204f15f061c54b054afb846d5320943017c Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:21:34 -0800
-Subject: [PATCH 05/18] wifi: mt76: mt7925: add error handling for BSS info MCU
+Subject: [PATCH 05/19] wifi: mt76: mt7925: add error handling for BSS info MCU
  command in sta_add
 
 Check return value of mt7925_mcu_add_bss_info() in mt7925_mac_link_sta_add()
@@ -18,7 +18,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index fd473ce7f..790634768 100644
+index fd473ce7f4..790634768c 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -897,11 +897,14 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,

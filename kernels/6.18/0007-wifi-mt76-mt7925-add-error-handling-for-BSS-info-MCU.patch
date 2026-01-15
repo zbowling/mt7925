@@ -18,7 +18,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 48e830d5a..105e66a29 100644
+index 48e830d5a0..105e66a290 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -891,11 +891,14 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,

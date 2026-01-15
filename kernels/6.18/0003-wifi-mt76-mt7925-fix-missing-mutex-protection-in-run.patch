@@ -18,7 +18,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index b7b0190dc..188ae1e73 100644
+index b7b0190dc3..188ae1e73d 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -743,9 +743,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)

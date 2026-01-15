@@ -22,7 +22,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
-index caf24ae42..4c44cdea7 100644
+index caf24ae420..4c44cdea76 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1476,6 +1476,8 @@ int mt7925_mcu_uni_bss_ps(struct mt792x_dev *dev,

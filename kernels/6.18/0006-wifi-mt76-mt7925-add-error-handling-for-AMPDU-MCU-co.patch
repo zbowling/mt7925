@@ -22,7 +22,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 6f9a2e865..48e830d5a 100644
+index 6f9a2e865c..48e830d5a0 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -1263,22 +1263,22 @@ mt7925_ampdu_action(struct ieee80211_hw *hw, struct ieee80211_vif *vif,

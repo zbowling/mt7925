@@ -29,7 +29,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt792x_core.c b/drivers/net/wireless/mediatek/mt76/mt792x_core.c
-index 0170a23b0..d6db8bf1d 100644
+index 0170a23b05..d6db8bf1db 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt792x_core.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt792x_core.c
 @@ -936,6 +936,20 @@ int mt792x_load_firmware(struct mt792x_dev *dev)

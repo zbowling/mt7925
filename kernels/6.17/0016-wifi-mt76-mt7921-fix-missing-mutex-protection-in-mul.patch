@@ -1,7 +1,7 @@
 From 14dfa70268689065cb65df2cb4e5d50acc081606 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 19:58:05 -0800
-Subject: [PATCH 16/17] wifi: mt76: mt7921: fix missing mutex protection in
+Subject: [PATCH 16/18] wifi: mt76: mt7921: fix missing mutex protection in
  multiple paths
 
 Add mt792x_mutex_acquire/release around ieee80211_iterate_active_interfaces()
@@ -22,7 +22,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  2 files changed, 7 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/mac.c b/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
-index bce26389a..566a37894 100644
+index bce26389ab..566a378941 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
 @@ -693,9 +693,12 @@ void mt7921_mac_reset_work(struct work_struct *work)
@@ -39,7 +39,7 @@ index bce26389a..566a37894 100644
  }
  
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/main.c b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
-index 67383c41a..d45d5a32b 100644
+index 67383c41a3..d45d5a32b6 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 @@ -373,10 +373,12 @@ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
