@@ -2,277 +2,220 @@
 
 This repository contains critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics and system deadlocks on Framework Desktop systems and other hardware using this WiFi card.
 
-## ⚠️ Disclaimer
+## Quick Start
 
-I am not an expert on the MediaTek mt76 driver codebase. These fixes were developed through analysis of kernel panics and deadlock traces on my Framework Desktop, cross-referencing with similar code patterns in other drivers, and from looking at traces reported by other folks on mailing lists suffering the same pain. However, based on the analysis below, these fixes appear sound and follow established patterns used by other wireless drivers in the kernel.
+### Option 1: Use Pre-Patched Kernel Fork (Easiest)
 
-**These bugs have existed since the MT7925 driver was added to the kernel tree (late 2023 / early 2024).** Given that the alternative is kernel panics and system-wide deadlocks requiring hard reboots, these fixes represent a significant improvement.
+Clone our pre-patched Linux kernel fork:
+
+```bash
+git clone https://github.com/zbowling/linux-wifi.git
+cd linux-wifi
+
+# Choose your kernel version
+git checkout mt7925-fixes-v6.18.5   # Current stable
+# or: git checkout mt7925-fixes-v6.19-rc5  # Bleeding edge
+# or: git checkout mt7925-fixes-v6.17.13   # Older stable
+
+# Build and install
+make olddefconfig
+make -j$(nproc)
+sudo make modules_install install
+```
+
+### Option 2: DKMS Package (Recommended for Most Users)
+
+```bash
+cd dkms
+sudo ./install.sh
+```
+
+This builds and installs patched modules via DKMS. They'll auto-rebuild on kernel updates.
+
+### Option 3: Apply Patches Manually
+
+```bash
+# Get kernel source
+git clone https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+cd linux
+git checkout v6.18.5
+
+# Apply patches
+git am /path/to/mt7925/kernels/6.18/*.patch
+
+# Build
+make olddefconfig
+make -j$(nproc)
+```
 
 ## Repository Structure
 
 ```
-├── linux-6.19-rc4/     # ⭐ LATEST - All 18 patches for kernel 6.19-rc4
-│   ├── 0001-wifi-mt76-mt7925-fix-NULL-pointer-dereference-in-vif.patch
-│   ├── 0002-wifi-mt76-mt7925-fix-missing-mutex-protection-in-res.patch
-│   ├── ...
-│   └── 0018-wifi-mt76-mt7921-fix-missing-mutex-protection-in-mul.patch
-├── patches/            # Original patches for 6.18.x and 6.17.x
-│   ├── mt7925/         # MT7925 specific fixes
-│   └── mt7921/         # MT7921 specific fixes
-├── nbd168-patches/     # Patches for nbd168.git (the official Linux Wireless Development fork)
-├── stress-test.sh      # WiFi stress testing script
-└── monitor.sh          # Driver monitoring script
+mt7925/
+├── kernels/                    # Patches organized by kernel version
+│   ├── 6.17/                   # 17 patches for v6.17.13 (EOL)
+│   ├── 6.18/                   # 18 patches for v6.18.5 (current stable)
+│   ├── 6.19-rc/                # 18 patches for v6.19-rc5 (bleeding edge)
+│   └── nbd168/                 # 18 patches for nbd168/wireless tree
+├── dkms/                       # DKMS package for easy installation
+│   ├── install.sh              # One-command installer
+│   ├── uninstall.sh            # Clean removal
+│   ├── dkms.conf               # DKMS configuration
+│   └── src/                    # Pre-patched mt76 source
+├── linux-6.19-rc4/             # Legacy patches (historical reference)
+├── scripts/
+│   └── validate-patches.sh     # Verify patches apply cleanly
+├── docs/
+│   └── PATCH_DIFFERENCES.md    # How patches differ between versions
+├── AGENTS.md                   # Instructions for AI agents
+├── stress-test.sh              # WiFi stress testing script
+└── monitor.sh                  # Driver monitoring script
 ```
 
-## Quick Start (Kernel 6.19-rc4)
+## Pre-Patched Kernel Fork
+
+We maintain a Linux kernel fork with all patches pre-applied:
+
+**Repository:** https://github.com/zbowling/linux-wifi
+
+| Branch | Base Tag | Patches | Status |
+|--------|----------|---------|--------|
+| `mt7925-fixes-v6.17.13` | v6.17.13 | 17 | EOL but still used |
+| `mt7925-fixes-v6.18.5` | v6.18.5 | 18 | **Current stable** |
+| `mt7925-fixes-v6.19-rc5` | v6.19-rc5 | 18 | Bleeding edge |
+| `mt7925-fixes-nbd168` | nbd168/mt76 | 18 | Upstream staging |
+
+Base tags are pushed so you can easily compare: `git diff v6.18.5..mt7925-fixes-v6.18.5`
+
+## DKMS Installation
+
+### Requirements
+
+- DKMS installed (`pacman -S dkms` / `apt install dkms`)
+- Kernel headers for your running kernel
+- Clang (if your kernel was built with clang)
+
+### Install
 
 ```bash
-# Clone the kernel and this repo
-git clone https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-cd linux
-git checkout v6.19-rc4
+cd dkms
+sudo ./install.sh
+```
 
-# Apply all patches
-git am /path/to/mt7925/linux-6.19-rc4/*.patch
+The installer will:
+1. Check dependencies
+2. Blacklist stock mt76 modules
+3. Build and install via DKMS
+4. Load the new modules
 
-# Configure and build (with ccache for faster rebuilds)
-cp /boot/config-$(uname -r) .config
-make olddefconfig
-make CC="ccache gcc" -j$(nproc)
-make CC="ccache gcc" modules -j$(nproc)
+### Uninstall
 
-# Install
-sudo make modules_install
-sudo make install
-sudo update-initramfs -c -k 6.19.0-rc4-mt7925-fix+
-sudo update-grub
+```bash
+cd dkms
+sudo ./uninstall.sh
+```
+
+### Verify
+
+```bash
+dkms status                           # Check DKMS status
+lsmod | grep mt7925                   # Verify modules loaded
+modinfo mt7925e | grep srcversion     # Check module version
 ```
 
 ## Problem Description
 
-The MT7925 WiFi driver (mt7925e) has several related bugs that cause system instability:
+The MT7925 WiFi driver (mt7925e) has several related bugs:
 
-1. **NULL Pointer Dereference**: Kernel panics occur when the driver attempts to reset after WiFi association failures or during state transitions.
-
-2. **Mutex Deadlock in Reset/ROC Paths**: System-wide hangs occur during WiFi network switching, BSSID roaming, or firmware recovery.
-
-3. **Mutex Deadlock in Power Management Paths**: Additional deadlocks occur when runtime PM settings change or during MLO (Multi-Link Operation) power save state transitions.
-
-4. **Missing Error Handling**: MCU command failures are silently ignored, leading to inconsistent driver/firmware state.
+1. **NULL Pointer Dereference**: Kernel panics during reset or state transitions
+2. **Mutex Deadlock in Reset/ROC Paths**: System hangs during network switching
+3. **Mutex Deadlock in Power Management**: Deadlocks during suspend/resume
+4. **Missing Error Handling**: MCU command failures cause inconsistent state
 
 ### Affected Hardware
 
 - Framework Desktop (AMD Ryzen AI Max 300 Series)
-- Framework Laptop 13 (AMD Ryzen AI 300 Series) with MT7925 (RZ717) WiFi card
+- Framework Laptop 13 (AMD Ryzen AI 300 Series) with MT7925
 - Any system using MediaTek MT7925 WiFi hardware
 
 ### Symptoms
 
-- Kernel panics with NULL pointer dereference in `mt76_connac_mcu_uni_add_dev()`
-- System hangs during WiFi network switching or roaming
-- Network commands (`ip`, `ifconfig`, etc.) hang indefinitely
+- Kernel panics with NULL pointer dereference
+- System hangs during WiFi network switching
 - Processes stuck in uninterruptible sleep (D state)
-- NetworkManager, wpa_supplicant, and other network services timeout
-- System becomes completely unresponsive, requiring force reboot
-- Deadlock occurs every 5 minutes when adapter tries to hop to a better BSSID
+- System unresponsive, requiring force reboot
 - Hangs during suspend/resume cycles
 
-## Patch Summary (18 patches for 6.19-rc4)
+## Patch Summary (18 patches)
 
 | # | Patch | Category | Description |
 |---|-------|----------|-------------|
-| 01 | `0001-...-vif.patch` | Critical | NULL pointer dereference fix in vif iteration |
-| 02 | `0002-...-res.patch` | Critical | Missing mutex in reset and ROC abort |
-| 03 | `0003-...-run.patch` | Critical | Missing mutex in runtime PM and MLO PM |
-| 04 | `0004-...-func.patch` | NULL Checks | NULL checks in MCU STA TLV functions |
-| 05 | `0005-...-and-m.patch` | NULL Checks | NULL checks for link_conf and mlink |
-| 06 | `0006-...-co.patch` | Error Handling | Error handling for AMPDU MCU commands |
-| 07 | `0007-...-MCU.patch` | Error Handling | Error handling for BSS info in sta_add |
-| 08 | `0008-...-in-.patch` | Error Handling | Error handling for BSS info in key setup |
-| 09 | `0009-...-cha.patch` | NULL Checks | NULL checks in MLO link and chanctx |
-| 10 | `0010-...-TX-.patch` | Critical | NULL pointer fix in TX path (mt792x) |
-| 11 | `0011-...-ve.patch` | Debug | Lockdep assertions for mutex verification |
-| 12 | `0012-...-MLO-.patch` | MLO Fix | Key removal failure during MLO roaming |
-| 13 | `0013-...-setup.patch` | MLO Fix | Kernel warning in MLO ROC setup |
-| 14 | `0014-...-pointe.patch` | NULL Checks | NULL checks for MLO link pointers in MCU |
-| 15 | `0015-...-after-p.patch` | Recovery | Firmware reload after failed load (mt792x) |
-| 16 | `0016-...-path.patch` | Mutex | Mutex protection in resume path |
-| 17 | `0017-...-i.patch` | NULL Checks | NULL checks in sta_add and conf_tx |
-| 18 | `0018-...-mul.patch` | MT7921 | Missing mutex in MT7921 (same bugs) |
+| 01 | fix-NULL-pointer-dereference-in-vif | Critical | NULL pointer fix in vif iteration |
+| 02 | fix-missing-mutex-protection-in-res | Critical | Missing mutex in reset/ROC abort |
+| 03 | fix-missing-mutex-protection-in-run | Critical | Missing mutex in runtime PM/MLO PM |
+| 04 | add-NULL-checks-in-MCU-STA-TLV | NULL Checks | NULL checks in MCU STA TLV |
+| 05 | add-NULL-checks-for-link_conf | NULL Checks | NULL checks for link_conf/mlink |
+| 06 | add-error-handling-for-AMPDU | Error Handling | AMPDU MCU error handling |
+| 07 | add-error-handling-for-BSS-info-MCU | Error Handling | BSS info in sta_add |
+| 08 | add-error-handling-for-BSS-info-in | Error Handling | BSS info in key setup |
+| 09 | add-NULL-checks-in-MLO-link | NULL Checks | MLO link/chanctx checks |
+| 10 | fix-NULL-pointer-dereference-in-TX | Critical | TX path NULL fix (mt792x) |
+| 11 | add-lockdep-assertions | Debug | Mutex verification |
+| 12 | fix-key-removal-failure | MLO Fix | MLO roaming key removal |
+| 13 | fix-kernel-warning-in-MLO-ROC | MLO Fix | MLO ROC setup warning |
+| 14 | add-NULL-checks-for-MLO-link-pointe | NULL Checks | MCU MLO link checks |
+| 15 | fix-firmware-reload-failure | Recovery | Firmware reload fix (mt792x) |
+| 16 | add-mutex-protection-in-resume | Mutex | Resume path protection |
+| 17 | add-NULL-checks-for-link-pointers | NULL Checks | sta_add/conf_tx checks |
+| 18 | mt7921-fix-missing-mutex | MT7921 | Same bugs in MT7921 |
 
-## Background & Analysis
+## CI Validation
 
-### The Root Cause: Missing Mutex Protection
+Patches are automatically validated via GitHub Actions:
 
-All patches address variations of the same anti-pattern:
+- **Patch application**: Tests patches apply cleanly to each kernel version
+- **Module build**: Builds mt76 modules with sccache
+- **Targets**: 6.17.13, 6.18.5, 6.19-rc5, nbd168/wireless
 
-```c
-// DANGEROUS - Missing mutex protection
-void some_function(...) {
-    ieee80211_iterate_active_interfaces(hw,
-        IEEE80211_IFACE_ITER_RESUME_ALL,
-        callback_that_calls_mcu_functions, dev);
-}
-
-// CORRECT - With mutex protection
-void some_function(...) {
-    mt792x_mutex_acquire(dev);
-    ieee80211_iterate_active_interfaces(hw,
-        IEEE80211_IFACE_ITER_RESUME_ALL,
-        callback_that_calls_mcu_functions, dev);
-    mt792x_mutex_release(dev);
-}
+Run locally:
+```bash
+./scripts/validate-patches.sh        # Test all versions
+./scripts/validate-patches.sh 6.18   # Test specific version
 ```
 
-### Same Bugs Exist in MT7921
+## Building with Clang
 
-The MT7925 driver was derived from MT7921 (previous generation chipset). **The MT7921 driver has identical bugs** (fixed by patch 18).
-
-### The Older MT7615 Driver Does It Correctly
-
-The MT7615 driver (for much older MediaTek hardware) has **proper mutex protection**:
-
-```c
-// mt7615/main.c - roc_work has mutex protection
-mt7615_mutex_acquire(phy->dev);
-ieee80211_iterate_active_interfaces(phy->mt76->hw,
-                                    IEEE80211_IFACE_ITER_RESUME_ALL,
-                                    mt7615_roc_iter, phy);
-mt7615_mutex_release(phy->dev);
-```
-
-### Consistent with Other Wireless Drivers
-
-This mutex pattern is consistent with how other major wireless drivers handle `ieee80211_iterate_active_interfaces`:
-
-- **Intel iwlwifi**: Uses `lockdep_assert_held(&mvm->mutex)` to verify the driver mutex is held
-- **Atheros (ath9k/10k/11k/12k)**: Only uses the `_atomic` variant where callbacks don't need to sleep
-- **TI wlcore**: Explicitly documents mutex requirements in comments
-
-The mac80211 subsystem's `ieee80211_iterate_active_interfaces()` only protects the **interface list** with its internal mutex. It does **not** protect driver state.
-
-## How to Apply These Patches
-
-### Method 1: Apply to Kernel 6.19-rc4 (Recommended)
+If your kernel was built with clang (common on Arch/CachyOS), build modules with:
 
 ```bash
-cd /path/to/linux-kernel-source
-git checkout v6.19-rc4
-
-# Apply all 18 patches
-git am /path/to/mt7925/linux-6.19-rc4/*.patch
-
-# Build with ccache for faster rebuilds
-make CC="ccache gcc" -j$(nproc)
-make CC="ccache gcc" modules -j$(nproc)
+make CC=clang -j$(nproc) M=drivers/net/wireless/mediatek/mt76
 ```
 
-### Method 2: Build Module Only (Quick Test)
+Or for DKMS, ensure clang is available and the build will auto-detect.
 
-```bash
-# Install kernel headers
-sudo apt-get install linux-headers-$(uname -r)
+## Upstream Status
 
-# Get kernel source
-apt-get source linux-image-$(uname -r)
-cd linux-*/
-
-# Apply patches (adjust paths for your kernel version)
-for patch in /path/to/mt7925/linux-6.19-rc4/*.patch; do
-    patch -p1 < "$patch" || echo "Patch may need manual adjustment: $patch"
-done
-
-# Build just the mt76 modules
-make CC="ccache gcc" -j$(nproc) M=drivers/net/wireless/mediatek/mt76
-
-# Unload old modules
-sudo modprobe -r mt7925e mt7925_common mt792x_lib mt76_connac_lib mt76
-
-# Load new modules
-cd drivers/net/wireless/mediatek/mt76
-sudo insmod mt76.ko
-sudo insmod mt76-connac-lib.ko
-sudo insmod mt792x-lib.ko
-sudo insmod mt7925/mt7925-common.ko
-sudo insmod mt7925/mt7925e.ko
-```
-
-### Using ccache for Faster Builds
-
-Install and enable ccache:
-
-```bash
-# Install ccache
-sudo apt install ccache
-
-# Add to your shell rc file (~/.bashrc or ~/.zshrc)
-export PATH="/usr/lib/ccache:$PATH"
-
-# Build kernel with ccache
-make CC="ccache gcc" -j$(nproc)
-
-# Check ccache stats
-ccache -s
-```
-
-## Verification
-
-```bash
-# Check module version (srcversion will be different from stock)
-modinfo mt7925_common | grep srcversion
-
-# Monitor kernel logs for errors
-dmesg | grep -i mt7925
-
-# Test WiFi connectivity
-# Try switching between networks or disconnecting/reconnecting
-# The system should no longer hang or panic
-```
-
-## Status
-
-| Patch | Description | Status / Reference |
-|-------|-------------|-------------------|
-| 0001 | NULL pointer dereference fix | ✅ Submitted to LKML / [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
-| 0002 | Reset/ROC mutex fix          | ✅ Submitted to LKML / [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
-| 0003 | Runtime PM/MLO PM mutex fix  | ✅ Submitted to LKML / [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
-| 0004 | MCU STA TLV NULL checks      | ✅ [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
-| 0005 | Main.c link NULL checks      | ✅ [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
-| 0006 | AMPDU MCU error handling     | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0007 | Station add BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0008 | Key setup BSS info error handling | ✅ [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
-| 0009 | MLO link/chanctx NULL checks | ✅ [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
-| 0010 | TX path NULL pointer fix (mt792x) | ✅ [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
-| 0011 | Lockdep assertions           | ✅ Submitted to LKML |
-| 0012 | MLO roaming key removal fix  | ✅ Submitted to LKML |
-| 0013 | MLO ROC setup warning fix    | ✅ Submitted to LKML |
-| 0014 | MCU MLO link NULL checks     | ✅ Submitted to LKML |
-| 0015 | Firmware reload fix (mt792x) | ✅ Submitted to LKML |
-| 0016 | Resume path mutex fix        | ✅ Submitted to LKML |
-| 0017 | sta_add/conf_tx NULL checks  | ✅ Submitted to LKML |
-| 0018 | MT7921 mutex fixes           | ✅ Submitted to LKML |
-
-## Tested Kernels
-
-| Kernel | Status | Notes |
-|--------|--------|-------|
-| 6.18.2 (custom build) | ✅ Working | Stable with all patches |
-| 6.19-rc4 | ✅ Building | 18 patches applied cleanly |
-| 6.17.0 (Ubuntu) | ✅ Working | Tested with earlier patch set |
+| Patch | Status |
+|-------|--------|
+| 0001-0003 | Submitted to LKML / [OpenWrt PR #1029](https://github.com/openwrt/mt76/pull/1029) |
+| 0004-0005 | [OpenWrt PR #1030](https://github.com/openwrt/mt76/pull/1030) |
+| 0006-0008 | [OpenWrt PR #1031](https://github.com/openwrt/mt76/pull/1031) |
+| 0009 | [OpenWrt PR #1032](https://github.com/openwrt/mt76/pull/1032) |
+| 0010 | [OpenWrt PR #1033](https://github.com/openwrt/mt76/pull/1033) |
+| 0011-0018 | Submitted to LKML |
 
 ## Related Issues
 
-- [Framework Community Forum Discussion](https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301/9)
+- [Framework Community Forum](https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301/9)
 - [Ubuntu Launchpad Bug #2137291](https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2137291)
 - [Linux Kernel Mailing List Thread](https://lore.kernel.org/all/CAA5_Hq7vNOy9oCGkkgyukq2OP=a5yL_3ZKBdmNtBXS+zp6byiQ@mail.gmail.com/T/#u)
 - [OpenWrt mt76 Issue #1027](https://github.com/openwrt/mt76/issues/1027)
 
 ## Contributing
 
-If you encounter issues or have improvements, please help by:
-1. Testing the patches on your system
-2. Reporting results in the [Framework Community Forum](https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301/9)
-3. Updating the [Ubuntu Launchpad bug](https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2137291) with your findings
+1. Test the patches on your system
+2. Report results in the [Framework Community Forum](https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301/9)
+3. Update the [Ubuntu Launchpad bug](https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2137291)
 
 ## License
 
