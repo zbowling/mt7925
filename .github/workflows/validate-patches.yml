@@ -109,7 +109,7 @@ jobs:
             install: |
               dnf install -y gcc kernel kernel-devel make patch
             headers_path: "/usr/src/kernels"
-            headers_pattern: "*"
+            headers_pattern: "*x86_64"
           # Arch Linux - rolling (latest kernel)
           - name: "Arch Linux"
             image: "archlinux:latest"
@@ -150,6 +150,13 @@ jobs:
           # Handle Arch's /usr/lib/modules/*/build symlink structure
           if [ -L "$KDIR" ]; then
             KDIR=$(readlink -f "$KDIR")
+          fi
+
+          # Validate this is actually a kernel build directory
+          if [ ! -f "$KDIR/Makefile" ]; then
+            echo "Error: $KDIR does not contain a Makefile"
+            ls -la "$KDIR"
+            exit 1
           fi
 
           echo "Found kernel headers: $KDIR"
