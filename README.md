@@ -4,7 +4,7 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Status
 
-**Patches:** All 18 patches tested and submitted to LKML for upstream inclusion.
+**Patches:** All 21 patches tested and submitted to LKML (v4) for upstream inclusion.
 
 **DKMS:** Beta - requires kernel 6.17+ (uses APIs not available in older kernels)
 
@@ -65,10 +65,10 @@ sudo ./install.sh
 ```
 mt7925/
 ├── kernels/                    # Patches organized by kernel version
-│   ├── 6.17/                   # 17 patches for v6.17.13
-│   ├── 6.18/                   # 18 patches for v6.18.5
-│   ├── 6.19-rc/                # 18 patches for v6.19-rc5
-│   └── nbd168/                 # 18 patches for nbd168/wireless
+│   ├── 6.17/                   # 20 patches for v6.17.13
+│   ├── 6.18/                   # 20 patches for v6.18.5
+│   ├── 6.19-rc/                # 21 patches for v6.19-rc5
+│   └── nbd168/                 # 21 patches for nbd168/wireless
 ├── dkms/                       # DKMS package (beta, 6.12+ only)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
@@ -156,7 +156,7 @@ The MT7925 WiFi driver has several critical bugs:
 - Processes stuck in D state (uninterruptible sleep)
 - Hangs during suspend/resume cycles
 
-## Patches (18 total)
+## Patches (21 total)
 
 | # | Patch | Category |
 |---|-------|----------|
@@ -170,7 +170,10 @@ The MT7925 WiFi driver has several critical bugs:
 | 11 | add-lockdep-assertions | Debug |
 | 12-13 | fix-MLO-roaming-issues | MLO |
 | 14-17 | add-NULL-checks-and-mutex | Safety |
-| 18 | mt7921-fix-missing-mutex | MT7921 port |
+| 18 | mt7921-fix-missing-mutex | MT7921 |
+| 19 | mt7921-fix-mutex-deadlocks | MT7921 |
+| 20 | fix-list-corruption-in-wcid-cleanup | Critical (mt76 core) |
+| 21 | fix-BA-session-teardown-beacon-loss | Critical |
 
 ## Building with Clang
 

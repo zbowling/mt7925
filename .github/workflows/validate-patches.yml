@@ -261,15 +261,10 @@ jobs:
           grep -E "warning:|error:" sparse-output.txt | head -50 || echo "No warnings found"
 
           # Count warnings
-          WARNINGS=$(grep -c "warning:" sparse-output.txt || echo 0)
-          ERRORS=$(grep -c "error:" sparse-output.txt || echo 0)
+          WARNINGS=$(grep -c "warning:" sparse-output.txt 2>/dev/null || echo "0")
+          ERRORS=$(grep -c "error:" sparse-output.txt 2>/dev/null || echo "0")
           echo ""
           echo "Total: $WARNINGS warnings, $ERRORS errors"
-
-          # Save as artifact
-          if [ -s sparse-output.txt ]; then
-            echo "sparse_warnings=$WARNINGS" >> $GITHUB_OUTPUT
-          fi
 
       - name: Run clang-tidy
         env:
