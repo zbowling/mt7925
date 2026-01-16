@@ -266,55 +266,6 @@ jobs:
           echo ""
           echo "Total: $WARNINGS warnings, $ERRORS errors"
 
-      - name: Run clang-tidy
-        env:
-          KDIR: ${{ steps.kernel.outputs.kdir }}
-        continue-on-error: true
-        run: |
-          cd dkms/src
-          echo "Running clang-tidy analysis..."
-          echo "=============================="
-
-          # Generate compile_commands.json
-          make KDIR="$KDIR" clean 2>/dev/null || true
-
-          # Run clang-tidy using .clang-tidy config file
-          for f in mt7921/*.c mt7925/*.c; do
-            if [ -f "$f" ]; then
-              echo "Checking: $f"
-              clang-tidy "$f" \
-                -- -I. -I"$KDIR/include" -I"$KDIR/arch/x86/include" \
-                -D__KERNEL__ -DMODULE 2>&1 | head -20 || true
-            fi
-          done
-
-      - name: Run Coccinelle (semantic analysis)
-        continue-on-error: true
-        run: |
-          echo "Running Coccinelle semantic analysis..."
-          echo "======================================="
-
-          # Install coccinelle
-          pacman -S --noconfirm coccinelle
-
-          cd dkms/src
-
-          # Run kernel's cocci scripts for common bugs
-          COCCI_SCRIPTS="
-            null_check_after_deref.cocci
-            api/alloc/alloc_cast.cocci
-            api/alloc/zalloc-simple.cocci
-            misc/ifcol.cocci
-          "
-
-          for script in $COCCI_SCRIPTS; do
-            SCRIPT_PATH="${{ steps.kernel.outputs.kdir }}/scripts/coccinelle/$script"
-            if [ -f "$SCRIPT_PATH" ]; then
-              echo "Running: $script"
-              spatch --sp-file "$SCRIPT_PATH" --dir mt7925 2>&1 | head -30 || true
-            fi
-          done
-
       - name: Run checkpatch (kernel style)
         continue-on-error: true
         run: |
@@ -324,10 +275,25 @@ jobs:
           CHECKPATCH="${{ steps.kernel.outputs.kdir }}/scripts/checkpatch.pl"
 
           if [ -f "$CHECKPATCH" ]; then
+            TOTAL_ERRORS=0
+            TOTAL_WARNINGS=0
             for patch in kernels/nbd168/*.patch; do
-              echo "Checking: $(basename $patch)"
-              perl "$CHECKPATCH" --no-tree --no-signoff "$patch" 2>&1 | tail -5 || true
+              echo ""
+              echo "=== $(basename $patch) ==="
+              OUTPUT=$(perl "$CHECKPATCH" --no-tree --no-signoff "$patch" 2>&1)
+              echo "$OUTPUT"
+              # Count errors and warnings
+              ERRORS=$(echo "$OUTPUT" | grep -c "^ERROR:" || true)
+              WARNINGS=$(echo "$OUTPUT" | grep -c "^WARNING:" || true)
+              TOTAL_ERRORS=$((TOTAL_ERRORS + ERRORS))
+              TOTAL_WARNINGS=$((TOTAL_WARNINGS + WARNINGS))
             done
+            echo ""
+            echo "================================"
+            echo "Total: $TOTAL_ERRORS errors, $TOTAL_WARNINGS warnings"
+            if [ $TOTAL_ERRORS -gt 0 ]; then
+              exit 1
+            fi
           else
             echo "checkpatch.pl not found"
           fi
