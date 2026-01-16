@@ -278,14 +278,11 @@ jobs:
           # Generate compile_commands.json
           make KDIR="$KDIR" clean 2>/dev/null || true
 
-          # Run clang-tidy on mt7921 files for lock analysis
-          # Focus on concurrency checks
-          CHECKS="-checks=-*,concurrency-*,bugprone-*,misc-*"
-
+          # Run clang-tidy using .clang-tidy config file
           for f in mt7921/*.c mt7925/*.c; do
             if [ -f "$f" ]; then
               echo "Checking: $f"
-              clang-tidy "$f" $CHECKS \
+              clang-tidy "$f" \
                 -- -I. -I"$KDIR/include" -I"$KDIR/arch/x86/include" \
                 -D__KERNEL__ -DMODULE 2>&1 | head -20 || true
             fi
