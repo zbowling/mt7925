@@ -1,7 +1,7 @@
 From e52f12b2653cd110e3e65139034fd9bdcbec8d31 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:38:26 -0800
-Subject: [PATCH 10/18] wifi: mt76: mt792x: fix NULL pointer dereference in TX
+Subject: [PATCH 10/19] wifi: mt76: mt792x: fix NULL pointer dereference in TX
  path
 
 Add NULL pointer checks in mt792x_tx() to prevent kernel crashes when

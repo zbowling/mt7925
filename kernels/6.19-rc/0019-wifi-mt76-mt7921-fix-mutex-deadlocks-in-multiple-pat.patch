@@ -1,7 +1,7 @@
 From 9c3de777f6996d4d7197555f319a0d51893df731 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 10:11:17 -0800
-Subject: [PATCH 19/19] wifi: mt76: mt7921: fix mutex deadlocks in multiple
+Subject: [PATCH 19/20] wifi: mt76: mt7921: fix mutex deadlocks in multiple
  paths
 
 Fix mutex handling to prevent deadlocks:

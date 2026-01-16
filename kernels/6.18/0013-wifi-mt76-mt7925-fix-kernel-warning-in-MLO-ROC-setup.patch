@@ -1,7 +1,7 @@
 From 07b3537f75de97f3e5ea1feacc5442db998c0f74 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Thu, 1 Jan 2026 12:36:10 -0800
-Subject: [PATCH 13/18] wifi: mt76: mt7925: fix kernel warning in MLO ROC setup
+Subject: [PATCH 13/19] wifi: mt76: mt7925: fix kernel warning in MLO ROC setup
  when channel not configured
 
 mt7925_mcu_set_mlo_roc() uses WARN_ON_ONCE() to check if link_conf or
