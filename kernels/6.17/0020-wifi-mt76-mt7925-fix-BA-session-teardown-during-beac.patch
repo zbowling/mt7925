@@ -45,6 +45,6 @@ index 869f75f309..ca48472552 100644
  		break;
  	}
  	mt792x_mutex_release(dev);
--- 
+--
 2.52.0
 

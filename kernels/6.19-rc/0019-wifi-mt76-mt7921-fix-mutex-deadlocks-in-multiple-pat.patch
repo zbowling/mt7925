@@ -30,7 +30,7 @@ index 6160e78583..21bd5fd1e9 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 @@ -373,12 +373,15 @@ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
- 
+
  	timer_delete_sync(&phy->roc_timer);
  	cancel_work_sync(&phy->roc_work);
 -	mt792x_mutex_acquire(dev);
@@ -46,10 +46,10 @@ index 6160e78583..21bd5fd1e9 100644
 -	mt792x_mutex_release(dev);
  }
  EXPORT_SYMBOL_GPL(mt7921_roc_abort_sync);
- 
+
 @@ -621,11 +624,10 @@ void mt7921_set_runtime_pm(struct mt792x_dev *dev)
  	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
- 
+
  	pm->enable = pm->enable_user && !monitor;
 -	mt792x_mutex_acquire(dev);
 +	/* Note: caller (debugfs) must hold mutex before calling this function */
@@ -67,11 +67,11 @@ index ec96861832..9f76b334b9 100644
 @@ -426,7 +426,9 @@ static int mt7921_pci_suspend(struct device *device)
  	cancel_delayed_work_sync(&pm->ps_work);
  	cancel_work_sync(&pm->wake_work);
- 
+
 +	mt792x_mutex_acquire(dev);
  	mt7921_roc_abort_sync(dev);
 +	mt792x_mutex_release(dev);
- 
+
  	err = mt792x_mcu_drv_pmctrl(dev);
  	if (err < 0)
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c b/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
@@ -81,13 +81,13 @@ index 3421e53dc9..92ea281181 100644
 @@ -219,7 +219,9 @@ static int mt7921s_suspend(struct device *__dev)
  	cancel_delayed_work_sync(&pm->ps_work);
  	cancel_work_sync(&pm->wake_work);
- 
+
 +	mt792x_mutex_acquire(dev);
  	mt7921_roc_abort_sync(dev);
 +	mt792x_mutex_release(dev);
- 
+
  	err = mt792x_mcu_drv_pmctrl(dev);
  	if (err < 0)
--- 
+--
 2.52.0
 

@@ -38,8 +38,8 @@ index fd473ce7f4..790634768c 100644
 +		if (ret)
 +			return ret;
  	}
- 
+
  	if (ieee80211_vif_is_mld(vif) &&
--- 
+--
 2.52.0
 

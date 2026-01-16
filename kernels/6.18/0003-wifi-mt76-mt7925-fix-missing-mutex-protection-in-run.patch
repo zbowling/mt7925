@@ -23,7 +23,7 @@ index b7b0190dc3..188ae1e73d 100644
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -743,9 +743,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)
  	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
- 
+
  	pm->enable = pm->enable_user && !monitor;
 +	mt792x_mutex_acquire(dev);
  	ieee80211_iterate_active_interfaces(hw,
@@ -36,7 +36,7 @@ index b7b0190dc3..188ae1e73d 100644
 @@ -1293,14 +1295,12 @@ mt7925_mlo_pm_iter(void *priv, u8 *mac, struct ieee80211_vif *vif)
  	if (mvif->mlo_pm_state != MT792x_MLO_CHANGED_PS)
  		return;
- 
+
 -	mt792x_mutex_acquire(dev);
  	for_each_set_bit(i, &valid, IEEE80211_MLD_MAX_NUM_LINKS) {
  		bss_conf = mt792x_vif_to_bss_conf(vif, i);
@@ -46,20 +46,20 @@ index b7b0190dc3..188ae1e73d 100644
  	}
 -	mt792x_mutex_release(dev);
  }
- 
+
  void mt7925_mlo_pm_work(struct work_struct *work)
 @@ -1309,9 +1309,11 @@ void mt7925_mlo_pm_work(struct work_struct *work)
  					      mlo_pm_work.work);
  	struct ieee80211_hw *hw = mt76_hw(dev);
- 
+
 +	mt792x_mutex_acquire(dev);
  	ieee80211_iterate_active_interfaces(hw,
  					    IEEE80211_IFACE_ITER_RESUME_ALL,
  					    mt7925_mlo_pm_iter, dev);
 +	mt792x_mutex_release(dev);
  }
- 
+
  static bool is_valid_alpha2(const char *alpha2)
--- 
+--
 2.52.0
 

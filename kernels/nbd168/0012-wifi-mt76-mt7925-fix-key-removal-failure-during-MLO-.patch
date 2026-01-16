@@ -41,7 +41,7 @@ index 852cf8ff84..7cf6faa1f6 100644
 @@ -605,8 +605,15 @@ static int mt7925_set_link_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
  	mconf = mt792x_vif_to_link(mvif, link_id);
  	mlink = mt792x_sta_to_link(msta, link_id);
- 
+
 -	if (!link_conf || !mconf || !mlink)
 +	if (!link_conf || !mconf || !mlink) {
 +		/* During MLO roaming, link state may be torn down before
@@ -52,9 +52,9 @@ index 852cf8ff84..7cf6faa1f6 100644
 +			return 0;
  		return -EINVAL;
 +	}
- 
+
  	wcid = &mlink->wcid;
  	wcid_keyidx = &wcid->hw_key_idx;
--- 
+--
 2.52.0
 

@@ -32,6 +32,6 @@ index 958f575647..8c0d375a06 100644
  	mt7925_mcu_set_clc(dev, "00", ENVIRON_INDOOR);
  	mt792x_mutex_release(dev);
  }
--- 
+--
 2.52.0
 

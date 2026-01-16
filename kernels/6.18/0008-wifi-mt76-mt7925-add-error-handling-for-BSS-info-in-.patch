@@ -24,7 +24,7 @@ index 105e66a290..c7504aab51 100644
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -629,8 +629,10 @@ static int mt7925_set_link_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
  		struct mt792x_phy *phy = mt792x_hw_phy(hw);
- 
+
  		mconf->mt76.cipher = mt7925_mcu_get_cipher(key->cipher);
 -		mt7925_mcu_add_bss_info(phy, mconf->mt76.ctx, link_conf,
 -					link_sta, true);
@@ -33,8 +33,8 @@ index 105e66a290..c7504aab51 100644
 +		if (err)
 +			goto out;
  	}
- 
+
  	if (cmd == SET_KEY)
--- 
+--
 2.52.0
 

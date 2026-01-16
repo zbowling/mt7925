@@ -31,8 +31,8 @@ index 184efe8afa..0aeced62b9 100644
  	mt7925_regd_change(&dev->phy, "00");
 +	mt792x_mutex_release(dev);
  }
- 
+
  void mt7925_coredump_work(struct work_struct *work)
--- 
+--
 2.52.0
 

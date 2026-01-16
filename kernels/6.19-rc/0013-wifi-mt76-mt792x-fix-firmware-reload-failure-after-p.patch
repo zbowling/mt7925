@@ -35,7 +35,7 @@ index 9dc768aa8b..05598202b4 100644
 @@ -936,6 +936,20 @@ int mt792x_load_firmware(struct mt792x_dev *dev)
  {
  	int ret;
- 
+
 +	/* Release semaphore if taken by previous failed load attempt.
 +	 * This prevents "Failed to get patch semaphore" errors when
 +	 * recovering from firmware crashes or suspend/resume failures.
@@ -53,6 +53,6 @@ index 9dc768aa8b..05598202b4 100644
  	ret = mt76_connac2_load_patch(&dev->mt76, mt792x_patch_name(dev));
  	if (ret)
  		return ret;
--- 
+--
 2.52.0
 

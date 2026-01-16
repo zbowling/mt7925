@@ -27,7 +27,7 @@ index 10d68d241b..a53a4d5b3e 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1723,6 +1723,10 @@ mt7925_mcu_sta_phy_tlv(struct sk_buff *skb,
- 
+
  	link_conf = mt792x_vif_to_bss_conf(vif, link_sta->link_id);
  	mconf = mt792x_vif_to_link(mvif, link_sta->link_id);
 +
@@ -36,9 +36,9 @@ index 10d68d241b..a53a4d5b3e 100644
 +
  	chandef = mconf->mt76.ctx ? &mconf->mt76.ctx->def :
  				    &link_conf->chanreq.oper;
- 
+
 @@ -1801,6 +1805,10 @@ mt7925_mcu_sta_rate_ctrl_tlv(struct sk_buff *skb,
- 
+
  	link_conf = mt792x_vif_to_bss_conf(vif, link_sta->link_id);
  	mconf = mt792x_vif_to_link(mvif, link_sta->link_id);
 +
@@ -48,6 +48,6 @@ index 10d68d241b..a53a4d5b3e 100644
  	chandef = mconf->mt76.ctx ? &mconf->mt76.ctx->def :
  				    &link_conf->chanreq.oper;
  	band = chandef->chan->band;
--- 
+--
 2.52.0
 

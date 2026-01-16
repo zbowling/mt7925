@@ -29,8 +29,8 @@ index 3f7f974a50..2a38b75974 100644
  	mt76_connac_power_save_sched(&dev->mt76.phy, pm);
 +	mt792x_mutex_release(dev);
  }
- 
+
  void mt7925_coredump_work(struct work_struct *work)
--- 
+--
 2.52.0
 
