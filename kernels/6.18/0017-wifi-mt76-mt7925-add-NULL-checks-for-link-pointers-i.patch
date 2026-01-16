@@ -1,7 +1,7 @@
 From 486371198bf75b22ae897735ae123b23617dcfa0 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 5 Jan 2026 13:19:02 -0800
-Subject: [PATCH 17/19] wifi: mt76: mt7925: add NULL checks for link pointers
+Subject: [PATCH 17/20] wifi: mt76: mt7925: add NULL checks for link pointers
  in sta_add and conf_tx
 
 Add NULL pointer checks for mt792x_sta_to_link() and mt792x_vif_to_link()

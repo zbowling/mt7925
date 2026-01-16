@@ -1,7 +1,7 @@
 From 55ed45976c309243ebceb0f51a1588983cfff2b9 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:10:57 -0800
-Subject: [PATCH 05/19] wifi: mt76: mt7925: add NULL checks for link_conf and
+Subject: [PATCH 05/20] wifi: mt76: mt7925: add NULL checks for link_conf and
  mlink in main.c
 
 Add NULL pointer checks throughout main.c for functions that call

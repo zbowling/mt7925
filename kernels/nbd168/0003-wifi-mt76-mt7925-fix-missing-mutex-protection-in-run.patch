@@ -1,7 +1,7 @@
 From 869ebcdd2def88368106b5fa1c91d4702d59508d Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:03:43 -0800
-Subject: [PATCH 03/20] wifi: mt76: mt7925: fix missing mutex protection in
+Subject: [PATCH 03/21] wifi: mt76: mt7925: fix missing mutex protection in
  runtime PM and MLO PM
 
 Two additional code paths iterate over active interfaces and call MCU
