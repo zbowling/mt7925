@@ -13,7 +13,8 @@ This issue manifests as devices becoming unusable after suspend/resume
 failures or firmware crashes, requiring a full hardware reboot to
 recover. This has been widely reported on MT7921 and MT7925 devices.
 
-Apply the same fix that was applied to MT7915 in commit 79dd14f:
+Apply the same fix from OpenWrt MT7915 commit 79dd14f2e8161 ("mt76: mt7915:
+fix firmware download failure after reboot"):
 1. Release the patch semaphore before starting firmware load (in case
    it was held by a previous failed attempt)
 2. Restart MCU firmware to ensure clean state
