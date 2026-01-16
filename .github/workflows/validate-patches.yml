@@ -291,6 +291,50 @@ jobs:
             fi
           done
 
+      - name: Run Coccinelle (semantic analysis)
+        continue-on-error: true
+        run: |
+          echo "Running Coccinelle semantic analysis..."
+          echo "======================================="
+
+          # Install coccinelle
+          pacman -S --noconfirm coccinelle
+
+          cd dkms/src
+
+          # Run kernel's cocci scripts for common bugs
+          COCCI_SCRIPTS="
+            null_check_after_deref.cocci
+            api/alloc/alloc_cast.cocci
+            api/alloc/zalloc-simple.cocci
+            misc/ifcol.cocci
+          "
+
+          for script in $COCCI_SCRIPTS; do
+            SCRIPT_PATH="${{ steps.kernel.outputs.kdir }}/scripts/coccinelle/$script"
+            if [ -f "$SCRIPT_PATH" ]; then
+              echo "Running: $script"
+              spatch --sp-file "$SCRIPT_PATH" --dir mt7925 2>&1 | head -30 || true
+            fi
+          done
+
+      - name: Run checkpatch (kernel style)
+        continue-on-error: true
+        run: |
+          echo "Running checkpatch.pl on patches..."
+          echo "===================================="
+
+          CHECKPATCH="${{ steps.kernel.outputs.kdir }}/scripts/checkpatch.pl"
+
+          if [ -f "$CHECKPATCH" ]; then
+            for patch in kernels/nbd168/*.patch; do
+              echo "Checking: $(basename $patch)"
+              perl "$CHECKPATCH" --no-tree --no-signoff "$patch" 2>&1 | tail -5 || true
+            done
+          else
+            echo "checkpatch.pl not found"
+          fi
+
       - name: Upload analysis results
         uses: actions/upload-artifact@v4
         if: always()
