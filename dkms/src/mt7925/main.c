@@ -1380,9 +1380,17 @@ static bool is_valid_alpha2(const char *alpha2)
 void mt7925_scan_work(struct work_struct *work)
 {
 	struct mt792x_phy *phy;
+	struct mt792x_dev *dev;
+	struct mt76_connac_pm *pm;
 
 	phy = (struct mt792x_phy *)container_of(work, struct mt792x_phy,
 						scan_work.work);
+
+	/* Skip scan during suspend to prevent command timeouts */
+	dev = phy->dev;
+	pm = &dev->pm;
+	if (pm->suspended)
+		return;
 
 	while (true) {
 		struct mt76_dev *mdev = &phy->dev->mt76;
