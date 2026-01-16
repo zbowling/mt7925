@@ -46,7 +46,7 @@ check_kernel_version() {
         log_error "Kernel $KVER is too old. This DKMS package requires kernel 6.17+"
         log_error "The mt76 source uses APIs not available in older kernels."
         log_error "Options:"
-        echo "  1. Upgrade to a newer kernel (6.12+)"
+        echo "  1. Upgrade to a newer kernel (6.17+)"
         echo "  2. Apply patches directly to your kernel source"
         echo "     See kernels/ directory for version-specific patches"
         exit 1
