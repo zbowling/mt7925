@@ -280,7 +280,7 @@ jobs:
             for patch in kernels/nbd168/*.patch; do
               echo ""
               echo "=== $(basename $patch) ==="
-              OUTPUT=$(perl "$CHECKPATCH" --no-tree --no-signoff "$patch" 2>&1)
+              OUTPUT=$(perl "$CHECKPATCH" --no-tree --no-signoff "$patch" 2>&1 || true)
               echo "$OUTPUT"
               # Count errors and warnings
               ERRORS=$(echo "$OUTPUT" | grep -c "^ERROR:" || true)
