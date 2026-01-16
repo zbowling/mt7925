@@ -128,23 +128,22 @@ unload_modules() {
     done
 }
 
-blacklist_stock_modules() {
-    log_info "Blacklisting stock mt76 modules..."
+setup_module_priority() {
+    # DKMS modules are installed to /updates/dkms/ which has higher priority
+    # than stock modules in /kernel/ according to depmod search order.
+    # No blacklist needed - depmod priority handles it automatically.
+    #
+    # Search order (from /lib/depmod.d/search.conf):
+    #   updates > extramodules > built-in
+    #
+    log_info "DKMS modules installed to /updates/dkms/ (higher priority than stock)"
 
-    cat > /etc/modprobe.d/mt76-dkms-blacklist.conf << 'EOF'
-# Blacklist stock mt76 modules to use DKMS version
-# Created by mt7925 DKMS installer
-blacklist mt7925e
-blacklist mt7925_common
-blacklist mt792x_lib
-blacklist mt792x_usb
-blacklist mt76_connac_lib
-blacklist mt76_usb
-blacklist mt76_sdio
-# Don't blacklist mt76 core as DKMS version will replace it
-EOF
-
-    log_info "Stock modules blacklisted in /etc/modprobe.d/mt76-dkms-blacklist.conf"
+    # Remove old blacklist if it exists (from previous versions)
+    # Blacklisting was wrong - it blocks ALL modules with that name including DKMS ones
+    if [[ -f /etc/modprobe.d/mt76-dkms-blacklist.conf ]]; then
+        log_info "Removing obsolete blacklist file..."
+        rm -f /etc/modprobe.d/mt76-dkms-blacklist.conf
+    fi
 }
 
 install_dkms() {
@@ -203,7 +202,7 @@ main() {
     check_dependencies
     remove_existing
     unload_modules
-    blacklist_stock_modules
+    setup_module_priority
     install_dkms
     load_modules
     verify_installation

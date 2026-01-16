@@ -58,9 +58,11 @@ remove_dkms() {
     fi
 }
 
-remove_blacklist() {
+cleanup_legacy_files() {
+    # Remove obsolete blacklist file from old versions
+    # (We no longer use blacklisting - depmod priority handles module selection)
     if [[ -f /etc/modprobe.d/mt76-dkms-blacklist.conf ]]; then
-        log_info "Removing module blacklist..."
+        log_info "Removing obsolete blacklist file..."
         rm -f /etc/modprobe.d/mt76-dkms-blacklist.conf
     fi
 }
@@ -100,7 +102,7 @@ main() {
     check_root
     unload_modules
     remove_dkms
-    remove_blacklist
+    cleanup_legacy_files
     restore_stock_modules
     verify_removal
 
