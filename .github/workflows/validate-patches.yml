@@ -221,7 +221,7 @@ jobs:
           pacman -Syu --noconfirm \
             gcc make linux linux-headers \
             sparse clang clang-tools-extra \
-            python python-pip
+            python python-pip perl
 
       - name: Find kernel headers
         id: kernel
