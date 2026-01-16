@@ -226,8 +226,19 @@ jobs:
       - name: Find kernel headers
         id: kernel
         run: |
-          KDIR=$(find /usr/lib/modules -maxdepth 2 -type l -name "build" | head -1)
-          KDIR=$(readlink -f "$KDIR")
+          # In containers, modules are installed but no kernel is running
+          # Find the headers directory by looking for Makefile
+          KDIR=$(find /usr/lib/modules -maxdepth 3 -type f -name "Makefile" -path "*/build/*" | head -1 | xargs dirname)
+          if [ -z "$KDIR" ]; then
+            # Fallback: check /usr/src for kernel headers
+            KDIR=$(find /usr/src -maxdepth 2 -type f -name "Makefile" -path "*linux*" | head -1 | xargs dirname)
+          fi
+          if [ -z "$KDIR" ] || [ ! -f "$KDIR/Makefile" ]; then
+            echo "Error: Could not find kernel headers"
+            find /usr/lib/modules -maxdepth 3 -type d 2>/dev/null | head -20
+            find /usr/src -maxdepth 2 -type d 2>/dev/null | head -10
+            exit 1
+          fi
           echo "Found kernel headers: $KDIR"
           echo "kdir=$KDIR" >> $GITHUB_OUTPUT
 
