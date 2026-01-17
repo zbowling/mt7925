@@ -1,7 +1,7 @@
 From 14dfa70268689065cb65df2cb4e5d50acc081606 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 19:58:05 -0800
-Subject: [PATCH 16/20] wifi: mt76: mt7921: fix missing mutex protection in
+Subject: [PATCH 16/21] wifi: mt76: mt7921: fix missing mutex protection in
  multiple paths
 
 Add mt792x_mutex_acquire/release around ieee80211_iterate_active_interfaces()

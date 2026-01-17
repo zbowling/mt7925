@@ -445,6 +445,29 @@ static void mt7925_roc_iter(void *priv, u8 *mac,
 	mt7925_mcu_abort_roc(phy, &mvif->bss_conf, phy->roc_token_id);
 }
 
+/* Async ROC abort - safe to call while holding mutex.
+ * Sets abort flag and lets roc_work handle cleanup without blocking.
+ * This prevents deadlock when called from sta_remove path which holds mutex.
+ */
+static void mt7925_roc_abort_async(struct mt792x_dev *dev)
+{
+	struct mt792x_phy *phy = &dev->phy;
+
+	/* Set abort flag first - roc_work checks this before acquiring mutex */
+	set_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
+
+	/* Clear ROC state */
+	clear_bit(MT76_STATE_ROC, &phy->mt76->state);
+
+	/* Stop the timer - use non-sync version to avoid blocking */
+	timer_delete(&phy->roc_timer);
+
+	/* Do NOT call cancel_work_sync here - that would deadlock if
+	 * roc_work is waiting for mutex that we (caller) already hold.
+	 * The work will see the abort flag and clean up gracefully.
+	 */
+}
+
 void mt7925_roc_abort_sync(struct mt792x_dev *dev)
 {
 	struct mt792x_phy *phy = &dev->phy;
@@ -464,6 +487,17 @@ void mt7925_roc_work(struct work_struct *work)
 
 	phy = (struct mt792x_phy *)container_of(work, struct mt792x_phy,
 						roc_work);
+
+	/* Check abort flag BEFORE acquiring mutex to prevent deadlock.
+	 * If abort is requested while we're in the sta_remove path (which
+	 * holds the mutex), we must not try to acquire it or we'll deadlock.
+	 * Just clear the flags and notify mac80211 that ROC expired.
+	 */
+	if (test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state)) {
+		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
+		ieee80211_remain_on_channel_expired(phy->mt76->hw);
+		return;
+	}
 
 	if (!test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
 		return;
@@ -1127,7 +1161,11 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
 	if (!mlink)
 		return;
 
-	mt7925_roc_abort_sync(dev);
+	/* Use async abort to prevent deadlock - this function is called from
+	 * mt76_sta_remove() which already holds dev->mt76.mutex. Using the
+	 * sync version would deadlock if roc_work is waiting for the same mutex.
+	 */
+	mt7925_roc_abort_async(dev);
 
 	mt76_connac_free_pending_tx_skbs(&dev->pm, &mlink->wcid);
 	mt76_connac_pm_wake(&dev->mphy, &dev->pm);
@@ -1380,17 +1418,9 @@ static bool is_valid_alpha2(const char *alpha2)
 void mt7925_scan_work(struct work_struct *work)
 {
 	struct mt792x_phy *phy;
-	struct mt792x_dev *dev;
-	struct mt76_connac_pm *pm;
 
 	phy = (struct mt792x_phy *)container_of(work, struct mt792x_phy,
 						scan_work.work);
-
-	/* Skip scan during suspend to prevent command timeouts */
-	dev = phy->dev;
-	pm = &dev->pm;
-	if (pm->suspended)
-		return;
 
 	while (true) {
 		struct mt76_dev *mdev = &phy->dev->mt76;

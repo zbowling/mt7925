@@ -1,7 +1,7 @@
 From 468e00f0b8c7bc1072fff849881156e3acc85753 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Thu, 1 Jan 2026 14:01:50 -0800
-Subject: [PATCH 13/20] wifi: mt76: mt792x: fix firmware reload failure after
+Subject: [PATCH 13/21] wifi: mt76: mt792x: fix firmware reload failure after
  previous load crash
 
 If the firmware loading process crashes or is interrupted after
@@ -13,8 +13,7 @@ This issue manifests as devices becoming unusable after suspend/resume
 failures or firmware crashes, requiring a full hardware reboot to
 recover. This has been widely reported on MT7921 and MT7925 devices.
 
-Apply the same fix from OpenWrt MT7915 commit 79dd14f2e8161 ("mt76: mt7915:
-fix firmware download failure after reboot"):
+Apply the same fix that was applied to MT7915 in commit 79dd14f:
 1. Release the patch semaphore before starting firmware load (in case
    it was held by a previous failed attempt)
 2. Restart MCU firmware to ensure clean state

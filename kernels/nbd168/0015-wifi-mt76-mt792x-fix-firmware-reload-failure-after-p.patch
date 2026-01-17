@@ -1,7 +1,7 @@
 From 66162b691f13dc7a0e60e981c898e202b492a9a1 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:07:57 -0800
-Subject: [PATCH 15/21] wifi: mt76: mt792x: fix firmware reload failure after
+Subject: [PATCH 15/22] wifi: mt76: mt792x: fix firmware reload failure after
  previous load crash
 
 If the firmware loading process crashes or is interrupted after
@@ -17,8 +17,7 @@ Example error log:
   mt7921e 0000:c2:00.0: Failed to get patch semaphore
   mt7921e 0000:c2:00.0: probe with driver mt7921e failed with error -5
 
-Apply the same fix from OpenWrt MT7915 commit 79dd14f2e8161 ("mt76: mt7915:
-fix firmware download failure after reboot"):
+Apply the same fix that was applied to MT7915 in commit 79dd14f:
 1. Release the patch semaphore before starting firmware load (in case
    it was held by a previous failed attempt)
 2. Restart MCU firmware to ensure clean state

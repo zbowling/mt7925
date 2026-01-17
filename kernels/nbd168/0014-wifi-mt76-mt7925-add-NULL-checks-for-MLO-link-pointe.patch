@@ -1,7 +1,7 @@
 From b2537b7e029fa11f15fafb9a64d6caede7998af9 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:07:35 -0800
-Subject: [PATCH 14/21] wifi: mt76: mt7925: add NULL checks for MLO link
+Subject: [PATCH 14/22] wifi: mt76: mt7925: add NULL checks for MLO link
  pointers in MCU functions
 
 Several MCU functions dereference pointers returned by mt792x_sta_to_link()

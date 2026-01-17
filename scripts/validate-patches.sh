@@ -44,14 +44,15 @@ clone_kernel() {
     local tag=$1
     local dest="$TEMP_DIR/linux-$tag"
 
-    log_info "Cloning Linux kernel $tag (sparse checkout for mt76)..."
+    # Redirect log_info to stderr so it doesn't corrupt the return value
+    log_info "Cloning Linux kernel $tag (sparse checkout for mt76)..." >&2
 
     git clone --depth 1 --filter=blob:none --sparse \
         https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
         -b "$tag" "$dest" 2>/dev/null
 
     cd "$dest"
-    git sparse-checkout set drivers/net/wireless/mediatek/mt76
+    git sparse-checkout set drivers/net/wireless/mediatek/mt76 2>/dev/null
     cd - > /dev/null
 
     echo "$dest"

@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_NAME="mt76-mt7925"
-PACKAGE_VERSION="1.0.0"
+PACKAGE_VERSION="1.1.0"
 DKMS_SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
 
 # Colors
