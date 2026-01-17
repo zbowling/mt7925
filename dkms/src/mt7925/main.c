@@ -1161,6 +1161,13 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
 	if (!mlink)
 		return;
 
+	/* Delay to let MCU process previous commands during roaming.
+	 * Without this, rapid MLO link teardown can flood the MCU queue
+	 * causing timeouts and firmware resets. 15-30ms gives firmware
+	 * sufficient time to drain its command queue.
+	 */
+	usleep_range(15000, 30000);
+
 	/* Use async abort to prevent deadlock - this function is called from
 	 * mt76_sta_remove() which already holds dev->mt76.mutex. Using the
 	 * sync version would deadlock if roc_work is waiting for the same mutex.

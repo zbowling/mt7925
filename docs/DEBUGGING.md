@@ -4,6 +4,12 @@
 
 This guide provides techniques for debugging issues in the MT7925 driver, including common problems, debugging tools, and diagnostic procedures.
 
+## Related Documentation
+
+For detailed interface references, see:
+- **[DEBUGFS.md](DEBUGFS.md)** - Complete debugfs reference with all entries, usage examples, and trace events
+- **[SYSFS.md](SYSFS.md)** - Sysfs interface reference for temperature monitoring, rfkill, and power management
+
 ## Debug Tools
 
 ### Kernel Messages (dmesg)

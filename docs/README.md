@@ -35,6 +35,8 @@ This documentation provides a comprehensive guide to understanding, navigating, 
 
 - **[NAVIGATION_GUIDE.md](NAVIGATION_GUIDE.md)** - How to navigate the codebase, trace features, and find related code
 - **[DEBUGGING.md](DEBUGGING.md)** - Debugging techniques, common issues, and diagnostic procedures
+- **[DEBUGFS.md](DEBUGFS.md)** - Complete debugfs reference: firmware debug, coredump, register access, trace events
+- **[SYSFS.md](SYSFS.md)** - Sysfs interface reference: temperature monitoring, rfkill, power management, PCI device control
 
 ## Quick Start
 
