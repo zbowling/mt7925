@@ -4,7 +4,6 @@
  */
 
 #include "mt76.h"
-#include "mt76_connac.h"
 
 struct sk_buff *
 __mt76_mcu_msg_alloc(struct mt76_dev *dev, const void *data,
@@ -130,16 +129,6 @@ retry:
 
 out:
 	dev_kfree_skb(orig_skb);
-
-	/* Throttle MCU commands to prevent firmware queue overflow.
-	 * During rapid state transitions (MLO roaming, multi-link setup/teardown),
-	 * commands can flood the MCU faster than firmware can process them,
-	 * causing timeouts and firmware resets. A small delay between commands
-	 * gives the firmware time to drain its queue.
-	 */
-	if (is_mt7925(dev))
-		usleep_range(2000, 4000);
-
 	mutex_unlock(&dev->mcu.mutex);
 
 	return ret;

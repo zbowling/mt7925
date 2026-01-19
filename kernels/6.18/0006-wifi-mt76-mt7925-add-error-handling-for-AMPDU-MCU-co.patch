@@ -1,7 +1,7 @@
 From 9821bba5c5134cd2e19b0963ac0d5f0e49206b2c Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:20:50 -0800
-Subject: [PATCH 06/27] wifi: mt76: mt7925: add error handling for AMPDU MCU
+Subject: [PATCH 06/26] wifi: mt76: mt7925: add error handling for AMPDU MCU
  commands
 
 Check return values of mt7925_mcu_uni_rx_ba() and mt7925_mcu_uni_tx_ba()

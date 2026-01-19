@@ -188,7 +188,6 @@ struct mt792x_phy {
 
 	/* ROC rate limiting to prevent MCU overload during rapid reconnection
 	 * cycles (e.g., MLO authentication failures causing repeated ROC).
-	 * See crash-2026-01-19-mlo-authentication-failure.log for details.
 	 */
 	u8 roc_timeout_count;		/* consecutive ROC timeouts */
 	unsigned long roc_last_timeout;	/* jiffies of last timeout */
@@ -238,7 +237,6 @@ struct mt792x_dev {
 	bool hw_init_done:1;
 	bool fw_assert:1;
 	bool has_eht:1;
-	bool regd_user:1;
 	bool regd_in_progress:1;
 	bool aspm_supported:1;
 	bool hif_idle:1;

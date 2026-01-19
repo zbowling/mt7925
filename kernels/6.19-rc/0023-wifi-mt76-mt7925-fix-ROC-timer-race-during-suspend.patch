@@ -1,7 +1,7 @@
 From 5353ac39fed7eaa94b94be14f8c386e53062baf5 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 12:28:11 -0800
-Subject: [PATCH 23/28] wifi: mt76: mt7925: fix ROC timer race during suspend
+Subject: [PATCH 23/27] wifi: mt76: mt7925: fix ROC timer race during suspend
 
 Cancel ROC timer and work in mt7925_suspend() (mac80211 callback)
 before mac80211 finishes quiescing. Previously this was only done
