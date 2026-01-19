@@ -614,19 +614,11 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
 	 * If abort_async was called but roc_work never ran (timer was cancelled
 	 * before firing), the abort flag would be stale and incorrectly abort
 	 * this new ROC session.
+	 *
+	 * Note: cancel_work_sync must be called by our callers BEFORE they
+	 * acquire the mutex, to prevent deadlock. See mt7925_remain_on_channel.
 	 */
 	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
-
-	/* Cancel any pending roc_work from a previous async-aborted ROC.
-	 * This prevents a race where stale work could abort our new ROC:
-	 * 1. Previous ROC's roc_work clears ROC flag with test_and_clear
-	 * 2. Work blocks waiting for mutex
-	 * 3. abort_async called, sets abort flag
-	 * 4. New ROC starts here, clears abort flag, sets ROC flag
-	 * 5. Stale work gets mutex, calls mcu_abort_roc with NEW token
-	 * Safe to call here since we don't hold the mutex yet.
-	 */
-	cancel_work_sync(&phy->roc_work);
 
 	if (test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state))
 		return -EBUSY;
@@ -676,13 +668,11 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
 		}
 	}
 
-	/* Clear any stale abort flag from previous ROC abort_async calls */
-	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
-
-	/* Cancel any pending roc_work from a previous async-aborted ROC.
-	 * See comment in mt7925_set_roc for the race condition this prevents.
+	/* Clear any stale abort flag from previous ROC abort_async calls.
+	 * Note: cancel_work_sync must be called by our callers BEFORE they
+	 * acquire the mutex, to prevent deadlock.
 	 */
-	cancel_work_sync(&phy->roc_work);
+	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
 
 	if (WARN_ON_ONCE(test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state)))
 		return -EBUSY;
@@ -717,6 +707,11 @@ static int mt7925_remain_on_channel(struct ieee80211_hw *hw,
 	struct mt792x_vif *mvif = (struct mt792x_vif *)vif->drv_priv;
 	struct mt792x_phy *phy = mt792x_hw_phy(hw);
 	int err;
+
+	/* Cancel any pending ROC work BEFORE acquiring mutex to prevent
+	 * deadlock. The work may be waiting for mutex we're about to take.
+	 */
+	cancel_work_sync(&phy->roc_work);
 
 	mt792x_mutex_acquire(phy->dev);
 	err = mt7925_set_roc(phy, &mvif->bss_conf,
@@ -1052,14 +1047,16 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
 
 	ret = mt76_connac_pm_wake(&dev->mphy, &dev->pm);
 	if (ret)
-		return ret;
+		goto err_wcid;
 
 	mt7925_mac_wtbl_update(dev, idx,
 			       MT_WTBL_UPDATE_ADM_COUNT_CLEAR);
 
 	link_conf = mt792x_vif_to_bss_conf(vif, link_id);
-	if (!link_conf)
-		return -EINVAL;
+	if (!link_conf) {
+		ret = -EINVAL;
+		goto err_wcid;
+	}
 
 	/* should update bss info before STA add */
 	if (vif->type == NL80211_IFTYPE_STATION && !link_sta->sta->tdls) {
@@ -1071,7 +1068,7 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
 			ret = mt7925_mcu_add_bss_info(&dev->phy, mconf->mt76.ctx,
 						      link_conf, link_sta, false);
 		if (ret)
-			return ret;
+			goto err_wcid;
 	}
 
 	if (ieee80211_vif_is_mld(vif) &&
@@ -1079,28 +1076,33 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
 		ret = mt7925_mcu_sta_update(dev, link_sta, vif, true,
 					    MT76_STA_INFO_STATE_NONE);
 		if (ret)
-			return ret;
+			goto err_wcid;
 	} else if (ieee80211_vif_is_mld(vif) &&
 		   link_sta != mlink->pri_link) {
 		ret = mt7925_mcu_sta_update(dev, mlink->pri_link, vif,
 					    true, MT76_STA_INFO_STATE_ASSOC);
 		if (ret)
-			return ret;
+			goto err_wcid;
 
 		ret = mt7925_mcu_sta_update(dev, link_sta, vif, true,
 					    MT76_STA_INFO_STATE_ASSOC);
 		if (ret)
-			return ret;
+			goto err_wcid;
 	} else {
 		ret = mt7925_mcu_sta_update(dev, link_sta, vif, true,
 					    MT76_STA_INFO_STATE_NONE);
 		if (ret)
-			return ret;
+			goto err_wcid;
 	}
 
 	mt76_connac_power_save_sched(&dev->mphy, &dev->pm);
 
 	return 0;
+
+err_wcid:
+	rcu_assign_pointer(dev->mt76.wcid[idx], NULL);
+	mt76_wcid_mask_clear(dev->mt76.wcid_mask, idx);
+	return ret;
 }
 
 static int
@@ -2076,6 +2078,8 @@ static void mt7925_mgd_prepare_tx(struct ieee80211_hw *hw,
 	u16 duration = info->duration ? info->duration :
 		       jiffies_to_msecs(HZ);
 
+	cancel_work_sync(&mvif->phy->roc_work);
+
 	mt792x_mutex_acquire(dev);
 	mt7925_set_roc(mvif->phy, &mvif->bss_conf,
 		       mvif->bss_conf.mt76.ctx->def.chan, duration,
@@ -2229,6 +2233,11 @@ mt7925_change_vif_links(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 
 	if (old_links == new_links)
 		return 0;
+
+	/* Cancel any pending ROC work before acquiring mutex to prevent
+	 * deadlock if mt7925_set_mlo_roc is called below.
+	 */
+	cancel_work_sync(&phy->roc_work);
 
 	mt792x_mutex_acquire(dev);
 

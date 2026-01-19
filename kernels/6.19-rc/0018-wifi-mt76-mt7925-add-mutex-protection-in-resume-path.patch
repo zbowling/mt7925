@@ -1,7 +1,7 @@
 From a9e18185c97f64ee57e7734087b2fb6388c1b6ce Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:13:29 -0800
-Subject: [PATCH 18/24] wifi: mt76: mt7925: add mutex protection in resume path
+Subject: [PATCH 18/26] wifi: mt76: mt7925: add mutex protection in resume path
 
 Add mutex protection around mt7925_mcu_set_deep_sleep() and
 mt7925_mcu_regd_update() calls in the resume path to prevent

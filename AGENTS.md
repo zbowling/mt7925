@@ -89,7 +89,7 @@ The `docs/` folder contains comprehensive documentation. Use this index to find 
    - Patches in `kernels/` are exported using `git format-patch`
    - Never hand-edit patches - edit the source branch and re-export
 
-4. **Test before committing**
+4. **Validate before committing in this repo**
    - Run `./scripts/validate-patches.sh` to verify patches apply
    - CI workflow tests patch application and builds
 
@@ -141,14 +141,14 @@ mt7925/
    git format-patch v6.18.5..mt7925-fixes-v6.18.5 -o <path-to-this-repo>/kernels/6.18
    ```
 
-3. **Validate**
+3. **Validate (before committing in this repo)**
    ```bash
    ./scripts/validate-patches.sh 6.18
    ```
 
 4. **Port to other versions** (see [PATCH_DIFFERENCES.md](docs/PATCH_DIFFERENCES.md))
 
-5. **Commit and push**
+5. **Commit and push in this repo**
 
 ---
 

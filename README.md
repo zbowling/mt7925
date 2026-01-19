@@ -4,9 +4,9 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Status
 
-**Patches:** All 21 patches tested and submitted to LKML (v4) for upstream inclusion.
+**Patches:** 24-26 patches (depending on kernel version) tested and submitted to LKML for upstream inclusion.
 
-**DKMS:** Beta - requires kernel 6.17+ (uses APIs not available in older kernels)
+**DKMS:** v1.1.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
 
 ## Quick Start
 
@@ -55,29 +55,29 @@ sudo ./install.sh
 
 | Version | Patches | Status | Notes |
 |---------|---------|--------|-------|
-| 6.18.x | `kernels/6.18/` | **Current stable** | Arch, Fedora 42, CachyOS |
-| 6.19-rc | `kernels/6.19-rc/` | Release candidate | Bleeding edge |
-| 6.17.x | `kernels/6.17/` | EOL | Fedora 41, older Arch |
-| nbd168 | `kernels/nbd168/` | Upstream staging | nbd168/wireless tree |
+| 6.18.x | 25 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
+| 6.19-rc | 26 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
+| 6.17.x | 24 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
+| nbd168 | 25 (`kernels/nbd168/`) | Upstream staging | nbd168/wireless tree |
 
 ## Repository Structure
 
 ```
 mt7925/
 ├── kernels/                    # Patches organized by kernel version
-│   ├── 6.17/                   # 20 patches for v6.17.13
-│   ├── 6.18/                   # 20 patches for v6.18.5
-│   ├── 6.19-rc/                # 21 patches for v6.19-rc5
-│   └── nbd168/                 # 21 patches for nbd168/wireless
-├── dkms/                       # DKMS package (beta, 6.12+ only)
+│   ├── 6.17/                   # 24 patches for v6.17.13
+│   ├── 6.18/                   # 25 patches for v6.18.5
+│   ├── 6.19-rc/                # 26 patches for v6.19-rc5
+│   └── nbd168/                 # 25 patches for nbd168/wireless
+├── dkms/                       # DKMS package (v1.1.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
 │   ├── dkms.conf               # DKMS configuration
-│   └── src/                    # Pre-patched mt76 source from 6.18
+│   └── src/                    # Pre-patched mt76 source
 ├── crashes/                    # Crash logs for debugging
-├── docs/                       # Documenting the design of all the mt76 drivers
-│   ├── BUILD_ARCH.md           # Arch/CachyOS build guide
-│   ├── BUILD_UBUNTU.md         # Ubuntu/Pop_OS build guide
+├── docs/                       # Documentation for mt76 drivers
+│   ├── ARCHITECTURE.md         # Driver architecture overview
+│   ├── LOCKING.md              # Locking and mutex patterns
 │   └── PATCH_DIFFERENCES.md    # Version differences
 └── scripts/
     └── validate-patches.sh     # Local patch validation
@@ -142,6 +142,10 @@ The MT7925 WiFi driver has several critical bugs:
 2. **Mutex Deadlock in Reset/ROC** - System hangs during network switching
 3. **Mutex Deadlock in Power Management** - Deadlocks during suspend/resume
 4. **Missing Error Handling** - MCU command failures cause inconsistent state
+5. **ROC Work Deadlock** - `cancel_work_sync` called while holding mutex
+6. **WCID Resource Leak** - WCID table exhaustion on repeated sta add failures
+7. **List Corruption** - `sta_poll_list` corruption after device reset
+8. **Suspend/Resume Race** - ROC timer firing during quiescing causes hangs
 
 ### Affected Hardware
 
@@ -156,13 +160,12 @@ The MT7925 WiFi driver has several critical bugs:
 - Processes stuck in D state (uninterruptible sleep)
 - Hangs during suspend/resume cycles
 
-## Patches (21 total)
+## Patches (24-26 per kernel)
 
 | # | Patch | Category |
 |---|-------|----------|
 | 01 | fix-NULL-pointer-dereference-in-vif | Critical |
-| 02 | fix-missing-mutex-protection-in-reset | Critical |
-| 03 | fix-missing-mutex-protection-in-runtime-pm | Critical |
+| 02-03 | fix-missing-mutex-protection | Critical |
 | 04-05 | add-NULL-checks-in-MCU-STA-TLV | NULL Checks |
 | 06-08 | add-error-handling-for-MCU | Error Handling |
 | 09 | add-NULL-checks-in-MLO-link | MLO |
@@ -174,6 +177,10 @@ The MT7925 WiFi driver has several critical bugs:
 | 19 | mt7921-fix-mutex-deadlocks | MT7921 |
 | 20 | fix-list-corruption-in-wcid-cleanup | Critical (mt76 core) |
 | 21 | fix-BA-session-teardown-beacon-loss | Critical |
+| 22 | fix-deadlock-in-sta-removal-ROC-abort | Critical |
+| 23 | fix-ROC-timer-race-during-suspend | Critical |
+| 24 | add-ROC-rate-limiting-MLO-auth-failures | Stability |
+| 25 | fix-deadlock-and-WCID-leak-bugs | Critical |
 
 ## Building with Clang
 

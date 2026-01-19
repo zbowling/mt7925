@@ -1,16 +1,24 @@
 # MT7925 DKMS Package
 
+**Version:** 1.1.0
+
 This DKMS package provides a patched MT7925 WiFi driver with fixes for:
 - NULL pointer dereferences in MLO (Multi-Link Operation) paths
 - Missing mutex protection causing race conditions
 - Error handling for MCU commands
 - Firmware reload failures
+- ROC (Remain On Channel) deadlocks and race conditions
+- WCID resource leaks on error paths
+- List corruption in WCID cleanup after reset
+- ROC timer race during suspend/resume
+- ROC rate limiting for MLO authentication failures
 
 ## Requirements
 
-- Linux kernel 6.8 or newer (tested on 6.17-6.19)
+- Linux kernel **6.17 or newer** (uses APIs not available in older kernels)
 - DKMS installed
 - Kernel headers for your running kernel
+- Clang + lld (if your kernel was built with clang)
 
 ### Installing Requirements
 
@@ -62,11 +70,11 @@ This will:
 dkms status
 
 # Rebuild for current kernel
-sudo dkms build mt76-mt7925/1.0.0
-sudo dkms install mt76-mt7925/1.0.0
+sudo dkms build mt76-mt7925/1.1.0
+sudo dkms install mt76-mt7925/1.1.0
 
 # Remove
-sudo dkms remove mt76-mt7925/1.0.0 --all
+sudo dkms remove mt76-mt7925/1.1.0 --all
 ```
 
 ## Troubleshooting
