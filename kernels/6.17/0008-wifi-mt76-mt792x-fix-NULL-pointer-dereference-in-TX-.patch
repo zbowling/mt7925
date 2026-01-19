@@ -1,4 +1,4 @@
-From 37cac5f3720c1967f8c5ab90c107497ad4b26a07 Mon Sep 17 00:00:00 2001
+From 5ef62f449f4527b50f203a7ffdc665dffd2813ef Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:38:26 -0800
 Subject: [PATCH 08/23] wifi: mt76: mt792x: fix NULL pointer dereference in TX

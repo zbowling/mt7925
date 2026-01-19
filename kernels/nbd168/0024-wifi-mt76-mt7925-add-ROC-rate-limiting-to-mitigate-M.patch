@@ -1,5 +1,5 @@
-From 75bcd8bd05aa96d2064a199d804239b2e25c3fe7 Mon Sep 17 00:00:00 2001
-From: Zac <zac@zacbowling.com>
+From 3638e1844f6532a8fc1456704f50285023b2a9ee Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 12:32:01 -0800
 Subject: [PATCH 24/24] wifi: mt76: mt7925: add ROC rate limiting to mitigate
  MLO auth failures

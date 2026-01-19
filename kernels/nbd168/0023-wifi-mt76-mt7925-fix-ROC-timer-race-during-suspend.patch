@@ -1,5 +1,5 @@
-From 126e0f824035ef0a299f6de2d22332bf780cab09 Mon Sep 17 00:00:00 2001
-From: Zac <zac@zacbowling.com>
+From 06e75b28d5e3587b2208f82f5ea85ecdeb228f34 Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 12:28:11 -0800
 Subject: [PATCH 23/24] wifi: mt76: mt7925: fix ROC timer race during suspend
 

@@ -1,4 +1,4 @@
-From 2771fdd936d7c702500de97ea181488ae6636efa Mon Sep 17 00:00:00 2001
+From 2a273146c014832b35aa340248a2d08b8bcbcb83 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:09:48 -0800
 Subject: [PATCH 17/24] wifi: mt76: mt7925: add NULL checks in link station and

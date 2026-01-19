@@ -1,4 +1,4 @@
-From 6966bf8bf0affeaaa8d484b21699f0fc364c045d Mon Sep 17 00:00:00 2001
+From cdf0ce4a146a00cffe9b97dd6ee3de6d8ee36c4e Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:08:40 -0800
 Subject: [PATCH 16/24] wifi: mt76: mt7925: add mutex protection in resume path

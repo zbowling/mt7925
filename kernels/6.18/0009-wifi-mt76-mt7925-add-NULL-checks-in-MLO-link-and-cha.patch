@@ -1,4 +1,4 @@
-From 07f4466b8df6829da77ef68ce82f941fbf506e5e Mon Sep 17 00:00:00 2001
+From b3a6cfd9af5a92b49aed606464abc550fd2b8095 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:32:55 -0800
 Subject: [PATCH 09/23] wifi: mt76: mt7925: add NULL checks in MLO link and

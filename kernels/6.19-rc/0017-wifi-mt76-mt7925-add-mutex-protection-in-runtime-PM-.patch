@@ -1,5 +1,5 @@
-From fb6f9f0fda6eb84cca35663600ff1d2a7ae45f88 Mon Sep 17 00:00:00 2001
-From: Zac <zac@zacbowling.com>
+From 6e8191e5a36338f2ede71a9dab36b9a4406a0b06 Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:10:32 -0800
 Subject: [PATCH 17/24] wifi: mt76: mt7925: add mutex protection in runtime PM
  iteration

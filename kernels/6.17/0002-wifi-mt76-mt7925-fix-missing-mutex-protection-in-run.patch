@@ -1,5 +1,5 @@
-From b2f94dfb315109d838bebffcbf64914b2bea8f87 Mon Sep 17 00:00:00 2001
-From: Zac <zac@zacbowling.com>
+From e09bf7507f0149bf0e6af024fd05fc198d2613cf Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 19:52:58 -0800
 Subject: [PATCH 02/23] wifi: mt76: mt7925: fix missing mutex protection in
  runtime PM and MLO PM

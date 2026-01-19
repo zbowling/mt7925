@@ -1,4 +1,4 @@
-From da9ffa885b9b7d597a3af497fc45baf0053dfbfe Mon Sep 17 00:00:00 2001
+From ff77f3e2f0a4a4d82e11fabc320cc9fc83623688 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:21:34 -0800
 Subject: [PATCH 06/23] wifi: mt76: mt7925: add error handling for BSS info MCU

@@ -1,4 +1,4 @@
-From 8f6ef70257807535828a9596edbcc7775bab4524 Mon Sep 17 00:00:00 2001
+From f11c33537ddd5c178a02e56e16b3db65ab3b6342 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Thu, 1 Jan 2026 12:36:10 -0800
 Subject: [PATCH 11/23] wifi: mt76: mt7925: fix kernel warning in MLO ROC setup

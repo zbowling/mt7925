@@ -1,5 +1,5 @@
-From 1bb425f639fab276d16a819edfa9c930739a3735 Mon Sep 17 00:00:00 2001
-From: Zac <zac@zacbowling.com>
+From 41ce6334e9b927183ad606f72a134c28c1de5890 Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
 Date: Fri, 16 Jan 2026 21:59:42 -0800
 Subject: [PATCH 21/23] wifi: mt76: mt7925: fix deadlock in sta removal ROC
  abort path
@@ -62,7 +62,7 @@ breaks the deadlock chain while still ensuring proper ROC cleanup.
 
 Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 chips")
 Reported-by: Aritz Beobide-Cardinal <aritz@aritzcracker.ca>
-Signed-off-by: Zac Bowling <zbowling@gmail.com>
+Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
  drivers/net/wireless/mediatek/mt76/mt76.h     |  1 +
  .../net/wireless/mediatek/mt76/mt7925/main.c  | 40 ++++++++++++++++++-
