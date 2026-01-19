@@ -1161,7 +1161,10 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
 	if (!mlink)
 		return;
 
-	/* Delay to let MCU process previous commands during roaming.
+	/* HACK: Do not land this into patchsets. 
+	 * Experimenting with this based on a hunch.
+	 * 
+	 * Delay to let MCU process previous commands during roaming.
 	 * Without this, rapid MLO link teardown can flood the MCU queue
 	 * causing timeouts and firmware resets. 15-30ms gives firmware
 	 * sufficient time to drain its command queue.
@@ -1591,6 +1594,14 @@ static int mt7925_suspend(struct ieee80211_hw *hw,
 	mt76_connac_free_pending_tx_skbs(&dev->pm, NULL);
 
 	mt792x_mutex_acquire(dev);
+
+	/* Cancel ROC timer and work before mac80211 finishes quiescing.
+	 * This must happen here, not in pci_suspend, because mac80211
+	 * sets quiescing=true before calling this callback. If the ROC
+	 * timer fires after quiescing starts, ieee80211_queue_work() will
+	 * fail and leave the driver in an inconsistent state.
+	 */
+	mt7925_roc_abort_sync(dev);
 
 	clear_bit(MT76_STATE_RUNNING, &phy->mt76->state);
 	ieee80211_iterate_active_interfaces(hw,
