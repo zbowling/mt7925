@@ -1,7 +1,7 @@
 From 861a03f644c1093ceaa622dd6a48f043428e5688 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:09:05 -0800
-Subject: [PATCH 04/25] wifi: mt76: mt7925: add NULL checks in MCU STA TLV
+Subject: [PATCH 04/27] wifi: mt76: mt7925: add NULL checks in MCU STA TLV
  functions
 
 Add NULL pointer checks for link_conf and mconf in:

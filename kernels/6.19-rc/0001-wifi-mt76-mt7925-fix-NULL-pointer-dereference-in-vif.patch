@@ -1,7 +1,7 @@
 From a0ce218a98f5314314763d226d388b55618effac Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 15:42:18 -0800
-Subject: [PATCH 01/26] wifi: mt76: mt7925: fix NULL pointer dereference in vif
+Subject: [PATCH 01/28] wifi: mt76: mt7925: fix NULL pointer dereference in vif
  iteration
 
 mt792x_vif_to_bss_conf() can return NULL when iterating over valid_links
