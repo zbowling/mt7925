@@ -1,0 +1,63 @@
+From 08a4471560422f597e62b40c083e7c0ec68f0e22 Mon Sep 17 00:00:00 2001
+From: Zac <zac@zacbowling.com>
+Date: Mon, 19 Jan 2026 15:15:32 -0800
+Subject: [PATCH 26/27] wifi: mt76: mt7925: fix race condition in async ROC
+ abort
+
+Remove the clear_bit(MT76_STATE_ROC) call from mt7925_roc_abort_async()
+to fix a race condition where mac80211 might not receive the ROC expiry
+notification.
+
+The race sequence was:
+  1. roc_work runs and checks abort flag - NOT set yet
+  2. mt7925_roc_abort_async sets abort flag
+  3. mt7925_roc_abort_async clears ROC flag
+  4. roc_work checks ROC flag - CLEARED! Returns without cleanup
+  5. ieee80211_remain_on_channel_expired never called
+
+By leaving the ROC flag set, roc_work will properly handle either case:
+  - If it sees abort flag: handles abort path (clears both flags)
+  - If it sees ROC flag: handles normal expiry path
+
+Either way, mac80211 receives proper notification.
+
+Reported-by: Cursor Bot (code review)
+Signed-off-by: Zac Bowling <zac@zacbowling.com>
+---
+ .../net/wireless/mediatek/mt76/mt7925/main.c   | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
+index b6f9ec1458..7dce8c0fa0 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
+@@ -453,12 +453,22 @@ static void mt7925_roc_abort_async(struct mt792x_dev *dev)
+ {
+ 	struct mt792x_phy *phy = &dev->phy;
+ 
+-	/* Set abort flag first - roc_work checks this before acquiring mutex */
++	/* Set abort flag - roc_work checks this before acquiring mutex.
++	 *
++	 * IMPORTANT: Do NOT clear MT76_STATE_ROC here. There's a race:
++	 *   1. roc_work checks abort flag - not set yet
++	 *   2. We set abort flag here
++	 *   3. If we cleared ROC flag here...
++	 *   4. roc_work checks ROC flag - cleared! Returns without cleanup
++	 *   5. mac80211 never gets ieee80211_remain_on_channel_expired
++	 *
++	 * By leaving ROC flag set, roc_work will either:
++	 *   - See abort flag set: handle abort path (clears both flags)
++	 *   - See ROC flag set: handle normal expiry (clears ROC flag)
++	 * Either way, mac80211 gets properly notified.
++	 */
+ 	set_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
+ 
+-	/* Clear ROC state */
+-	clear_bit(MT76_STATE_ROC, &phy->mt76->state);
+-
+ 	/* Stop the timer - use non-sync version to avoid blocking */
+ 	timer_delete(&phy->roc_timer);
+ 
+-- 
+2.52.0
+

@@ -1,7 +1,7 @@
 From 9cc62d64b9542f200ee703f30658418a60f9f130 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:02:04 -0800
-Subject: [PATCH 17/24] wifi: mt76: mt7925: fix missing mutex protection in
+Subject: [PATCH 17/26] wifi: mt76: mt7925: fix missing mutex protection in
  reset and ROC abort
 
 Add missing mt792x_mutex_acquire/release calls around

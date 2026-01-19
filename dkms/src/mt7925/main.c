@@ -445,27 +445,14 @@ static void mt7925_roc_iter(void *priv, u8 *mac,
 	mt7925_mcu_abort_roc(phy, &mvif->bss_conf, phy->roc_token_id);
 }
 
-/* Async ROC abort - safe to call while holding mutex.
- * Sets abort flag and lets roc_work handle cleanup without blocking.
- * This prevents deadlock when called from sta_remove path which holds mutex.
- */
+/* Async ROC abort - safe to call while holding mutex */
 static void mt7925_roc_abort_async(struct mt792x_dev *dev)
 {
 	struct mt792x_phy *phy = &dev->phy;
 
-	/* Set abort flag first - roc_work checks this before acquiring mutex */
+	/* Don't clear ROC flag - let roc_work handle it to avoid race */
 	set_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
-
-	/* Clear ROC state */
-	clear_bit(MT76_STATE_ROC, &phy->mt76->state);
-
-	/* Stop the timer - use non-sync version to avoid blocking */
 	timer_delete(&phy->roc_timer);
-
-	/* Do NOT call cancel_work_sync here - that would deadlock if
-	 * roc_work is waiting for mutex that we (caller) already hold.
-	 * The work will see the abort flag and clean up gracefully.
-	 */
 }
 
 void mt7925_roc_abort_sync(struct mt792x_dev *dev)
@@ -488,11 +475,7 @@ void mt7925_roc_work(struct work_struct *work)
 	phy = (struct mt792x_phy *)container_of(work, struct mt792x_phy,
 						roc_work);
 
-	/* Check abort flag BEFORE acquiring mutex to prevent deadlock.
-	 * If abort is requested while we're in the sta_remove path (which
-	 * holds the mutex), we must not try to acquire it or we'll deadlock.
-	 * Just clear the flags and notify mac80211 that ROC expired.
-	 */
+	/* Handle async abort - check before mutex to avoid deadlock */
 	if (test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state)) {
 		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
 		ieee80211_remain_on_channel_expired(phy->mt76->hw);
@@ -576,7 +559,7 @@ static void mt7925_roc_record_timeout(struct mt792x_phy *phy)
 	/* Warn if we're seeing repeated timeouts - likely upper layer issue */
 	if (phy->roc_timeout_count == MT7925_ROC_TIMEOUT_WARN_THRESH)
 		dev_warn(phy->dev->mt76.dev,
-			 "mt7925: %u consecutive ROC timeouts, possible mac80211/wpa_supplicant issue (MLO key race?)\n",
+			 "mt7925: %u consecutive ROC timeouts\n",
 			 phy->roc_timeout_count);
 }
 
@@ -596,10 +579,8 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
 	unsigned long throttle;
 	int err;
 
-	/* Check rate limiting - if in backoff period, wait or return busy */
 	throttle = mt7925_roc_throttle_check(phy);
 	if (throttle) {
-		/* For short backoffs, wait; for longer ones, return busy */
 		if (throttle < msecs_to_jiffies(200)) {
 			msleep(jiffies_to_msecs(throttle));
 		} else {
@@ -610,14 +591,7 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
 		}
 	}
 
-	/* Clear any stale abort flag from previous ROC abort_async calls.
-	 * If abort_async was called but roc_work never ran (timer was cancelled
-	 * before firing), the abort flag would be stale and incorrectly abort
-	 * this new ROC session.
-	 *
-	 * Note: cancel_work_sync must be called by our callers BEFORE they
-	 * acquire the mutex, to prevent deadlock. See mt7925_remain_on_channel.
-	 */
+	/* Clear stale abort flag from previous aborted ROC */
 	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
 
 	if (test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state))
@@ -653,9 +627,6 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
 	unsigned long throttle;
 	int err;
 
-	/* Check rate limiting - MLO ROC is especially prone to rapid-fire
-	 * during reconnection cycles after MLO authentication failures.
-	 */
 	throttle = mt7925_roc_throttle_check(phy);
 	if (throttle) {
 		if (throttle < msecs_to_jiffies(200)) {
@@ -668,10 +639,7 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
 		}
 	}
 
-	/* Clear any stale abort flag from previous ROC abort_async calls.
-	 * Note: cancel_work_sync must be called by our callers BEFORE they
-	 * acquire the mutex, to prevent deadlock.
-	 */
+	/* Clear stale abort flag from previous aborted ROC */
 	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
 
 	if (WARN_ON_ONCE(test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state)))
@@ -708,11 +676,7 @@ static int mt7925_remain_on_channel(struct ieee80211_hw *hw,
 	struct mt792x_phy *phy = mt792x_hw_phy(hw);
 	int err;
 
-	/* Cancel any pending ROC work BEFORE acquiring mutex to prevent
-	 * deadlock. The work may be waiting for mutex we're about to take.
-	 */
 	cancel_work_sync(&phy->roc_work);
-
 	mt792x_mutex_acquire(phy->dev);
 	err = mt7925_set_roc(phy, &mvif->bss_conf,
 			     chan, duration, MT7925_ROC_REQ_ROC);
@@ -1234,11 +1198,17 @@ static void mt7925_mac_link_sta_assoc(struct mt76_dev *mdev,
 
 	if (link_conf && vif->type == NL80211_IFTYPE_STATION && !link_sta->sta->tdls) {
 		struct mt792x_bss_conf *mconf;
+		int ret;
 
 		mconf = mt792x_link_conf_to_mconf(link_conf);
-		if (mconf)
-			mt7925_mcu_add_bss_info(&dev->phy, mconf->mt76.ctx,
-						link_conf, link_sta, true);
+		if (mconf) {
+			ret = mt7925_mcu_add_bss_info(&dev->phy, mconf->mt76.ctx,
+						      link_conf, link_sta, true);
+			if (ret)
+				dev_warn(dev->mt76.dev,
+					 "failed to update BSS info during beacon loss (ret=%d)\n",
+					 ret);
+		}
 	}
 
 	ewma_avg_signal_init(&mlink->avg_ack_signal);
@@ -1288,16 +1258,6 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
 	if (!mlink)
 		return;
 
-	/* HACK: Do not land this into patchsets. 
-	 * Experimenting with this based on a hunch.
-	 * 
-	 * Delay to let MCU process previous commands during roaming.
-	 * Without this, rapid MLO link teardown can flood the MCU queue
-	 * causing timeouts and firmware resets. 15-30ms gives firmware
-	 * sufficient time to drain its command queue.
-	 */
-	usleep_range(15000, 30000);
-
 	/* Use async abort to prevent deadlock - this function is called from
 	 * mt76_sta_remove() which already holds dev->mt76.mutex. Using the
 	 * sync version would deadlock if roc_work is waiting for the same mutex.
@@ -1316,16 +1276,21 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
 
 	if (link_conf && vif->type == NL80211_IFTYPE_STATION && !link_sta->sta->tdls) {
 		struct mt792x_bss_conf *mconf;
+		int ret;
 
 		mconf = mt792x_link_conf_to_mconf(link_conf);
 		if (!mconf)
 			goto out;
 
-		if (ieee80211_vif_is_mld(vif))
+		if (ieee80211_vif_is_mld(vif)) {
 			mt792x_mac_link_bss_remove(dev, mconf, mlink);
-		else
-			mt7925_mcu_add_bss_info(&dev->phy, mconf->mt76.ctx, link_conf,
-						link_sta, false);
+		} else {
+			ret = mt7925_mcu_add_bss_info(&dev->phy, mconf->mt76.ctx,
+						      link_conf, link_sta, false);
+			if (ret)
+				dev_warn(dev->mt76.dev,
+					 "failed to remove BSS info (ret=%d)\n", ret);
+		}
 	}
 out:
 
@@ -1345,6 +1310,7 @@ mt7925_mac_sta_remove_links(struct mt792x_dev *dev, struct ieee80211_vif *vif,
 	struct mt76_dev *mdev = &dev->mt76;
 	struct mt76_wcid *wcid;
 	unsigned int link_id;
+	int ret;
 
 	/* clean up bss before starec */
 	for_each_set_bit(link_id, &old_links, IEEE80211_MLD_MAX_NUM_LINKS) {
@@ -1369,9 +1335,14 @@ mt7925_mac_sta_remove_links(struct mt792x_dev *dev, struct ieee80211_vif *vif,
 			continue;
 
 		mconf = mt792x_link_conf_to_mconf(link_conf);
+		if (!mconf)
+			continue;
 
-		mt7925_mcu_add_bss_info(&dev->phy, mconf->mt76.ctx, link_conf,
-					link_sta, false);
+		ret = mt7925_mcu_add_bss_info(&dev->phy, mconf->mt76.ctx,
+					      link_conf, link_sta, false);
+		if (ret)
+			dev_warn(dev->mt76.dev,
+				 "failed to remove link BSS info (ret=%d)\n", ret);
 	}
 
 	for_each_set_bit(link_id, &old_links, IEEE80211_MLD_MAX_NUM_LINKS) {
@@ -1720,16 +1691,7 @@ static int mt7925_suspend(struct ieee80211_hw *hw,
 	cancel_delayed_work_sync(&dev->pm.ps_work);
 	mt76_connac_free_pending_tx_skbs(&dev->pm, NULL);
 
-	/* Cancel ROC timer and work before mac80211 finishes quiescing.
-	 * This must happen here, not in pci_suspend, because mac80211
-	 * sets quiescing=true before calling this callback. If the ROC
-	 * timer fires after quiescing starts, ieee80211_queue_work() will
-	 * fail and leave the driver in an inconsistent state.
-	 *
-	 * IMPORTANT: Must be called BEFORE mutex_acquire to avoid deadlock.
-	 * If roc_work is running and waiting for mutex, cancel_work_sync
-	 * would block forever if we already hold the mutex.
-	 */
+	/* Cancel ROC before quiescing - must be before mutex to avoid deadlock */
 	mt7925_roc_abort_sync(dev);
 
 	mt792x_mutex_acquire(dev);
@@ -1996,8 +1958,11 @@ mt7925_stop_ap(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	if (err)
 		goto out;
 
-	mt7925_mcu_add_bss_info(&dev->phy, mvif->bss_conf.mt76.ctx, link_conf,
-				NULL, false);
+	err = mt7925_mcu_add_bss_info(&dev->phy, mvif->bss_conf.mt76.ctx,
+				      link_conf, NULL, false);
+	if (err)
+		dev_warn(dev->mt76.dev,
+			 "failed to remove BSS info in stop_ap (ret=%d)\n", err);
 
 out:
 	mt792x_mutex_release(dev);
@@ -2234,11 +2199,7 @@ mt7925_change_vif_links(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	if (old_links == new_links)
 		return 0;
 
-	/* Cancel any pending ROC work before acquiring mutex to prevent
-	 * deadlock if mt7925_set_mlo_roc is called below.
-	 */
 	cancel_work_sync(&phy->roc_work);
-
 	mt792x_mutex_acquire(dev);
 
 	for_each_set_bit(link_id, &rem, IEEE80211_MLD_MAX_NUM_LINKS) {
@@ -2372,6 +2333,7 @@ static int mt7925_assign_vif_chanctx(struct ieee80211_hw *hw,
 	struct mt792x_dev *dev = mt792x_hw_dev(hw);
 	struct ieee80211_bss_conf *pri_link_conf;
 	struct mt792x_bss_conf *mconf;
+	int ret;
 
 	mutex_lock(&dev->mt76.mutex);
 
@@ -2385,9 +2347,14 @@ static int mt7925_assign_vif_chanctx(struct ieee80211_hw *hw,
 		pri_link_conf = mt792x_vif_to_bss_conf(vif, mvif->deflink_id);
 
 		if (pri_link_conf && vif->type == NL80211_IFTYPE_STATION &&
-		    mconf == &mvif->bss_conf)
-			mt7925_mcu_add_bss_info(&dev->phy, NULL, pri_link_conf,
-						NULL, true);
+		    mconf == &mvif->bss_conf) {
+			ret = mt7925_mcu_add_bss_info(&dev->phy, NULL,
+						      pri_link_conf, NULL, true);
+			if (ret)
+				dev_warn(dev->mt76.dev,
+					 "failed to add BSS info in chanctx assign (ret=%d)\n",
+					 ret);
+		}
 	} else {
 		mconf = &mvif->bss_conf;
 	}
@@ -2408,6 +2375,7 @@ static void mt7925_unassign_vif_chanctx(struct ieee80211_hw *hw,
 	struct mt792x_vif *mvif = (struct mt792x_vif *)vif->drv_priv;
 	struct mt792x_dev *dev = mt792x_hw_dev(hw);
 	struct mt792x_bss_conf *mconf;
+	int ret;
 
 	mutex_lock(&dev->mt76.mutex);
 
@@ -2419,9 +2387,14 @@ static void mt7925_unassign_vif_chanctx(struct ieee80211_hw *hw,
 		}
 
 		if (vif->type == NL80211_IFTYPE_STATION &&
-		    mconf == &mvif->bss_conf)
-			mt7925_mcu_add_bss_info(&dev->phy, NULL, link_conf,
-						NULL, false);
+		    mconf == &mvif->bss_conf) {
+			ret = mt7925_mcu_add_bss_info(&dev->phy, NULL, link_conf,
+						      NULL, false);
+			if (ret)
+				dev_warn(dev->mt76.dev,
+					 "failed to remove BSS info in chanctx unassign (ret=%d)\n",
+					 ret);
+		}
 	} else {
 		mconf = &mvif->bss_conf;
 	}

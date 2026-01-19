@@ -1,7 +1,7 @@
 From e09bf7507f0149bf0e6af024fd05fc198d2613cf Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 19:52:58 -0800
-Subject: [PATCH 02/24] wifi: mt76: mt7925: fix missing mutex protection in
+Subject: [PATCH 02/26] wifi: mt76: mt7925: fix missing mutex protection in
  runtime PM and MLO PM
 
 Add mt792x_mutex_acquire/release around ieee80211_iterate_active_interfaces()

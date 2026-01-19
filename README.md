@@ -4,7 +4,7 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Status
 
-**Patches:** 24-26 patches (depending on kernel version) tested and submitted to LKML for upstream inclusion.
+**Patches:** 26-28 patches (depending on kernel version) tested and submitted to LKML for upstream inclusion.
 
 **DKMS:** v1.1.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
 
@@ -55,20 +55,20 @@ sudo ./install.sh
 
 | Version | Patches | Status | Notes |
 |---------|---------|--------|-------|
-| 6.18.x | 25 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
-| 6.19-rc | 26 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
-| 6.17.x | 24 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
-| nbd168 | 25 (`kernels/nbd168/`) | Upstream staging | nbd168/wireless tree |
+| 6.18.x | 27 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
+| 6.19-rc | 28 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
+| 6.17.x | 26 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
+| nbd168 | 27 (`kernels/nbd168/`) | Upstream staging | nbd168/wireless tree |
 
 ## Repository Structure
 
 ```
 mt7925/
 ├── kernels/                    # Patches organized by kernel version
-│   ├── 6.17/                   # 24 patches for v6.17.13
-│   ├── 6.18/                   # 25 patches for v6.18.5
-│   ├── 6.19-rc/                # 26 patches for v6.19-rc5
-│   └── nbd168/                 # 25 patches for nbd168/wireless
+│   ├── 6.17/                   # 26 patches for v6.17.13
+│   ├── 6.18/                   # 27 patches for v6.18.5
+│   ├── 6.19-rc/                # 28 patches for v6.19-rc5
+│   └── nbd168/                 # 27 patches for nbd168/wireless
 ├── dkms/                       # DKMS package (v1.1.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
@@ -160,7 +160,7 @@ The MT7925 WiFi driver has several critical bugs:
 - Processes stuck in D state (uninterruptible sleep)
 - Hangs during suspend/resume cycles
 
-## Patches (24-26 per kernel)
+## Patches (26-28 per kernel)
 
 | # | Patch | Category |
 |---|-------|----------|
@@ -181,6 +181,8 @@ The MT7925 WiFi driver has several critical bugs:
 | 23 | fix-ROC-timer-race-during-suspend | Critical |
 | 24 | add-ROC-rate-limiting-MLO-auth-failures | Stability |
 | 25 | fix-deadlock-and-WCID-leak-bugs | Critical |
+| 26 | fix-race-condition-in-async-ROC-abort | Critical |
+| 27 | clean-up-verbose-comments-for-upstream | Cleanup |
 
 ## Building with Clang
 

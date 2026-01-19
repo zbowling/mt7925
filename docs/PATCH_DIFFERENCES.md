@@ -10,10 +10,10 @@ The MT7925 WiFi 7 driver is part of the mt76 driver family in the Linux kernel. 
 
 | Version | Tag | Patches | Status |
 |---------|-----|---------|--------|
-| 6.17.x | v6.17.13 | 24 patches | EOL but still used (Fedora 41, older Arch) |
-| 6.18.x | v6.18.5 | 25 patches | **Current stable** - Arch, Fedora 42 |
-| 6.19-rcX | v6.19-rc5 | 26 patches | Release candidate - bleeding edge |
-| nbd168 | wireless-next | 25 patches | OpenWRT staging tree |
+| 6.17.x | v6.17.13 | 26 patches | EOL but still used (Fedora 41, older Arch) |
+| 6.18.x | v6.18.5 | 27 patches | **Current stable** - Arch, Fedora 42 |
+| 6.19-rcX | v6.19-rc5 | 28 patches | Release candidate - bleeding edge |
+| nbd168 | wireless-next | 27 patches | OpenWRT staging tree |
 
 ## Key Differences Between Versions
 
