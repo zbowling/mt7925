@@ -4,9 +4,9 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Status
 
-**Patches:** 26-28 patches (depending on kernel version) tested and submitted to LKML for upstream inclusion.
+**Patches:** 25-27 patches (depending on kernel version) tested and submitted to LKML for upstream inclusion.
 
-**DKMS:** v1.1.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
+**DKMS:** v1.2.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
 
 ## Quick Start
 
@@ -55,21 +55,21 @@ sudo ./install.sh
 
 | Version | Patches | Status | Notes |
 |---------|---------|--------|-------|
-| 6.18.x | 27 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
-| 6.19-rc | 28 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
-| 6.17.x | 26 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
-| nbd168 | 27 (`kernels/nbd168/`) | Upstream staging | nbd168/wireless tree |
+| 6.18.x | 26 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
+| 6.19-rc | 27 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
+| 6.17.x | 25 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
+| nbd168 | 26 (`kernels/nbd168/`) | Upstream staging | nbd168/wireless tree |
 
 ## Repository Structure
 
 ```
 mt7925/
 ├── kernels/                    # Patches organized by kernel version
-│   ├── 6.17/                   # 26 patches for v6.17.13
-│   ├── 6.18/                   # 27 patches for v6.18.5
-│   ├── 6.19-rc/                # 28 patches for v6.19-rc5
-│   └── nbd168/                 # 27 patches for nbd168/wireless
-├── dkms/                       # DKMS package (v1.1.0, requires 6.17+)
+│   ├── 6.17/                   # 25 patches for v6.17.13
+│   ├── 6.18/                   # 26 patches for v6.18.5
+│   ├── 6.19-rc/                # 27 patches for v6.19-rc5
+│   └── nbd168/                 # 26 patches for nbd168/wireless
+├── dkms/                       # DKMS package (v1.2.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
 │   ├── dkms.conf               # DKMS configuration
@@ -160,7 +160,7 @@ The MT7925 WiFi driver has several critical bugs:
 - Processes stuck in D state (uninterruptible sleep)
 - Hangs during suspend/resume cycles
 
-## Patches (26-28 per kernel)
+## Patches (25-27 per kernel)
 
 | # | Patch | Category |
 |---|-------|----------|
