@@ -617,6 +617,17 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
 	 */
 	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
 
+	/* Cancel any pending roc_work from a previous async-aborted ROC.
+	 * This prevents a race where stale work could abort our new ROC:
+	 * 1. Previous ROC's roc_work clears ROC flag with test_and_clear
+	 * 2. Work blocks waiting for mutex
+	 * 3. abort_async called, sets abort flag
+	 * 4. New ROC starts here, clears abort flag, sets ROC flag
+	 * 5. Stale work gets mutex, calls mcu_abort_roc with NEW token
+	 * Safe to call here since we don't hold the mutex yet.
+	 */
+	cancel_work_sync(&phy->roc_work);
+
 	if (test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state))
 		return -EBUSY;
 
@@ -667,6 +678,11 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
 
 	/* Clear any stale abort flag from previous ROC abort_async calls */
 	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
+
+	/* Cancel any pending roc_work from a previous async-aborted ROC.
+	 * See comment in mt7925_set_roc for the race condition this prevents.
+	 */
+	cancel_work_sync(&phy->roc_work);
 
 	if (WARN_ON_ONCE(test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state)))
 		return -EBUSY;
