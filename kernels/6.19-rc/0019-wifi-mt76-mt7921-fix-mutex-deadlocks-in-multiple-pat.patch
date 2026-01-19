@@ -1,5 +1,5 @@
-From 9c3de777f6996d4d7197555f319a0d51893df731 Mon Sep 17 00:00:00 2001
-From: Zac <zac@zacbowling.com>
+From 5a999545abef0bfed3d029c70df6cd6c0a88f111 Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 10:11:17 -0800
 Subject: [PATCH 19/24] wifi: mt76: mt7921: fix mutex deadlocks in multiple
  paths

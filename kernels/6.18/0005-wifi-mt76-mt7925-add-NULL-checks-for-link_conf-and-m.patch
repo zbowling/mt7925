@@ -1,4 +1,4 @@
-From 55ed45976c309243ebceb0f51a1588983cfff2b9 Mon Sep 17 00:00:00 2001
+From 5db19cf6daa0ced590195880dd9896bbb2c89b6d Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:10:57 -0800
 Subject: [PATCH 05/23] wifi: mt76: mt7925: add NULL checks for link_conf and

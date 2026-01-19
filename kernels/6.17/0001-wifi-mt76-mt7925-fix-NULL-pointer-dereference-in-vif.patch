@@ -1,4 +1,4 @@
-From 8b519f5cf43d68113f31accf4e42b4319eff2c19 Mon Sep 17 00:00:00 2001
+From a5dd27860bfc87499ef46edbb663c2bc8ae07f64 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 15:42:18 -0800
 Subject: [PATCH 01/23] wifi: mt76: mt7925: fix NULL pointer dereference in vif

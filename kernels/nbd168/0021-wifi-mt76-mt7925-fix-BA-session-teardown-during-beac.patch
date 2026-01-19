@@ -1,5 +1,5 @@
-From da60e74120907c8fd2fcdf9ec87b26b20fbd28b2 Mon Sep 17 00:00:00 2001
-From: Zac <zac@zacbowling.com>
+From d85124e4e3d509d5b6462d5de36888f49048c8c8 Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 16:35:55 -0800
 Subject: [PATCH 21/24] wifi: mt76: mt7925: fix BA session teardown during
  beacon loss

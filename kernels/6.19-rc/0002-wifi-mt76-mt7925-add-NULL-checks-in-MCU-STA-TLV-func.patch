@@ -1,4 +1,4 @@
-From 335744f0b4d090a3fef81260ef88b007bfa70269 Mon Sep 17 00:00:00 2001
+From fe5fd31209a987eb11a2b57f3192e048f2db3c37 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:09:05 -0800
 Subject: [PATCH 02/24] wifi: mt76: mt7925: add NULL checks in MCU STA TLV

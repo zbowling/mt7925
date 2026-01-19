@@ -1,5 +1,5 @@
-From 9028c99ba03b37913958050f8f5b55350c9e54b8 Mon Sep 17 00:00:00 2001
-From: Zac <zac@zacbowling.com>
+From b74d48c46f9ee22a63cefed592aea2ac598302c7 Mon Sep 17 00:00:00 2001
+From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 19:58:05 -0800
 Subject: [PATCH 18/23] wifi: mt76: mt7921: fix mutex handling in multiple
  paths

@@ -1,4 +1,4 @@
-From 66162b691f13dc7a0e60e981c898e202b492a9a1 Mon Sep 17 00:00:00 2001
+From 77520471e43d091f9fac95e99ab28c0b79520996 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:07:57 -0800
 Subject: [PATCH 15/24] wifi: mt76: mt792x: fix firmware reload failure after

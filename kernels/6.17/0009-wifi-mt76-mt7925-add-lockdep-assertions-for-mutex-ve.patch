@@ -1,4 +1,4 @@
-From 5c4f312a9371cfeb0173c1bfafd85b0a07fabf07 Mon Sep 17 00:00:00 2001
+From 133a8abfc6d0c7c6e04245707c4dd93271f650eb Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 21:31:51 -0800
 Subject: [PATCH 09/23] wifi: mt76: mt7925: add lockdep assertions for mutex
