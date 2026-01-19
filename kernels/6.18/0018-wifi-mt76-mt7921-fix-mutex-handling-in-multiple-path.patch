@@ -1,7 +1,7 @@
 From 9028c99ba03b37913958050f8f5b55350c9e54b8 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 19:58:05 -0800
-Subject: [PATCH 18/21] wifi: mt76: mt7921: fix mutex handling in multiple
+Subject: [PATCH 18/23] wifi: mt76: mt7921: fix mutex handling in multiple
  paths
 
 Fix mutex handling to prevent deadlocks:
@@ -45,13 +45,13 @@ index bce26389ab..566a378941 100644
 +	mt792x_mutex_release(dev);
  	mt76_connac_power_save_sched(&dev->mt76.phy, pm);
  }
-
+ 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/main.c b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 index 67383c41a3..91b484738d 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 @@ -373,6 +373,11 @@ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
-
+ 
  	timer_delete_sync(&phy->roc_timer);
  	cancel_work_sync(&phy->roc_work);
 +	/* Note: caller must hold mutex if ieee80211_iterate_interfaces is
@@ -64,7 +64,7 @@ index 67383c41a3..91b484738d 100644
  					     IEEE80211_IFACE_ITER_RESUME_ALL,
 @@ -619,6 +624,7 @@ void mt7921_set_runtime_pm(struct mt792x_dev *dev)
  	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
-
+ 
  	pm->enable = pm->enable_user && !monitor;
 +	/* Note: caller (debugfs) must hold mutex before calling this function */
  	ieee80211_iterate_active_interfaces(hw,
@@ -77,11 +77,11 @@ index a0c9df3c2c..9c8357e275 100644
 @@ -426,7 +426,9 @@ static int mt7921_pci_suspend(struct device *device)
  	cancel_delayed_work_sync(&pm->ps_work);
  	cancel_work_sync(&pm->wake_work);
-
+ 
 +	mt792x_mutex_acquire(dev);
  	mt7921_roc_abort_sync(dev);
 +	mt792x_mutex_release(dev);
-
+ 
  	err = mt792x_mcu_drv_pmctrl(dev);
  	if (err < 0)
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c b/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
@@ -91,13 +91,13 @@ index d8d36b3c30..2e2932e8d9 100644
 @@ -219,7 +219,9 @@ static int mt7921s_suspend(struct device *__dev)
  	cancel_delayed_work_sync(&pm->ps_work);
  	cancel_work_sync(&pm->wake_work);
-
+ 
 +	mt792x_mutex_acquire(dev);
  	mt7921_roc_abort_sync(dev);
 +	mt792x_mutex_release(dev);
-
+ 
  	err = mt792x_mcu_drv_pmctrl(dev);
  	if (err < 0)
---
+-- 
 2.52.0
 

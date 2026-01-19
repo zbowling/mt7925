@@ -1,7 +1,7 @@
 From 449d5c21e04ca7571455a8965a24c4de5a997500 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 16:35:55 -0800
-Subject: [PATCH 20/21] wifi: mt76: mt7925: fix BA session teardown during
+Subject: [PATCH 20/23] wifi: mt76: mt7925: fix BA session teardown during
  beacon loss
 
 The ieee80211_stop_tx_ba_cb_irqsafe() callback was conditionally called
@@ -45,6 +45,6 @@ index 869f75f309..ca48472552 100644
  		break;
  	}
  	mt792x_mutex_release(dev);
---
+-- 
 2.52.0
 

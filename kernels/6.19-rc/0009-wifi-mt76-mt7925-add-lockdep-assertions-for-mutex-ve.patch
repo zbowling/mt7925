@@ -1,7 +1,7 @@
 From 9fc5a3a71be7f3ea38b04db34d319515409e9ba5 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 21:31:51 -0800
-Subject: [PATCH 09/22] wifi: mt76: mt7925: add lockdep assertions for mutex
+Subject: [PATCH 09/24] wifi: mt76: mt7925: add lockdep assertions for mutex
  verification
 
 Add lockdep_assert_held() calls to critical MCU functions to help catch
@@ -28,16 +28,16 @@ index d61a7fbda7..958ff9da9f 100644
 @@ -1527,6 +1527,8 @@ int mt7925_mcu_uni_bss_ps(struct mt792x_dev *dev,
  		},
  	};
-
+ 
 +	lockdep_assert_held(&dev->mt76.mutex);
 +
  	if (link_conf->vif->type != NL80211_IFTYPE_STATION)
  		return -EOPNOTSUPP;
-
+ 
 @@ -2037,6 +2039,8 @@ int mt7925_mcu_sta_update(struct mt792x_dev *dev,
  	struct mt792x_sta *msta;
  	struct mt792x_link_sta *mlink;
-
+ 
 +	lockdep_assert_held(&dev->mt76.mutex);
 +
  	if (link_sta) {
@@ -46,12 +46,12 @@ index d61a7fbda7..958ff9da9f 100644
 @@ -2843,6 +2847,8 @@ int mt7925_mcu_add_bss_info(struct mt792x_phy *phy,
  	struct mt792x_link_sta *mlink_bc;
  	struct sk_buff *skb;
-
+ 
 +	lockdep_assert_held(&dev->mt76.mutex);
 +
  	skb = __mt7925_mcu_alloc_bss_req(&dev->mt76, &mconf->mt76,
  					 MT7925_BSS_UPDATE_MAX_SIZE);
  	if (IS_ERR(skb))
---
+-- 
 2.52.0
 

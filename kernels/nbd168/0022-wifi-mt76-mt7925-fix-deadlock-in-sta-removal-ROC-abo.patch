@@ -1,8 +1,8 @@
-From 867b7c67b3f84413395ee529765459d26a69cc32 Mon Sep 17 00:00:00 2001
+From 0bd3381893bb09091b4101c027b39af56a860e3f Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Fri, 16 Jan 2026 21:59:42 -0800
-Subject: [PATCH] wifi: mt76: mt7925: fix deadlock in sta removal ROC abort
- path
+Subject: [PATCH 22/24] wifi: mt76: mt7925: fix deadlock in sta removal ROC
+ abort path
 
 Fix a mutex deadlock that occurs during station removal when
 cancel_work_sync() is called while already holding the device mutex.
@@ -61,7 +61,7 @@ to acquire the mutex, it can clean up and exit without blocking. This
 breaks the deadlock chain while still ensuring proper ROC cleanup.
 
 Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 chips")
-Reported-by: ARitz Cracker <aritz-cracker@users.noreply.github.com>
+Reported-by: Aritz Beobide-Cardinal <aritz@aritzcracker.ca>
 Signed-off-by: Zac Bowling <zbowling@gmail.com>
 ---
  drivers/net/wireless/mediatek/mt76/mt76.h     |  1 +
@@ -145,6 +145,6 @@ index cc7ef2c170..d2d3539eeb 100644
  
  	mt76_connac_free_pending_tx_skbs(&dev->pm, &mlink->wcid);
  	mt76_connac_pm_wake(&dev->mphy, &dev->pm);
---
+-- 
 2.52.0
 

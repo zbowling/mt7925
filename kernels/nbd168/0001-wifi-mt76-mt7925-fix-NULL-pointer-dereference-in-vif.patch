@@ -1,7 +1,7 @@
 From 9d21ff7808ef87a15b80f6b6067a2d3138e3db21 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:03:12 -0800
-Subject: [PATCH 01/22] wifi: mt76: mt7925: fix NULL pointer dereference in vif
+Subject: [PATCH 01/24] wifi: mt76: mt7925: fix NULL pointer dereference in vif
  iteration
 
 mt792x_vif_to_bss_conf() can return NULL when iterating over valid_links
@@ -56,7 +56,7 @@ index 871b671019..184efe8afa 100644
 @@ -1271,6 +1271,12 @@ mt7925_vif_connect_iter(void *priv, u8 *mac,
  		bss_conf = mt792x_vif_to_bss_conf(vif, i);
  		mconf = mt792x_vif_to_link(mvif, i);
-
+ 
 +		/* Skip links that don't have bss_conf set up yet in mac80211.
 +		 * This can happen during HW reset when link state is inconsistent.
 +		 */
@@ -80,7 +80,7 @@ index 2d358a9664..3001a62a8b 100644
  	}
  	mt792x_mutex_release(dev);
 @@ -1630,6 +1632,8 @@ static void mt7925_ipv6_addr_change(struct ieee80211_hw *hw,
-
+ 
  	for_each_set_bit(i, &valid, IEEE80211_MLD_MAX_NUM_LINKS) {
  		bss_conf = mt792x_vif_to_bss_conf(vif, i);
 +		if (!bss_conf)
@@ -106,6 +106,6 @@ index 2d358a9664..3001a62a8b 100644
  					mt7925_mcu_uni_bss_ps(dev, bss_conf);
  				}
  			}
---
+-- 
 2.52.0
 

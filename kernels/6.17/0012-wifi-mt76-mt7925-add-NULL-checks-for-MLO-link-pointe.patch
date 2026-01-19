@@ -1,7 +1,7 @@
 From d4a8a6cbb31d1695637709565db5568b0df40a0d Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 5 Jan 2026 13:17:14 -0800
-Subject: [PATCH 12/21] wifi: mt76: mt7925: add NULL checks for MLO link
+Subject: [PATCH 12/23] wifi: mt76: mt7925: add NULL checks for MLO link
  pointers in MCU functions
 
 Several MCU functions dereference pointers returned by mt792x_sta_to_link()
@@ -29,7 +29,7 @@ index 737641e257..76bb0726c8 100644
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1037,6 +1037,8 @@ mt7925_mcu_sta_hdr_trans_tlv(struct sk_buff *skb,
  		struct mt792x_link_sta *mlink;
-
+ 
  		mlink = mt792x_sta_to_link(msta, link_sta->link_id);
 +		if (!mlink)
 +			return;
@@ -39,7 +39,7 @@ index 737641e257..76bb0726c8 100644
 @@ -1070,6 +1072,9 @@ int mt7925_mcu_wtbl_update_hdr_trans(struct mt792x_dev *dev,
  	link_sta = mt792x_sta_to_link_sta(vif, sta, link_id);
  	mconf = mt792x_vif_to_link(mvif, link_id);
-
+ 
 +	if (!mlink || !mconf)
 +		return -EINVAL;
 +
@@ -48,15 +48,15 @@ index 737641e257..76bb0726c8 100644
  					      MT7925_STA_UPDATE_MAX_SIZE);
 @@ -1701,6 +1706,8 @@ mt7925_mcu_sta_amsdu_tlv(struct sk_buff *skb,
  	amsdu->amsdu_en = true;
-
+ 
  	mlink = mt792x_sta_to_link(msta, link_sta->link_id);
 +	if (!mlink)
 +		return;
  	mlink->wcid.amsdu = true;
-
+ 
  	switch (link_sta->agg.max_amsdu_len) {
 @@ -1903,6 +1910,9 @@ mt7925_mcu_sta_mld_tlv(struct sk_buff *skb,
-
+ 
  		mconf = mt792x_vif_to_link(mvif, i);
  		mlink = mt792x_sta_to_link(msta, i);
 +		if (!mconf || !mlink)
@@ -64,16 +64,16 @@ index 737641e257..76bb0726c8 100644
 +
  		mld->link[cnt].wlan_id = cpu_to_le16(mlink->wcid.idx);
  		mld->link[cnt++].bss_idx = mconf->mt76.idx;
-
+ 
 @@ -1995,7 +2005,7 @@ int mt7925_mcu_sta_update(struct mt792x_dev *dev,
  		.rcpi = to_rcpi(rssi),
  	};
  	struct mt792x_sta *msta;
 -	struct mt792x_link_sta *mlink;
 +	struct mt792x_link_sta *mlink = NULL;
-
+ 
  	lockdep_assert_held(&dev->mt76.mutex);
-
+ 
 @@ -2003,7 +2013,7 @@ int mt7925_mcu_sta_update(struct mt792x_dev *dev,
  		msta = (struct mt792x_sta *)link_sta->sta->drv_priv;
  		mlink = mt792x_sta_to_link(msta, link_sta->link_id);
@@ -81,8 +81,8 @@ index 737641e257..76bb0726c8 100644
 -	info.wcid = link_sta ? &mlink->wcid : &mvif->sta.deflink.wcid;
 +	info.wcid = (link_sta && mlink) ? &mlink->wcid : &mvif->sta.deflink.wcid;
  	info.newly = state != MT76_STA_INFO_STATE_ASSOC;
-
+ 
  	return mt7925_mcu_sta_cmd(&dev->mphy, &info);
---
+-- 
 2.52.0
 
