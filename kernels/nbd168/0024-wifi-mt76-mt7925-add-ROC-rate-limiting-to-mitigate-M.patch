@@ -1,4 +1,4 @@
-From 941c4fc214b8cf8d014a44455c91ac185db3a9c1 Mon Sep 17 00:00:00 2001
+From 69ba067df129557c88fd4269d9a84520ff2127ae Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 12:32:01 -0800
 Subject: [PATCH 24/24] wifi: mt76: mt7925: add ROC rate limiting to mitigate
@@ -46,15 +46,15 @@ Upstream Bug Reports Needed:
 
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
- .../net/wireless/mediatek/mt76/mt7925/main.c  | 99 +++++++++++++++++++
- drivers/net/wireless/mediatek/mt76/mt792x.h   |  7 ++
- 2 files changed, 106 insertions(+)
+ .../net/wireless/mediatek/mt76/mt7925/main.c  | 117 +++++++++++++++++-
+ drivers/net/wireless/mediatek/mt76/mt792x.h   |   7 ++
+ 2 files changed, 120 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 152a990621..f0aeb7bf4b 100644
+index 152a990621..c4f0faa673 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-@@ -534,14 +534,90 @@ static int mt7925_abort_roc(struct mt792x_phy *phy,
+@@ -534,14 +534,97 @@ static int mt7925_abort_roc(struct mt792x_phy *phy,
  	return err;
  }
  
@@ -142,10 +142,17 @@ index 152a990621..f0aeb7bf4b 100644
 +		}
 +	}
 +
++	/* Clear any stale abort flag from previous ROC abort_async calls.
++	 * If abort_async was called but roc_work never ran (timer was cancelled
++	 * before firing), the abort flag would be stale and incorrectly abort
++	 * this new ROC session.
++	 */
++	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
++
  	if (test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state))
  		return -EBUSY;
  
-@@ -557,7 +633,11 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
+@@ -557,7 +640,11 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
  	if (!wait_event_timeout(phy->roc_wait, phy->roc_grant, 4 * HZ)) {
  		mt7925_mcu_abort_roc(phy, mconf, phy->roc_token_id);
  		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
@@ -157,7 +164,7 @@ index 152a990621..f0aeb7bf4b 100644
  	}
  
  out:
-@@ -568,8 +648,24 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
+@@ -568,8 +655,27 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
  			      struct mt792x_bss_conf *mconf,
  			      u16 sel_links)
  {
@@ -179,10 +186,13 @@ index 152a990621..f0aeb7bf4b 100644
 +		}
 +	}
 +
++	/* Clear any stale abort flag from previous ROC abort_async calls */
++	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
++
  	if (WARN_ON_ONCE(test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state)))
  		return -EBUSY;
  
-@@ -584,7 +680,10 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
+@@ -584,7 +690,10 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
  	if (!wait_event_timeout(phy->roc_wait, phy->roc_grant, 4 * HZ)) {
  		mt7925_mcu_abort_roc(phy, mconf, phy->roc_token_id);
  		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
@@ -193,6 +203,25 @@ index 152a990621..f0aeb7bf4b 100644
  	}
  
  out:
+@@ -908,14 +1017,14 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
+ 	if (!mlink)
+ 		return -EINVAL;
+ 
+-	idx = mt76_wcid_alloc(dev->mt76.wcid_mask, MT792x_WTBL_STA - 1);
+-	if (idx < 0)
+-		return -ENOSPC;
+-
+ 	mconf = mt792x_vif_to_link(mvif, link_id);
+ 	if (!mconf)
+ 		return -EINVAL;
+ 
++	idx = mt76_wcid_alloc(dev->mt76.wcid_mask, MT792x_WTBL_STA - 1);
++	if (idx < 0)
++		return -ENOSPC;
++
+ 	mt76_wcid_init(&mlink->wcid, 0);
+ 	mlink->wcid.sta = 1;
+ 	mlink->wcid.idx = idx;
 diff --git a/drivers/net/wireless/mediatek/mt76/mt792x.h b/drivers/net/wireless/mediatek/mt76/mt792x.h
 index 8388638ed5..d9c1ea7093 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt792x.h
