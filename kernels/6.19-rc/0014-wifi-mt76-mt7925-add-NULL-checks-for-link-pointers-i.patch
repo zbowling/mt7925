@@ -1,7 +1,7 @@
 From d8f9d7e3f5df0d65f111296e4506da8072a6a969 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 5 Jan 2026 13:19:02 -0800
-Subject: [PATCH 14/22] wifi: mt76: mt7925: add NULL checks for link pointers
+Subject: [PATCH 14/24] wifi: mt76: mt7925: add NULL checks for link pointers
  in sta_add and conf_tx
 
 Add NULL pointer checks for mt792x_sta_to_link() and mt792x_vif_to_link()
@@ -21,16 +21,16 @@ index 1a6e30e897..03fbbd4880 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -869,12 +869,17 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
-
+ 
  	msta = (struct mt792x_sta *)link_sta->sta->drv_priv;
  	mlink = mt792x_sta_to_link(msta, link_id);
 +	if (!mlink)
 +		return -EINVAL;
-
+ 
  	idx = mt76_wcid_alloc(dev->mt76.wcid_mask, MT792x_WTBL_STA - 1);
  	if (idx < 0)
  		return -ENOSPC;
-
+ 
  	mconf = mt792x_vif_to_link(mvif, link_id);
 +	if (!mconf)
 +		return -EINVAL;
@@ -41,13 +41,13 @@ index 1a6e30e897..03fbbd4880 100644
 @@ -1733,6 +1738,9 @@ mt7925_conf_tx(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
  		    [IEEE80211_AC_BK] = 1,
  	};
-
+ 
 +	if (!mconf)
 +		return -EINVAL;
 +
  	/* firmware uses access class index */
  	mconf->queue_params[mq_to_aci[queue]] = *params;
-
---
+ 
+-- 
 2.52.0
 

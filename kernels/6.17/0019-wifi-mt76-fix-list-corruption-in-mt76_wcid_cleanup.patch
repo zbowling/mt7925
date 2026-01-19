@@ -1,7 +1,7 @@
 From aeab9e823039beec688abc311b73c21479ac3e19 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 16:28:26 -0800
-Subject: [PATCH 19/21] wifi: mt76: fix list corruption in mt76_wcid_cleanup
+Subject: [PATCH 19/23] wifi: mt76: fix list corruption in mt76_wcid_cleanup
 
 mt76_wcid_cleanup() was not removing wcid entries from sta_poll_list
 before mt76_reset_device() reinitializes the master list. This leaves
@@ -26,9 +26,9 @@ index 4fa045e87a..b773110036 100644
 --- a/drivers/net/wireless/mediatek/mt76/mac80211.c
 +++ b/drivers/net/wireless/mediatek/mt76/mac80211.c
 @@ -1709,6 +1709,16 @@ void mt76_wcid_cleanup(struct mt76_dev *dev, struct mt76_wcid *wcid)
-
+ 
  	idr_destroy(&wcid->pktid);
-
+ 
 +	/* Remove from sta_poll_list to prevent list corruption after reset.
 +	 * Without this, mt76_reset_device() reinitializes sta_poll_list but
 +	 * leaves wcid->poll_list with stale pointers, causing list corruption
@@ -40,8 +40,8 @@ index 4fa045e87a..b773110036 100644
 +	spin_unlock_bh(&dev->sta_poll_lock);
 +
  	spin_lock_bh(&phy->tx_lock);
-
+ 
  	if (!list_empty(&wcid->tx_list))
---
+-- 
 2.52.0
 

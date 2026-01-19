@@ -1,7 +1,7 @@
 From 3bc31856ef93f3ace5b5d6f1de5c07c125dd79dc Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:04:53 -0800
-Subject: [PATCH 10/22] wifi: mt76: mt792x: fix NULL pointer dereference in TX
+Subject: [PATCH 10/24] wifi: mt76: mt792x: fix NULL pointer dereference in TX
  path
 
 Add NULL pointer checks in mt792x_tx() to prevent kernel crashes when
@@ -51,7 +51,7 @@ index f2ed16feb6..9dc768aa8b 100644
 +			goto free_skb;
  		wcid = &mlink->wcid;
  	}
-
+ 
 @@ -113,9 +115,12 @@ void mt792x_tx(struct ieee80211_hw *hw, struct ieee80211_tx_control *control,
  		link_id = wcid->link_id;
  		rcu_read_lock();
@@ -65,11 +65,11 @@ index f2ed16feb6..9dc768aa8b 100644
 +		}
 +		memcpy(hdr->addr2, conf->addr, ETH_ALEN);
  		memcpy(hdr->addr1, link_sta->addr, ETH_ALEN);
-
+ 
  		if (vif->type == NL80211_IFTYPE_STATION)
 @@ -136,6 +141,10 @@ void mt792x_tx(struct ieee80211_hw *hw, struct ieee80211_tx_control *control,
  	}
-
+ 
  	mt76_connac_pm_queue_skb(hw, &dev->pm, wcid, skb);
 +	return;
 +
@@ -77,7 +77,7 @@ index f2ed16feb6..9dc768aa8b 100644
 +	ieee80211_free_txskb(hw, skb);
  }
  EXPORT_SYMBOL_GPL(mt792x_tx);
-
---
+ 
+-- 
 2.52.0
 

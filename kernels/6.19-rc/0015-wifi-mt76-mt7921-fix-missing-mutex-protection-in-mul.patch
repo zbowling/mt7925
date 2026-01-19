@@ -1,7 +1,7 @@
 From c210dc1dc53805969e9959efc11274abc4ee0dc0 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 19:58:05 -0800
-Subject: [PATCH 15/22] wifi: mt76: mt7921: fix missing mutex protection in
+Subject: [PATCH 15/24] wifi: mt76: mt7921: fix missing mutex protection in
  multiple paths
 
 Add mt792x_mutex_acquire/release around ieee80211_iterate_active_interfaces()
@@ -37,13 +37,13 @@ index 03b4960db7..4f7e504f53 100644
 +	mt792x_mutex_release(dev);
  	mt76_connac_power_save_sched(&dev->mt76.phy, pm);
  }
-
+ 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/main.c b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 index 5fae9a6e27..6160e78583 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 @@ -373,10 +373,12 @@ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
-
+ 
  	timer_delete_sync(&phy->roc_timer);
  	cancel_work_sync(&phy->roc_work);
 +	mt792x_mutex_acquire(dev);
@@ -54,10 +54,10 @@ index 5fae9a6e27..6160e78583 100644
 +	mt792x_mutex_release(dev);
  }
  EXPORT_SYMBOL_GPL(mt7921_roc_abort_sync);
-
+ 
 @@ -619,9 +621,11 @@ void mt7921_set_runtime_pm(struct mt792x_dev *dev)
  	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
-
+ 
  	pm->enable = pm->enable_user && !monitor;
 +	mt792x_mutex_acquire(dev);
  	ieee80211_iterate_active_interfaces(hw,
@@ -67,6 +67,6 @@ index 5fae9a6e27..6160e78583 100644
  	pm->ds_enable = pm->ds_enable_user && !monitor;
  	mt76_connac_mcu_set_deep_sleep(&dev->mt76, pm->ds_enable);
  }
---
+-- 
 2.52.0
 

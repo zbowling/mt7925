@@ -1,7 +1,7 @@
 From fb6f9f0fda6eb84cca35663600ff1d2a7ae45f88 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:10:32 -0800
-Subject: [PATCH 17/22] wifi: mt76: mt7925: add mutex protection in runtime PM
+Subject: [PATCH 17/24] wifi: mt76: mt7925: add mutex protection in runtime PM
  iteration
 
 Add mt792x_mutex_acquire/release around ieee80211_iterate_active_interfaces()
@@ -19,7 +19,7 @@ index 03fbbd4880..d687eda4e1 100644
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -764,9 +764,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)
  	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
-
+ 
  	pm->enable = pm->enable_user && !monitor;
 +	mt792x_mutex_acquire(dev);
  	ieee80211_iterate_active_interfaces(hw,
@@ -29,6 +29,6 @@ index 03fbbd4880..d687eda4e1 100644
  	pm->ds_enable = pm->ds_enable_user && !monitor;
  	mt7925_mcu_set_deep_sleep(dev, pm->ds_enable);
  }
---
+-- 
 2.52.0
 

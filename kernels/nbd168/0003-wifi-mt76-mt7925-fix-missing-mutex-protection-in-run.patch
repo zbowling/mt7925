@@ -1,7 +1,7 @@
 From 869ebcdd2def88368106b5fa1c91d4702d59508d Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Sun, 4 Jan 2026 16:03:43 -0800
-Subject: [PATCH 03/22] wifi: mt76: mt7925: fix missing mutex protection in
+Subject: [PATCH 03/24] wifi: mt76: mt7925: fix missing mutex protection in
  runtime PM and MLO PM
 
 Two additional code paths iterate over active interfaces and call MCU
@@ -42,7 +42,7 @@ index 3001a62a8b..9f17b21aef 100644
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -751,9 +751,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)
  	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
-
+ 
  	pm->enable = pm->enable_user && !monitor;
 +	mt792x_mutex_acquire(dev);
  	ieee80211_iterate_active_interfaces(hw,
@@ -55,7 +55,7 @@ index 3001a62a8b..9f17b21aef 100644
 @@ -1301,14 +1303,12 @@ mt7925_mlo_pm_iter(void *priv, u8 *mac, struct ieee80211_vif *vif)
  	if (mvif->mlo_pm_state != MT792x_MLO_CHANGED_PS)
  		return;
-
+ 
 -	mt792x_mutex_acquire(dev);
  	for_each_set_bit(i, &valid, IEEE80211_MLD_MAX_NUM_LINKS) {
  		bss_conf = mt792x_vif_to_bss_conf(vif, i);
@@ -65,20 +65,20 @@ index 3001a62a8b..9f17b21aef 100644
  	}
 -	mt792x_mutex_release(dev);
  }
-
+ 
  void mt7925_mlo_pm_work(struct work_struct *work)
 @@ -1317,9 +1317,11 @@ void mt7925_mlo_pm_work(struct work_struct *work)
  					      mlo_pm_work.work);
  	struct ieee80211_hw *hw = mt76_hw(dev);
-
+ 
 +	mt792x_mutex_acquire(dev);
  	ieee80211_iterate_active_interfaces(hw,
  					    IEEE80211_IFACE_ITER_RESUME_ALL,
  					    mt7925_mlo_pm_iter, dev);
 +	mt792x_mutex_release(dev);
  }
-
+ 
  void mt7925_scan_work(struct work_struct *work)
---
+-- 
 2.52.0
 

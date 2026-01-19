@@ -1,7 +1,7 @@
 From 03289d96c5b2bb45eccd7f1cad2652af5056ba6b Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:45:45 -0800
-Subject: [PATCH 18/22] wifi: mt76: mt7921: fix missing mutex protection in
+Subject: [PATCH 18/24] wifi: mt76: mt7921: fix missing mutex protection in
  multiple paths
 
 Add mt792x_mutex_acquire/release around ieee80211_iterate_*() calls in
@@ -36,13 +36,13 @@ index 03b4960db7..f5c882e45b 100644
 +	mt792x_mutex_release(dev);
  	mt76_connac_power_save_sched(&dev->mt76.phy, pm);
  }
-
+ 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/main.c b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 index 5fae9a6e27..8fc3770d1b 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 @@ -373,10 +373,13 @@ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
-
+ 
  	timer_delete_sync(&phy->roc_timer);
  	cancel_work_sync(&phy->roc_work);
 -	if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
@@ -55,10 +55,10 @@ index 5fae9a6e27..8fc3770d1b 100644
 +	}
  }
  EXPORT_SYMBOL_GPL(mt7921_roc_abort_sync);
-
+ 
 @@ -619,9 +622,11 @@ void mt7921_set_runtime_pm(struct mt792x_dev *dev)
  	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
-
+ 
  	pm->enable = pm->enable_user && !monitor;
 +	mt792x_mutex_acquire(dev);
  	ieee80211_iterate_active_interfaces(hw,
@@ -71,15 +71,15 @@ index 5fae9a6e27..8fc3770d1b 100644
 @@ -765,9 +770,11 @@ mt7921_regd_set_6ghz_power_type(struct ieee80211_vif *vif, bool is_add)
  	struct mt792x_dev *dev = phy->dev;
  	u32 valid_vif_num = 0;
-
+ 
 +	mt792x_mutex_acquire(dev);
  	ieee80211_iterate_active_interfaces(mt76_hw(dev),
  					    IEEE80211_IFACE_ITER_RESUME_ALL,
  					    mt7921_calc_vif_num, &valid_vif_num);
 +	mt792x_mutex_release(dev);
-
+ 
  	if (valid_vif_num > 1) {
  		phy->power_type = MT_AP_DEFAULT;
---
+-- 
 2.52.0
 
