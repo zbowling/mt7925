@@ -10,9 +10,10 @@ The MT7925 WiFi 7 driver is part of the mt76 driver family in the Linux kernel. 
 
 | Version | Tag | Patches | Status |
 |---------|-----|---------|--------|
-| 6.17.x | v6.17.13 | 17 patches | EOL but still used (Fedora 41, older Arch) |
-| 6.18.x | v6.18.5 | 18 patches | **Current stable** - Arch, Fedora 42 |
-| 6.19-rcX | v6.19-rc5 | 18 patches | Release candidate - bleeding edge |
+| 6.17.x | v6.17.13 | 24 patches | EOL but still used (Fedora 41, older Arch) |
+| 6.18.x | v6.18.5 | 25 patches | **Current stable** - Arch, Fedora 42 |
+| 6.19-rcX | v6.19-rc5 | 26 patches | Release candidate - bleeding edge |
+| nbd168 | wireless-next | 25 patches | OpenWRT staging tree |
 
 ## Key Differences Between Versions
 
@@ -78,6 +79,25 @@ These patches add proper error checking for MCU command responses:
 ### Lockdep Assertions
 Debug assertions to verify mutex is held when expected. Uniform across versions.
 
+### ROC (Remain On Channel) Fixes
+Critical fixes for ROC state machine issues:
+
+- **ROC Timer Race During Suspend** (patch 22/23): Cancels ROC timer and work in `mt7925_suspend()` before mac80211 finishes quiescing, preventing warnings and inconsistent state on resume.
+
+- **Deadlock in STA Removal ROC Abort** (patch 21/22): Fixes potential deadlock in `mt7925_sta_remove_links()` where `mt7925_abort_roc()` was called without proper mutex handling.
+
+- **ROC Rate Limiting** (patch 23/24): Adds exponential backoff rate limiting for ROC commands to prevent MCU overload during rapid reconnection cycles (especially MLO authentication failures).
+
+- **ROC Work Deadlock** (patch 24/25): Moves `cancel_work_sync(&phy->roc_work)` from inside `mt7925_set_roc()` to callers BEFORE mutex acquisition, preventing deadlock when roc_work is waiting for the mutex.
+
+### Resource Leak Fixes
+- **WCID Table Leak** (patch 24/25): Adds proper error cleanup path in `mt7925_mac_link_sta_add()` that clears the wcid pointer and frees the allocated index on failure, preventing WCID table exhaustion.
+
+- **List Corruption in WCID Cleanup** (patch 20): Fixes `mt76_wcid_cleanup()` to remove entries from `sta_poll_list` before reset, preventing list corruption when `mt76_wcid_add_poll()` later tries to add the entry back.
+
+### BA Session Handling
+- **BA Session Teardown During Beacon Loss** (patch 21): Fixes race condition between BA session teardown and beacon loss handling that could cause system hangs.
+
 ## How to Port Patches to New Kernel Versions
 
 When a new kernel is released:
@@ -139,9 +159,17 @@ When a new kernel is released:
 | `mt7925_set_runtime_pm` | main.c | Mutex protection |
 | `mt7925_mlo_pm_work` | main.c | Mutex protection |
 | `_mt7925_pci_resume` | pci.c | Mutex protection |
-| `mt7925_mac_link_sta_add` | main.c | NULL checks |
+| `mt7925_mac_link_sta_add` | main.c | NULL checks, WCID leak fix |
 | `mt7925_conf_tx` | main.c | NULL checks |
 | `mt76_connac_mcu_sta_tlv` | mcu.c | NULL checks |
+| `mt7925_set_roc` | main.c | Deadlock fix, rate limiting |
+| `mt7925_set_mlo_roc` | main.c | Deadlock fix, rate limiting |
+| `mt7925_remain_on_channel` | main.c | Deadlock fix |
+| `mt7925_mgd_prepare_tx` | main.c | Deadlock fix |
+| `mt7925_change_vif_links` | main.c | Deadlock fix |
+| `mt7925_suspend` | main.c | ROC timer race fix |
+| `mt7925_sta_remove_links` | main.c | ROC abort deadlock |
+| `mt76_wcid_cleanup` | mac80211.c | List corruption fix |
 | Various MLO functions | main.c, mcu.c | NULL checks |
 
 ## Testing

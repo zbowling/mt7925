@@ -11,6 +11,59 @@ The mt76 driver uses several synchronization primitives:
 3. **Atomic state bits** - `MT76_STATE_*` flags for lightweight synchronization
 4. **RCU** - Read-Copy-Update for link/station data structures
 
+## Deadlock Classification
+
+Understanding the different types of deadlocks helps in identifying and fixing them:
+
+### Type 1: Recursive Lock (AA Deadlock)
+
+**Definition:** Same thread tries to acquire the same non-recursive lock twice.
+
+```
+Thread A:
+  mutex_lock(&lock)       ← Acquires lock
+  ...
+    some_function()
+      mutex_lock(&lock)   ← DEADLOCK: same thread, same lock
+```
+
+**Fix:** Create `_nolock()` or `__` prefixed variants that assume lock is already held.
+
+### Type 2: Lock Ordering Violation (AB-BA Deadlock)
+
+**Definition:** Two threads acquire two locks in opposite order.
+
+```
+Thread A:                    Thread B:
+  mutex_lock(&lock_A)          mutex_lock(&lock_B)
+  mutex_lock(&lock_B) ←WAIT    mutex_lock(&lock_A) ←WAIT
+         ↑                            ↑
+         +-------- DEADLOCK ----------+
+```
+
+**Fix:** Establish consistent lock ordering - always acquire in same order.
+
+### Type 3: Lock + Synchronization Deadlock
+
+**Definition:** Thread holds lock while waiting for another thread/work that needs the same lock. This involves a mutex plus a synchronization primitive like `cancel_work_sync()`, `wait_for_completion()`, or `flush_work()`.
+
+```
+Thread A (holds lock):           Thread B (work/completion):
+  mutex_lock(&lock)
+  ...
+  cancel_work_sync(&work) ←WAIT    mutex_lock(&lock) ←WAIT
+         ↑                                ↑
+         +---------- DEADLOCK ------------+
+```
+
+This is **NOT** a recursive lock (different threads) and **NOT** a classic AB-BA (only one lock). It's a deadlock through synchronization - Thread A waits for Thread B to complete, but Thread B needs the lock that Thread A holds.
+
+**Fixes:**
+1. Use non-blocking cancel: `cancel_work()` instead of `cancel_work_sync()`
+2. Check a flag before acquiring lock, exit early if abort requested
+3. Release lock before calling synchronization functions
+4. Restructure to avoid holding lock while waiting
+
 ## The Main Mutex: `dev->mt76.mutex`
 
 ### Acquisition Patterns
@@ -110,37 +163,79 @@ Both works try to cancel each other with `_sync`, causing circular wait.
 + cancel_delayed_work(&mphy->mac_work);
 ```
 
-### Pattern 2: ROC Work Deadlock
+### Pattern 2: ROC Work Deadlock (Type 3: Lock + Synchronization)
+
+This is a **Lock + Synchronization deadlock** (Type 3), not a recursive lock or AB-BA.
 
 **The Bug:**
 ```c
-// Station removal path holds mutex
+// Station removal path - called with mutex already held by mt76_sta_remove()
 mt7925_mac_link_sta_remove() {
-    mt792x_mutex_acquire(dev);        // Holds mutex
+    // NOTE: mutex already held by caller (mt76_sta_remove)
     mt7925_roc_abort_sync(dev);       // Calls cancel_work_sync
 }
 
-// ROC work needs mutex
+void mt7925_roc_abort_sync() {
+    cancel_work_sync(&phy->roc_work); // BLOCKS waiting for roc_work
+}
+
+// ROC work runs on workqueue (different thread)
 mt7925_roc_work() {
-    mt792x_mutex_acquire(dev);        // Waits for mutex
+    mt792x_mutex_acquire(dev);        // BLOCKED: mutex held by sta_remove
     // ...
 }
 ```
 
-**The Fix (Sean Wang):**
+**The deadlock:**
+```
+Thread A (sta_remove):              Thread B (workqueue - roc_work):
+  mutex_lock(&dev->mutex)  ← HOLDS
+  ...
+    mt7925_roc_abort_sync()
+      cancel_work_sync()   ← WAITS     mt792x_mutex_acquire() ← WAITS
+            ↑                                    ↑
+            +----------- DEADLOCK ---------------+
+```
+
+Thread A holds mutex, waits for Thread B (via cancel_work_sync).
+Thread B needs mutex held by Thread A. Neither can proceed.
+
+**Fix Option 1 (Sean Wang - upstream):** Use non-blocking cancel
 ```c
 void mt7925_roc_abort_sync(struct mt792x_dev *dev) {
-    // Early exit if ROC not active
     if (!test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
         return;
-    
-    // Use non-blocking cancel
 -   cancel_work_sync(&phy->roc_work);
-+   cancel_work(&phy->roc_work);
-    
-    // Continue with cleanup...
++   cancel_work(&phy->roc_work);  // Non-blocking
 }
 ```
+
+**Fix Option 2 (Our patch 0021/0022):** Async abort with early-exit flag
+```c
+// New async version - safe to call while holding mutex
+void mt7925_roc_abort_async(struct mt792x_dev *dev) {
+    set_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);  // Signal abort
+    clear_bit(MT76_STATE_ROC, &phy->mt76->state);
+    timer_delete(&phy->roc_timer);
+    // Do NOT call cancel_work_sync - would deadlock
+}
+
+// Work checks flag BEFORE trying to acquire mutex
+void mt7925_roc_work(struct work_struct *work) {
+    // Early exit if abort requested - avoids acquiring mutex
+    if (test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state)) {
+        clear_bit(MT76_STATE_ROC, &phy->mt76->state);
+        ieee80211_remain_on_channel_expired(phy->mt76->hw);
+        return;  // Exit WITHOUT touching mutex
+    }
+
+    // Normal path - safe to acquire mutex
+    mt792x_mutex_acquire(dev);
+    // ...
+}
+```
+
+This breaks the deadlock because `roc_work` can complete without blocking on the mutex when abort is requested.
 
 ### Pattern 3: Interface Iteration Without Mutex
 
