@@ -1,0 +1,244 @@
+# MT7925 Issue Report: MLO Authentication/Key Setup Failures
+# Date: 2026-01-19 08:45 - 09:10 PST
+# Kernel: 6.18.6-2-cachyos (CachyOS)
+# Hardware: Framework Laptop 16 (AMD Ryzen AI 300 Series)
+# DKMS: mt76-mt7925/1.1.0 with patches applied
+
+## Summary
+
+Repeated MLO (Multi-Link Operation) authentication and key setup failures on
+WiFi 7 network causing connection instability. Multiple MCU command timeouts
+(primarily ROC - Remain On Channel) triggering firmware resets. Issue occurs
+during MLO link establishment and Fast Transition (802.11r) roaming.
+
+Single-link WiFi 7 (EHT without MLO) works correctly on same hardware/AP.
+
+## Symptoms
+
+1. Repeated disconnections and reconnections on MLO-capable network
+2. MCU command timeouts (ROC, BAND_CONFIG, SCAN_REQ)
+3. Firmware resets every few minutes
+4. wpa_supplicant errors about MLO key handling
+5. Fast Transition (FT/802.11r) failures
+
+## Hardware/Firmware Info
+
+Device: mt7925e 0000:bf:00.0
+ASIC revision: 79250000
+HW/SW Version: 0x8a108a10
+Build Time: 20260106153007a
+WM Firmware Version: ____000000
+Firmware Build Time: 20260106153120
+
+## Network Configuration
+
+SSID: "Pfizer 5G Implant" / "Winternet is coming" (same AP, different bands)
+AP: Ubiquiti UniFi with WiFi 7 / MLO support
+Bands: 2.4 GHz, 5 GHz (5280 MHz), 6 GHz (6135 MHz)
+MLO: Enabled (multi-link across 5 GHz + 6 GHz)
+802.11r: Enabled (Fast Transition)
+
+## Error Timeline
+
+### MCU Command Timeouts (ROC most frequent)
+
+08:45:05 - Message 00020027 (MCU_UNI_CMD_ROC) timeout -> firmware reset
+08:50:48 - Message 00020027 (MCU_UNI_CMD_ROC) timeout
+08:50:51 - Message 00020008 (MCU_UNI_CMD_BAND_CONFIG) timeout -> firmware reset
+08:56:34 - Message 00020027 (MCU_UNI_CMD_ROC) timeout
+08:56:37 - Message 00020008 (MCU_UNI_CMD_BAND_CONFIG) timeout -> firmware reset
+09:02:27 - Message 00020027 (MCU_UNI_CMD_ROC) timeout
+09:03:08 - Message 00020016 (MCU_UNI_CMD_SCAN_REQ) timeout
+09:08:51 - Message 00020027 (MCU_UNI_CMD_ROC) timeout
+09:09:48 - Message 00020027 (MCU_UNI_CMD_ROC) timeout
+09:10:18 - Message 00020027 (MCU_UNI_CMD_ROC) timeout
+
+### MLO Authentication Failure Sequence (09:08:23)
+
+09:08:23 wpa_supplicant: SME: Trying to authenticate with d8:b3:70:f8:89:52 (freq=6135 MHz)
+09:08:23 wpa_supplicant: nl80211: kernel reports: link ID must for MLO group key
+09:08:23 wpa_supplicant: nl80211: kernel reports: link ID must for MLO group key
+09:08:23 wpa_supplicant: nl80211: kernel reports: link ID must for MLO group key
+09:08:23 kernel: wlan0: disconnect from AP d8:b3:70:f8:9e:7b for new auth to d8:b3:70:f8:89:4f
+09:08:24 kernel: wlan0: authenticate with d8:b3:70:f8:89:4f
+09:08:24 kernel: wlan0: authenticated
+09:08:24 wpa_supplicant: nl80211: kernel reports: key not allowed
+09:08:24 wpa_supplicant: FT: Failed to set PTK to the driver
+09:08:24 wpa_supplicant: nl80211: kernel reports: Error fetching BSS for link
+09:08:24 wpa_supplicant: SME: Association request to the driver failed
+09:08:24 wpa_supplicant: Added BSSID d8:b3:70:f8:89:52 into ignore list
+
+## Error Analysis
+
+### 1. "link ID must for MLO group key"
+
+This nl80211 error indicates the driver or wpa_supplicant is attempting to
+set an MLO group key without providing the required link_id parameter.
+In MLO mode, each link has its own keys and the link_id must be specified.
+
+Source: net/wireless/nl80211.c - key validation for MLO
+
+### 2. "key not allowed"
+
+The kernel rejected a key installation. This can happen when:
+- Trying to set keys on a link that isn't properly associated
+- Link state is inconsistent between driver and mac80211
+- Key parameters don't match expected link state
+
+### 3. "FT: Failed to set PTK to the driver"
+
+Fast Transition (802.11r) PTK (Pairwise Transient Key) installation failed.
+This breaks seamless roaming between APs/links. The PTK is derived during
+FT authentication but the driver rejected it.
+
+### 4. "Error fetching BSS for link"
+
+The driver couldn't find BSS information for the MLO link being set up.
+This suggests the link state in the driver doesn't match what mac80211
+expects - possibly the link was torn down or never properly initialized.
+
+### 5. ROC Command Timeouts
+
+The MCU_UNI_CMD_ROC (0x27) command is used for Remain-On-Channel operations,
+which are heavily used during:
+- Scanning for APs
+- MLO link discovery
+- Off-channel operations
+
+Repeated ROC timeouts suggest firmware is overwhelmed or in a bad state,
+possibly due to rapid MLO link setup/teardown cycles.
+
+## Root Cause Analysis (Detailed Investigation)
+
+### Primary Issue: nl80211 MLO Key Validation Race Condition
+
+The root cause is a **timing/race condition between disconnect and key setup during
+Fast Transition (802.11r) roaming with MLO enabled**.
+
+**Kernel Code (net/wireless/nl80211.c:4828-4841):**
+```c
+if (wdev->valid_links) {
+    if (link_id == -1) {
+        GENL_SET_ERR_MSG(info, "link ID must for MLO group key");
+        return -EINVAL;
+    }
+}
+```
+
+The kernel enforces that when MLO is active (wdev->valid_links is set), any group
+key operation MUST include a link_id. This validation happens at the nl80211 layer
+BEFORE the request reaches mac80211 or the driver.
+
+**Disconnect Path (net/wireless/sme.c:1359):**
+```c
+wdev->valid_links = 0;  // Cleared during disconnect
+```
+
+**The Race Condition:**
+1. Device is connected to AP1 in MLO mode (wdev->valid_links = bitmask)
+2. FT roaming begins to AP2 (different BSSID: d8:b3:70:f8:89:4f vs d8:b3:70:f8:9e:7b)
+3. wpa_supplicant attempts to set group keys for new connection
+4. Disconnect hasn't completed yet - wdev->valid_links is still set
+5. nl80211 validation fails: "link ID must for MLO group key"
+6. Key setup fails, authentication fails, disconnect completes
+7. Driver enters recovery cycle with ROC commands for reconnection
+8. MCU gets overwhelmed with ROC commands -> timeout -> firmware reset
+
+**Evidence from Timeline:**
+```
+09:08:23 wpa_supplicant: nl80211: kernel reports: link ID must for MLO group key (3x)
+09:08:23 kernel: wlan0: disconnect from AP d8:b3:70:f8:9e:7b for new auth
+```
+The key errors and disconnect occur at the SAME SECOND (09:08:23), confirming the race.
+
+### Secondary Issue: Post-Authentication Key Failure
+
+After authentication succeeds (09:08:24), a separate failure occurs:
+- "key not allowed" - PTK setup rejected
+- "Error fetching BSS for link" - Link state inconsistency
+
+This is because the failed group key setup corrupted the expected state machine.
+
+### Driver vs Upper Layer Responsibility
+
+**Driver Side (mt7925_set_key at main.c:727-740):**
+```c
+if (ieee80211_vif_is_mld(vif)) {
+    add = key->link_id != -1 ? BIT(key->link_id) : msta->valid_links;
+    for_each_set_bit(link_id, &add, IEEE80211_MLD_MAX_NUM_LINKS) {
+        err = mt7925_set_link_key(hw, cmd, vif, sta, key, link_id);
+    }
+}
+```
+The driver DOES handle key->link_id == -1 by iterating over all valid_links.
+However, **this code never executes** because nl80211 rejects the request first.
+
+**This is primarily a mac80211/wpa_supplicant bug, not a driver bug.**
+- wpa_supplicant should provide link_id for MLO group keys
+- mac80211 should ensure MLO state is properly sequenced during FT roaming
+
+### Why ROC Timeouts Occur (Symptom, Not Cause)
+
+The failed key setup triggers:
+1. Authentication failure -> disconnect
+2. Reconnection attempt -> ROC commands for scanning
+3. Failed reconnect -> more ROC commands
+4. MCU overwhelmed by rapid ROC requests -> timeout
+5. Firmware reset -> cycle repeats
+
+The ROC timeouts at 09:08:51, 09:09:48, 09:10:18 follow the key failures.
+
+## Existing Patches Applied
+
+- 0001: NULL check in vif_connect_iter (for reset path)
+- 0009: NULL checks in MLO link and chanctx
+- 0012: Key removal failure during MLO roaming (handles teardown, not setup)
+- 0013: Kernel warning in MLO ROC setup
+- 0014: NULL checks for MLO link pointers in MCU
+- 0016: Resume path mutex protection
+
+These patches address MLO *teardown* issues but not MLO *setup/authentication*.
+
+## Suggested Investigation Areas
+
+### Driver (mt7925)
+1. mt7925_set_link_key() - key setup path for MLO (main.c:613)
+2. mt7925_mac_sta_add_links() - MLO link addition (main.c:982)
+3. mt7925_set_mlo_roc() - MLO ROC setup (main.c:559)
+4. Consider ROC command rate limiting to prevent MCU overload
+
+### Kernel (mac80211/cfg80211)
+5. net/wireless/sme.c - disconnect/reconnect sequencing with valid_links
+6. net/wireless/nl80211.c:4828 - MLO key validation timing
+7. FT roaming path with MLO state transitions
+
+### wpa_supplicant
+8. MLO group key handling - should provide link_id when MLO active
+9. FT authentication sequence with MLO
+
+## Upstream Bug Report Candidates
+
+1. **wpa_supplicant**: MLO group key setup missing link_id during FT roaming
+2. **mac80211/cfg80211**: Race condition between disconnect and key setup
+   - valid_links should be cleared BEFORE new connection key setup begins
+
+## Possible Driver Mitigation (not a fix)
+
+While this is primarily an upper-layer bug, the driver could potentially:
+1. Rate-limit ROC commands to prevent MCU overload during rapid reconnection cycles
+2. Add a backoff mechanism when ROC timeouts occur consecutively
+3. Improve logging for MLO state transitions to aid debugging
+
+## Workaround
+
+Disable MLO or use single-link mode (still WiFi 7/EHT, just not multi-link).
+Single-link WiFi 7 at 5 GHz works correctly:
+- Connected: 5280 MHz, 80 MHz width
+- RX: 960.7 MBit/s EHT-MCS 9
+- TX: 1200.9 MBit/s EHT-MCS 11
+- Signal: -43 dBm (excellent)
+
+## Related Issues
+
+- GitHub Issue #6: Sleep/wake issues (related MCU timeout pattern)
+- Previous crash: crash-2026-01-10-2112-reset-work-null-vif.log (MLO teardown)
