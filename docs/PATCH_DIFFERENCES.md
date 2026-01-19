@@ -10,10 +10,10 @@ The MT7925 WiFi 7 driver is part of the mt76 driver family in the Linux kernel. 
 
 | Version | Tag | Patches | Status |
 |---------|-----|---------|--------|
-| 6.17.x | v6.17.13 | 26 patches | EOL but still used (Fedora 41, older Arch) |
-| 6.18.x | v6.18.5 | 27 patches | **Current stable** - Arch, Fedora 42 |
-| 6.19-rcX | v6.19-rc5 | 28 patches | Release candidate - bleeding edge |
-| nbd168 | wireless-next | 27 patches | OpenWRT staging tree |
+| 6.17.x | v6.17.13 | 25 patches | EOL but still used (Fedora 41, older Arch) |
+| 6.18.x | v6.18.5 | 26 patches | **Current stable** - Arch, Fedora 42 |
+| 6.19-rcX | v6.19-rc5 | 27 patches | Release candidate - bleeding edge |
+| nbd168 | wireless-next | 26 patches | OpenWRT staging tree |
 
 ## Key Differences Between Versions
 
@@ -22,28 +22,43 @@ The MT7925 WiFi 7 driver is part of the mt76 driver family in the Linux kernel. 
 1. **MLO Chanctx Functions** (patch 0009 on 6.18)
    - 6.17 lacks some MLO chanctx code that was added in 6.18
    - The `mt7925_mlo_add_chanctx` and related functions were refactored
-   - **Result**: 6.17 has 17 patches vs 18 in 6.18
+   - **Result**: 6.17 missing 1 patch
 
-2. **Function Signatures**
-   - Some function call sites have different line numbers
-   - No functional difference, just code movement
+2. **Error Handling Consolidation** (patch 0024 on 6.18)
+   - 6.18 has a consolidated error handling cleanup patch
+   - 6.17 doesn't need this patch (different code structure)
+   - **Result**: 6.17 missing 1 patch
+
+3. **MT7921 Mutex Patches**
+   - 6.17: Two separate patches (0016 + 0018)
+   - 6.18: Combined into one patch (0018)
+   - **Result**: 6.17 has 1 extra patch
+
+**Net difference**: 6.17 has 25 patches, 6.18 has 26 patches (-2 +1 = -1)
 
 ### 6.18.x vs 6.19-rc
 
-1. **Regulatory Domain Update Function**
+1. **MT7921 Mutex Patches**
+   - 6.18: Combined into one patch (0018)
+   - 6.19-rc: Two separate patches (0015 + 0019)
+   - **Result**: 6.19-rc has 1 extra patch
+
+2. **Regulatory Domain Update Function**
    - 6.18 uses: `mt7925_regd_update(dev)`
    - 6.19-rc uses: `mt7925_mcu_regd_update(dev, mdev->alpha2, dev->country_ie_env)`
    - The function was renamed and now takes additional parameters
-   - **Impact**: Resume path mutex patch (0016 equivalent) differs
+   - **Impact**: Resume path mutex patch differs in implementation
 
-2. **Reset Work Function**
+3. **Reset Work Function**
    - 6.18: `mt7925_regd_update(&dev->phy, "00")`
    - 6.19-rc: `mt7925_regd_change(&dev->phy, "00")`
    - Function renamed from `_update` to `_change`
 
-3. **Patch Ordering**
+4. **Patch Ordering**
    - Due to different code structure, patches are numbered differently
    - Same fixes, different application order
+
+**Net difference**: 6.18 has 26 patches, 6.19-rc has 27 patches (+1)
 
 ## Patch Categories
 
