@@ -445,14 +445,22 @@ static void mt7925_roc_iter(void *priv, u8 *mac,
 	mt7925_mcu_abort_roc(phy, &mvif->bss_conf, phy->roc_token_id);
 }
 
-/* Async ROC abort - safe to call while holding mutex */
+/* Async ROC abort - safe to call while holding mutex.
+ * Sets abort flag and lets roc_work handle cleanup without blocking.
+ * This prevents deadlock when called from sta_remove path which holds mutex.
+ */
 static void mt7925_roc_abort_async(struct mt792x_dev *dev)
 {
 	struct mt792x_phy *phy = &dev->phy;
 
-	/* Don't clear ROC flag - let roc_work handle it to avoid race */
+	/* Set abort flag - roc_work checks this before acquiring mutex */
 	set_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
+
+	/* Stop timer and schedule work to handle cleanup.
+	 * Must schedule work since timer may not have fired yet.
+	 */
 	timer_delete(&phy->roc_timer);
+	ieee80211_queue_work(phy->mt76->hw, &phy->roc_work);
 }
 
 void mt7925_roc_abort_sync(struct mt792x_dev *dev)
@@ -475,7 +483,11 @@ void mt7925_roc_work(struct work_struct *work)
 	phy = (struct mt792x_phy *)container_of(work, struct mt792x_phy,
 						roc_work);
 
-	/* Handle async abort - check before mutex to avoid deadlock */
+	/* Check abort flag BEFORE acquiring mutex to prevent deadlock.
+	 * If abort is requested while we're in the sta_remove path (which
+	 * holds the mutex), we must not try to acquire it or we'll deadlock.
+	 * Just clear the flags and notify mac80211 that ROC expired.
+	 */
 	if (test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state)) {
 		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
 		ieee80211_remain_on_channel_expired(phy->mt76->hw);
@@ -559,7 +571,7 @@ static void mt7925_roc_record_timeout(struct mt792x_phy *phy)
 	/* Warn if we're seeing repeated timeouts - likely upper layer issue */
 	if (phy->roc_timeout_count == MT7925_ROC_TIMEOUT_WARN_THRESH)
 		dev_warn(phy->dev->mt76.dev,
-			 "mt7925: %u consecutive ROC timeouts\n",
+			 "mt7925: %u consecutive ROC timeouts, possible mac80211/wpa_supplicant issue (MLO key race?)\n",
 			 phy->roc_timeout_count);
 }
 
@@ -579,8 +591,10 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
 	unsigned long throttle;
 	int err;
 
+	/* Check rate limiting - if in backoff period, wait or return busy */
 	throttle = mt7925_roc_throttle_check(phy);
 	if (throttle) {
+		/* For short backoffs, wait; for longer ones, return busy */
 		if (throttle < msecs_to_jiffies(200)) {
 			msleep(jiffies_to_msecs(throttle));
 		} else {
@@ -591,7 +605,7 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
 		}
 	}
 
-	/* Clear stale abort flag from previous aborted ROC */
+	/* Clear stale abort flag from previous ROC */
 	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
 
 	if (test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state))
@@ -627,6 +641,9 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
 	unsigned long throttle;
 	int err;
 
+	/* Check rate limiting - MLO ROC is especially prone to rapid-fire
+	 * during reconnection cycles after MLO authentication failures.
+	 */
 	throttle = mt7925_roc_throttle_check(phy);
 	if (throttle) {
 		if (throttle < msecs_to_jiffies(200)) {
@@ -639,7 +656,7 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
 		}
 	}
 
-	/* Clear stale abort flag from previous aborted ROC */
+	/* Clear stale abort flag from previous ROC */
 	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
 
 	if (WARN_ON_ONCE(test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state)))
@@ -1066,6 +1083,7 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
 err_wcid:
 	rcu_assign_pointer(dev->mt76.wcid[idx], NULL);
 	mt76_wcid_mask_clear(dev->mt76.wcid_mask, idx);
+	mt76_connac_power_save_sched(&dev->mphy, &dev->pm);
 	return ret;
 }
 
@@ -1258,10 +1276,7 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
 	if (!mlink)
 		return;
 
-	/* Use async abort to prevent deadlock - this function is called from
-	 * mt76_sta_remove() which already holds dev->mt76.mutex. Using the
-	 * sync version would deadlock if roc_work is waiting for the same mutex.
-	 */
+	/* Async abort - caller already holds mutex */
 	mt7925_roc_abort_async(dev);
 
 	mt76_connac_free_pending_tx_skbs(&dev->pm, &mlink->wcid);
@@ -1691,9 +1706,8 @@ static int mt7925_suspend(struct ieee80211_hw *hw,
 	cancel_delayed_work_sync(&dev->pm.ps_work);
 	mt76_connac_free_pending_tx_skbs(&dev->pm, NULL);
 
-	/* Cancel ROC before quiescing - must be before mutex to avoid deadlock */
+	/* Cancel ROC before quiescing starts */
 	mt7925_roc_abort_sync(dev);
-
 	mt792x_mutex_acquire(dev);
 
 	clear_bit(MT76_STATE_RUNNING, &phy->mt76->state);

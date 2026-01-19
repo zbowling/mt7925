@@ -1,7 +1,7 @@
 From 8cac58482c90f43aa58ed366d561a6b356c90bdc Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 12:32:01 -0800
-Subject: [PATCH 23/26] wifi: mt76: mt7925: add ROC rate limiting to mitigate
+Subject: [PATCH 23/25] wifi: mt76: mt7925: add ROC rate limiting to mitigate
  MLO auth failures
 
 Add exponential backoff rate limiting for ROC (Remain On Channel)

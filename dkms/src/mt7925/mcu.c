@@ -1321,9 +1321,6 @@ int mt7925_mcu_set_mlo_roc(struct mt792x_bss_conf *mconf, u16 sel_links,
 		type = MT7925_ROC_REQ_JOIN;
 
 	for (i = 0; i < ARRAY_SIZE(links) && i < hweight16(vif->active_links); i++) {
-		if (!links[i].mconf || !links[i].chan)
-			return -ENOLINK;
-
 		chan = links[i].chan;
 		center_ch = ieee80211_frequency_to_channel(chan->center_freq);
 		req.roc[i].len = cpu_to_le16(sizeof(struct roc_acquire_tlv));

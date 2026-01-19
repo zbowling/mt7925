@@ -1,7 +1,7 @@
 From 536562171c3eb0e23a54fe32de4845f0d3a38999 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Fri, 16 Jan 2026 21:59:42 -0800
-Subject: [PATCH 22/27] wifi: mt76: mt7925: fix deadlock in sta removal ROC
+Subject: [PATCH 22/26] wifi: mt76: mt7925: fix deadlock in sta removal ROC
  abort path
 
 Fix a mutex deadlock that occurs during station removal when

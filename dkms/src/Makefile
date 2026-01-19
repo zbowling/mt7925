@@ -1,73 +1,47 @@
 # SPDX-License-Identifier: GPL-2.0-only
-# MT76 MT7925 Out-of-tree DKMS Build Makefile
+obj-$(CONFIG_MT76_CORE) += mt76.o
+obj-$(CONFIG_MT76_USB) += mt76-usb.o
+obj-$(CONFIG_MT76_SDIO) += mt76-sdio.o
+obj-$(CONFIG_MT76x02_LIB) += mt76x02-lib.o
+obj-$(CONFIG_MT76x02_USB) += mt76x02-usb.o
+obj-$(CONFIG_MT76_CONNAC_LIB) += mt76-connac-lib.o
+obj-$(CONFIG_MT792x_LIB) += mt792x-lib.o
+obj-$(CONFIG_MT792x_USB) += mt792x-usb.o
 
-KDIR ?= /lib/modules/$(shell uname -r)/build
-PWD := $(shell pwd)
+mt76-y := \
+	mmio.o util.o trace.o dma.o mac80211.o debugfs.o eeprom.o \
+	tx.o agg-rx.o mcu.o wed.o scan.o channel.o
 
-# Auto-detect clang-built kernels and use LLVM toolchain
-# Check for CONFIG_CC_IS_CLANG in kernel config
-CLANG_FLAGS :=
-ifneq ($(wildcard $(KDIR)/.config),)
-  ifneq ($(shell grep -s "CONFIG_CC_IS_CLANG=y" $(KDIR)/.config),)
-    $(info Detected clang-built kernel, using LLVM toolchain)
-    CLANG_FLAGS := CC=clang LD=ld.lld LLVM=1
-  endif
-endif
+mt76-$(CONFIG_PCI) += pci.o
+mt76-$(CONFIG_NL80211_TESTMODE) += testmode.o
 
-# Include paths
-ccflags-y += -I$(src)
-
-# Module definitions - core mt76
-obj-m += mt76.o
-mt76-y := mmio.o util.o trace.o dma.o mac80211.o debugfs.o eeprom.o \
-	tx.o agg-rx.o mcu.o wed.o scan.o channel.o pci.o
+mt76-usb-y := usb.o usb_trace.o
+mt76-sdio-y := sdio.o sdio_txrx.o
 
 CFLAGS_trace.o := -I$(src)
-
-# mt76-connac-lib module
-obj-m += mt76-connac-lib.o
-mt76-connac-lib-y := mt76_connac_mcu.o mt76_connac_mac.o mt76_connac3_mac.o
-
-# mt792x-lib module
-obj-m += mt792x-lib.o
-mt792x-lib-y := mt792x_core.o mt792x_mac.o mt792x_trace.o \
-	mt792x_debugfs.o mt792x_dma.o mt792x_acpi_sar.o
-
+CFLAGS_usb_trace.o := -I$(src)
+CFLAGS_mt76x02_trace.o := -I$(src)
 CFLAGS_mt792x_trace.o := -I$(src)
 
-# mt7925-common module (built from mt7925/ subdir files)
-obj-m += mt7925-common.o
-mt7925-common-y := mt7925/mac.o mt7925/mcu.o mt7925/main.o mt7925/init.o mt7925/debugfs.o
+mt76x02-lib-y := mt76x02_util.o mt76x02_mac.o mt76x02_mcu.o \
+		 mt76x02_eeprom.o mt76x02_phy.o mt76x02_mmio.o \
+		 mt76x02_txrx.o mt76x02_trace.o mt76x02_debugfs.o \
+		 mt76x02_dfs.o mt76x02_beacon.o
 
-# mt7925e PCIe module
-obj-m += mt7925e.o
-mt7925e-y := mt7925/pci.o mt7925/pci_mac.o mt7925/pci_mcu.o
+mt76x02-usb-y := mt76x02_usb_mcu.o mt76x02_usb_core.o
 
-# Build targets
-all:
-	$(MAKE) -C $(KDIR) M=$(PWD) $(CLANG_FLAGS) modules
+mt76-connac-lib-y := mt76_connac_mcu.o mt76_connac_mac.o mt76_connac3_mac.o
 
-clean:
-	$(MAKE) -C $(KDIR) M=$(PWD) clean
-	rm -f *.o *.ko *.mod.c *.mod .*.cmd Module.symvers modules.order
-	rm -f mt7925/*.o mt7925/.*.cmd
+mt792x-lib-y := mt792x_core.o mt792x_mac.o mt792x_trace.o \
+		mt792x_debugfs.o mt792x_dma.o
+mt792x-lib-$(CONFIG_ACPI) += mt792x_acpi_sar.o
+mt792x-usb-y := mt792x_usb.o
 
-install:
-	$(MAKE) -C $(KDIR) M=$(PWD) $(CLANG_FLAGS) modules_install
-	depmod -a
-
-unload:
-	-rmmod mt7925e 2>/dev/null || true
-	-rmmod mt7925-common 2>/dev/null || true
-	-rmmod mt792x-lib 2>/dev/null || true
-	-rmmod mt76-connac-lib 2>/dev/null || true
-	-rmmod mt76 2>/dev/null || true
-
-load: unload
-	insmod mt76.ko
-	insmod mt76-connac-lib.ko
-	insmod mt792x-lib.ko
-	insmod mt7925-common.ko
-	insmod mt7925e.ko
-
-.PHONY: all clean install unload load
+obj-$(CONFIG_MT76x0_COMMON) += mt76x0/
+obj-$(CONFIG_MT76x2_COMMON) += mt76x2/
+obj-$(CONFIG_MT7603E) += mt7603/
+obj-$(CONFIG_MT7615_COMMON) += mt7615/
+obj-$(CONFIG_MT7915E) += mt7915/
+obj-$(CONFIG_MT7921_COMMON) += mt7921/
+obj-$(CONFIG_MT7996E) += mt7996/
+obj-$(CONFIG_MT7925_COMMON) += mt7925/

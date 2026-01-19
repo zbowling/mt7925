@@ -1,7 +1,7 @@
 From 2de30b4cf926564b9e3f062db27a243d68073031 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:32:55 -0800
-Subject: [PATCH 07/28] wifi: mt76: mt7925: add NULL checks in MLO link and
+Subject: [PATCH 07/27] wifi: mt76: mt7925: add NULL checks in MLO link and
  chanctx functions
 
 Add NULL pointer checks for mconf and link_conf in several functions
