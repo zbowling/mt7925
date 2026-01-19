@@ -1692,15 +1692,19 @@ static int mt7925_suspend(struct ieee80211_hw *hw,
 	cancel_delayed_work_sync(&dev->pm.ps_work);
 	mt76_connac_free_pending_tx_skbs(&dev->pm, NULL);
 
-	mt792x_mutex_acquire(dev);
-
 	/* Cancel ROC timer and work before mac80211 finishes quiescing.
 	 * This must happen here, not in pci_suspend, because mac80211
 	 * sets quiescing=true before calling this callback. If the ROC
 	 * timer fires after quiescing starts, ieee80211_queue_work() will
 	 * fail and leave the driver in an inconsistent state.
+	 *
+	 * IMPORTANT: Must be called BEFORE mutex_acquire to avoid deadlock.
+	 * If roc_work is running and waiting for mutex, cancel_work_sync
+	 * would block forever if we already hold the mutex.
 	 */
 	mt7925_roc_abort_sync(dev);
+
+	mt792x_mutex_acquire(dev);
 
 	clear_bit(MT76_STATE_RUNNING, &phy->mt76->state);
 	ieee80211_iterate_active_interfaces(hw,

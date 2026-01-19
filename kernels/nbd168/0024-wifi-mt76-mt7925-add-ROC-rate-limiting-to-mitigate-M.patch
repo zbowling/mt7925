@@ -1,4 +1,4 @@
-From 3638e1844f6532a8fc1456704f50285023b2a9ee Mon Sep 17 00:00:00 2001
+From 941c4fc214b8cf8d014a44455c91ac185db3a9c1 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 12:32:01 -0800
 Subject: [PATCH 24/24] wifi: mt76: mt7925: add ROC rate limiting to mitigate
@@ -51,7 +51,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  2 files changed, 106 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 360664c19f..09e93c9222 100644
+index 152a990621..f0aeb7bf4b 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -534,14 +534,90 @@ static int mt7925_abort_roc(struct mt792x_phy *phy,
