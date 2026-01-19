@@ -610,6 +610,13 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
 		}
 	}
 
+	/* Clear any stale abort flag from previous ROC abort_async calls.
+	 * If abort_async was called but roc_work never ran (timer was cancelled
+	 * before firing), the abort flag would be stale and incorrectly abort
+	 * this new ROC session.
+	 */
+	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
+
 	if (test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state))
 		return -EBUSY;
 
@@ -657,6 +664,9 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
 			return -EBUSY;
 		}
 	}
+
+	/* Clear any stale abort flag from previous ROC abort_async calls */
+	clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
 
 	if (WARN_ON_ONCE(test_and_set_bit(MT76_STATE_ROC, &phy->mt76->state)))
 		return -EBUSY;
@@ -999,13 +1009,13 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
 	if (!mlink)
 		return -EINVAL;
 
-	idx = mt76_wcid_alloc(dev->mt76.wcid_mask, MT792x_WTBL_STA - 1);
-	if (idx < 0)
-		return -ENOSPC;
-
 	mconf = mt792x_vif_to_link(mvif, link_id);
 	if (!mconf)
 		return -EINVAL;
+
+	idx = mt76_wcid_alloc(dev->mt76.wcid_mask, MT792x_WTBL_STA - 1);
+	if (idx < 0)
+		return -ENOSPC;
 
 	mt76_wcid_init(&mlink->wcid, 0);
 	mlink->wcid.sta = 1;
