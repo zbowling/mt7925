@@ -1,4 +1,4 @@
-From ac027e033658781412d9df6533a73e0f2df7710b Mon Sep 17 00:00:00 2001
+From 2f68b39407d5efbcecd3bf67a117e6be022f6eac Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:45:45 -0800
 Subject: [PATCH 04/12] wifi: mt76: mt7921: add mutex protection in critical
