@@ -4,7 +4,7 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Status
 
-**Patches:** 12 patches (v6) for each kernel version - includes Sean Wang's upstream deadlock fix + 11 stability patches.
+**Patches:** 13 patches (v6) for each kernel version - includes Sean Wang's upstream deadlock fix + 12 stability patches.
 
 **DKMS:** v1.3.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
 
@@ -54,14 +54,14 @@ sudo ./install.sh
 
 | Version | Patches | Status | Notes |
 |---------|---------|--------|-------|
-| 6.18.x | 12 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
-| 6.19-rc | 12 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
-| 6.17.x | 12 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
-| nbd168 | 12 (`kernels/nbd168/`) | **Upstream target** | nbd168/wireless tree |
+| 6.18.x | 13 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
+| 6.19-rc | 13 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
+| 6.17.x | 13 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
+| nbd168 | 13 (`kernels/nbd168/`) | **Upstream target** | nbd168/wireless tree |
 
 ## Patch Series (v6)
 
-**12 patches** - Sean Wang's upstream deadlock fix as base + 11 stability patches:
+**13 patches** - Sean Wang's upstream deadlock fix as base + 12 stability patches:
 
 | # | Patch | Category |
 |---|-------|----------|
@@ -77,6 +77,7 @@ sudo ./install.sh
 | 10 | mt7925: fix MLO roaming and ROC setup issues | MLO (mt7925) |
 | 11 | mt7925: fix BA session teardown during beacon loss | Critical (mt7925) |
 | 12 | mt7925: fix ROC deadlocks and race conditions | Critical (mt7925) |
+| 13 | mt7925: fix double wcid initialization race condition | Critical (mt7925) |
 
 **Order:** `Sean's fix → mt76 core → mt792x shared → mt7921 → mt7925`
 
@@ -85,10 +86,10 @@ sudo ./install.sh
 ```
 mt7925/
 ├── kernels/                    # Patches organized by kernel version
-│   ├── 6.17/                   # 12 patches for v6.17.13
-│   ├── 6.18/                   # 12 patches for v6.18.5
-│   ├── 6.19-rc/                # 12 patches for v6.19-rc5
-│   └── nbd168/                 # 12 patches for nbd168/wireless (upstream)
+│   ├── 6.17/                   # 13 patches for v6.17.13
+│   ├── 6.18/                   # 13 patches for v6.18.5
+│   ├── 6.19-rc/                # 13 patches for v6.19-rc5
+│   └── nbd168/                 # 13 patches for nbd168/wireless (upstream)
 ├── dkms/                       # DKMS package (v1.3.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
@@ -164,6 +165,7 @@ The MT7925 WiFi driver has several critical bugs:
 6. **WCID Resource Leak** - WCID table exhaustion on repeated sta add failures
 7. **List Corruption** - `sta_poll_list` corruption after device reset
 8. **Suspend/Resume Race** - ROC timer firing during quiescing causes hangs
+9. **Double WCID Init Race** - wcid reinitialized after RCU publish causes corruption
 
 ### Affected Hardware
 
