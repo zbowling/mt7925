@@ -1,4 +1,4 @@
-From 9201ec23b04b11d4416d1b2c1d7789f1ec91d176 Mon Sep 17 00:00:00 2001
+From 9e67bdbb1fa9e0ce3afdf17d2e927801843ffa45 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:04:53 -0800
 Subject: [PATCH 02/11] wifi: mt76: mt792x: fix NULL pointer and firmware
@@ -45,7 +45,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 25 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt792x_core.c b/drivers/net/wireless/mediatek/mt76/mt792x_core.c
-index 9cad572c34..d6db8bf1db 100644
+index 9cad572c34a3..d6db8bf1dbb1 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt792x_core.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt792x_core.c
 @@ -95,6 +95,8 @@ void mt792x_tx(struct ieee80211_hw *hw, struct ieee80211_tx_control *control,

@@ -1,4 +1,4 @@
-From 1349e068ee2aed2fc6ab8e82fa2cc0007d7691ba Mon Sep 17 00:00:00 2001
+From 2c7fb866aaced8f6494e1b14e86f81f3232b5663 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:05:04 -0800
 Subject: [PATCH 08/11] wifi: mt76: mt7925: add lockdep assertions for mutex
@@ -26,7 +26,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
-index 0a842799cb..7d6ec6f72b 100644
+index 0a842799cbe5..7d6ec6f72b94 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1481,6 +1481,8 @@ int mt7925_mcu_uni_bss_ps(struct mt792x_dev *dev,

@@ -4,7 +4,7 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Status
 
-**Patches:** 26-28 patches (depending on kernel version) tested and submitted to LKML for upstream inclusion.
+**Patches:** 11 patches (reorganized from 27) for each kernel version, tested and prepared for upstream submission.
 
 **DKMS:** v1.3.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
 
@@ -16,12 +16,11 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 # Get kernel source matching your version
 # Ideally google how to fetch your linux kernel sources for your distro with all the your distro patches and config.
 
-
 # Or check out vanilla linux kernel
 git clone --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git -b v6.18.5
 cd linux
 
-# Apply patches (use the folder for your kenrel version, 6.17/6.18/6.19-rc, etc)
+# Apply patches (use the folder for your kernel version: 6.17, 6.18, 6.19-rc, nbd168)
 git am /path/to/mt7925/kernels/6.18/*.patch
 
 # Build and install
@@ -35,7 +34,7 @@ sudo make modules_install install
 ```bash
 git clone https://github.com/zbowling/linux-wifi.git
 cd linux-wifi
-git checkout mt7925-fixes-v6.18.5  # or v6.19-rc5, v6.17.13
+git checkout mt7925-upstream-v2-6.18  # or -6.19, -6.17, or mt7925-upstream-v2 (nbd168)
 
 make olddefconfig
 make -j$(nproc)
@@ -55,20 +54,40 @@ sudo ./install.sh
 
 | Version | Patches | Status | Notes |
 |---------|---------|--------|-------|
-| 6.18.x | 27 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
-| 6.19-rc | 28 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
-| 6.17.x | 26 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
-| nbd168 | 27 (`kernels/nbd168/`) | Upstream staging | nbd168/wireless tree |
+| 6.18.x | 11 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
+| 6.19-rc | 11 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
+| 6.17.x | 11 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
+| nbd168 | 11 (`kernels/nbd168/`) | **Upstream target** | nbd168/wireless tree |
+
+## Patch Series (v2)
+
+Reorganized 27 individual fixes into **11 cleaner, logically-grouped patches**:
+
+| # | Patch | Category |
+|---|-------|----------|
+| 01 | mt76: fix list corruption in mt76_wcid_cleanup | Critical (mt76 core) |
+| 02 | mt792x: fix NULL pointer and firmware reload issues | Critical (mt792x shared) |
+| 03 | mt7921: add mutex protection in critical paths | Safety (mt7921) |
+| 04 | mt7921: fix deadlock in sta removal and suspend ROC abort | Critical (mt7921) |
+| 05 | mt7925: add comprehensive NULL pointer protection for MLO | Safety (mt7925) |
+| 06 | mt7925: add mutex protection in critical paths | Safety (mt7925) |
+| 07 | mt7925: add MCU command error handling | Safety (mt7925) |
+| 08 | mt7925: add lockdep assertions for mutex verification | Debug (mt7925) |
+| 09 | mt7925: fix MLO roaming and ROC setup issues | MLO (mt7925) |
+| 10 | mt7925: fix BA session teardown during beacon loss | Critical (mt7925) |
+| 11 | mt7925: fix ROC deadlocks and race conditions | Critical (mt7925) |
+
+**Order:** `mt76 core → mt792x shared → mt7921 → mt7925`
 
 ## Repository Structure
 
 ```
 mt7925/
 ├── kernels/                    # Patches organized by kernel version
-│   ├── 6.17/                   # 26 patches for v6.17.13
-│   ├── 6.18/                   # 27 patches for v6.18.5
-│   ├── 6.19-rc/                # 28 patches for v6.19-rc5
-│   └── nbd168/                 # 27 patches for nbd168/wireless
+│   ├── 6.17/                   # 11 patches for v6.17.13
+│   ├── 6.18/                   # 11 patches for v6.18.5
+│   ├── 6.19-rc/                # 11 patches for v6.19-rc5
+│   └── nbd168/                 # 11 patches for nbd168/wireless (upstream)
 ├── dkms/                       # DKMS package (v1.3.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
@@ -89,12 +108,10 @@ mt7925/
 
 | Branch | Base | Status |
 |--------|------|--------|
-| `mt7925-fixes-v6.18.5` | v6.18.5 | **Primary** |
-| `mt7925-fixes-v6.19-rc5` | v6.19-rc5 | RC |
-| `mt7925-fixes-v6.17.13` | v6.17.13 | EOL |
-| `mt7925-fixes-nbd168` | nbd168/mt76 | Staging |
-
-Base tags are pushed for easy comparison: `git diff v6.18.5..mt7925-fixes-v6.18.5`
+| `mt7925-upstream-v2` | nbd168/mt76 | **Upstream target** |
+| `mt7925-upstream-v2-6.18` | v6.18.5 | Current stable |
+| `mt7925-upstream-v2-6.19` | v6.19-rc5 | RC |
+| `mt7925-upstream-v2-6.17` | v6.17.13 | EOL |
 
 ## DKMS Installation (Beta)
 
@@ -160,31 +177,6 @@ The MT7925 WiFi driver has several critical bugs:
 - Processes stuck in D state (uninterruptible sleep)
 - Hangs during suspend/resume cycles
 
-## Patches (26-28 per kernel)
-
-| # | Patch | Category |
-|---|-------|----------|
-| 01 | fix-NULL-pointer-dereference-in-vif | Critical |
-| 02-03 | fix-missing-mutex-protection | Critical |
-| 04-05 | add-NULL-checks-in-MCU-STA-TLV | NULL Checks |
-| 06-08 | add-error-handling-for-MCU | Error Handling |
-| 09 | add-NULL-checks-in-MLO-link | MLO |
-| 10 | fix-NULL-pointer-dereference-in-TX | Critical (mt792x) |
-| 11 | add-lockdep-assertions | Debug |
-| 12-13 | fix-MLO-roaming-issues | MLO |
-| 14-17 | add-NULL-checks-and-mutex | Safety |
-| 18 | mt7921-fix-mutex-handling | MT7921 |
-| 19 | fix-list-corruption-in-wcid-cleanup | Critical (mt76 core) |
-| 20 | fix-BA-session-teardown-beacon-loss | Critical |
-| 21 | fix-deadlock-in-sta-removal-ROC-abort | Critical |
-| 22 | fix-ROC-timer-race-during-suspend | Critical |
-| 23 | add-ROC-rate-limiting-MLO-auth-failures | Stability |
-| 24 | improve-error-handling-code-cleanup | Cleanup |
-| 25 | fix-deadlock-and-WCID-leak-bugs | Critical |
-| 26 | fix-race-condition-in-async-ROC-abort | Critical |
-| 27 | mt7921-fix-deadlock-sta-removal-suspend | Critical (MT7921) |
-| 28 | clean-up-verbose-comments (6.19 only) | Cleanup |
-
 ## Building with Clang
 
 If your kernel was built with clang (Arch, CachyOS, etc.):
@@ -204,7 +196,10 @@ make CC=clang LD=ld.lld LLVM=1 -j$(nproc) M=drivers/net/wireless/mediatek/mt76
 
 ## Upstream Status
 
-All patches submitted to LKML for upstream inclusion. Also submitted to [OpenWrt mt76](https://github.com/openwrt/mt76).
+Patches reorganized for upstream submission to:
+- **nbd168/wireless** (Felix Fietkau's staging tree)
+- **linux-wireless mailing list**
+- **OpenWRT mt76**
 
 ## Related Issues
 

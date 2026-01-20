@@ -499,13 +499,16 @@ void mt7925_roc_work(struct work_struct *work)
 	/* Check abort flag BEFORE acquiring mutex to prevent deadlock.
 	 * If abort is requested while we're in the sta_remove path (which
 	 * holds the mutex), we must not try to acquire it or we'll deadlock.
-	 * Just clear the flags and notify mac80211 that ROC expired.
+	 * Clear the flags and only notify mac80211 if ROC was actually active.
 	 */
 	had_abort = test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
 	if (had_abort) {
-		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
-		dev_info(phy->dev->mt76.dev, "ROC: roc_work abort path, notifying expired\n");
-		ieee80211_remain_on_channel_expired(phy->mt76->hw);
+		if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state)) {
+			dev_info(phy->dev->mt76.dev, "ROC: roc_work abort path, notifying expired\n");
+			ieee80211_remain_on_channel_expired(phy->mt76->hw);
+		} else {
+			dev_info(phy->dev->mt76.dev, "ROC: roc_work abort path, ROC not active, skipping callback\n");
+		}
 		return;
 	}
 

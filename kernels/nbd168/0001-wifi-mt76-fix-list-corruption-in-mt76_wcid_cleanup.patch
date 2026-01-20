@@ -22,7 +22,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mac80211.c b/drivers/net/wireless/mediatek/mt76/mac80211.c
-index 75772979f4..d0c522909e 100644
+index 75772979f438..d0c522909e98 100644
 --- a/drivers/net/wireless/mediatek/mt76/mac80211.c
 +++ b/drivers/net/wireless/mediatek/mt76/mac80211.c
 @@ -1716,6 +1716,16 @@ void mt76_wcid_cleanup(struct mt76_dev *dev, struct mt76_wcid *wcid)

@@ -1,4 +1,4 @@
-From 0c32062948e6889f6ae4b2c66823d098633be58f Mon Sep 17 00:00:00 2001
+From c1d3c70c72c3a170383cbe42a10cbd1fcce30591 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:04:19 -0800
 Subject: [PATCH 07/11] wifi: mt76: mt7925: add MCU command error handling
@@ -34,7 +34,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 18 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 80ca518115..5f8a28d5ff 100644
+index 80ca5181150b..5f8a28d5ff72 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -637,8 +637,10 @@ static int mt7925_set_link_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,

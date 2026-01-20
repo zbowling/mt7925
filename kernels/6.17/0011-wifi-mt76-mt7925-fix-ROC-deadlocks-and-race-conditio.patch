@@ -1,4 +1,4 @@
-From 25e44dea8f1c1f6c1aac16ab3c3ebb9799b5fc5e Mon Sep 17 00:00:00 2001
+From f3e8e1c341f452da34858973a710aadfb4aa3891 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Fri, 16 Jan 2026 21:59:42 -0800
 Subject: [PATCH 11/11] wifi: mt76: mt7925: fix ROC deadlocks and race
@@ -61,7 +61,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  3 files changed, 170 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt76.h b/drivers/net/wireless/mediatek/mt76/mt76.h
-index eba26875ad..5e57370904 100644
+index eba26875aded..5e57370904c5 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt76.h
 +++ b/drivers/net/wireless/mediatek/mt76/mt76.h
 @@ -480,6 +480,7 @@ enum {
@@ -73,7 +73,7 @@ index eba26875ad..5e57370904 100644
  	MT76_STATE_WED_RESET,
  };
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index a520992be6..13ee97fb17 100644
+index a520992be6c7..e358c9401c01 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -453,6 +453,24 @@ static void mt7925_roc_iter(void *priv, u8 *mac,
@@ -108,11 +108,11 @@ index a520992be6..13ee97fb17 100644
 +	/* Check abort flag BEFORE acquiring mutex to prevent deadlock.
 +	 * If abort is requested while we're in the sta_remove path (which
 +	 * holds the mutex), we must not try to acquire it or we'll deadlock.
-+	 * Just clear the flags and notify mac80211 that ROC expired.
++	 * Clear the flags and only notify mac80211 if ROC was actually active.
 +	 */
 +	if (test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state)) {
-+		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
-+		ieee80211_remain_on_channel_expired(phy->mt76->hw);
++		if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
++			ieee80211_remain_on_channel_expired(phy->mt76->hw);
 +		return;
 +	}
 +
@@ -396,7 +396,7 @@ index a520992be6..13ee97fb17 100644
  
  	for_each_set_bit(link_id, &rem, IEEE80211_MLD_MAX_NUM_LINKS) {
 diff --git a/drivers/net/wireless/mediatek/mt76/mt792x.h b/drivers/net/wireless/mediatek/mt76/mt792x.h
-index 443d397d99..706dc56606 100644
+index 443d397d9961..706dc56606a0 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt792x.h
 +++ b/drivers/net/wireless/mediatek/mt76/mt792x.h
 @@ -185,6 +185,13 @@ struct mt792x_phy {

@@ -1,4 +1,4 @@
-From ccc54cd1eaa229921d3872bf1469dfca5f2c9476 Mon Sep 17 00:00:00 2001
+From b8070beb5f27014b9492c58583446e41fbb13541 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:03:12 -0800
 Subject: [PATCH 05/11] wifi: mt76: mt7925: add comprehensive NULL pointer
@@ -52,7 +52,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  3 files changed, 97 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
-index 871b671019..184efe8afa 100644
+index 871b67101976..184efe8afa10 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 @@ -1271,6 +1271,12 @@ mt7925_vif_connect_iter(void *priv, u8 *mac,
@@ -69,7 +69,7 @@ index 871b671019..184efe8afa 100644
  					    &mvif->sta.deflink.wcid, true);
  		mt7925_mcu_set_tx(dev, bss_conf);
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 2d358a9664..15d1b1b8d9 100644
+index 2d358a96640c..15d1b1b8d9f8 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -604,6 +604,10 @@ static int mt7925_set_link_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
@@ -302,7 +302,7 @@ index 2d358a9664..15d1b1b8d9 100644
  		if (vif->type == NL80211_IFTYPE_STATION &&
  		    mconf == &mvif->bss_conf)
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
-index cf0fdea45c..94ec62a453 100644
+index cf0fdea45cf7..94ec62a4538a 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1087,6 +1087,8 @@ mt7925_mcu_sta_hdr_trans_tlv(struct sk_buff *skb,

@@ -6,205 +6,158 @@ This document explains how the MT76/MT7925 driver differs between kernel version
 
 The MT7925 WiFi 7 driver is part of the mt76 driver family in the Linux kernel. As the kernel evolves, the driver code changes, requiring patches to be adapted for each version.
 
+## Patch Series (v2 - Reorganized)
+
+Our patch series has been reorganized from 27 individual fixes into **11 cleaner, logically-grouped patches** for easier upstream review.
+
+### Patch List
+
+| # | Patch Title | Subsystem | Description |
+|---|-------------|-----------|-------------|
+| 01 | fix list corruption in mt76_wcid_cleanup | mt76 core | Fixes sta_poll_list corruption after reset |
+| 02 | fix NULL pointer and firmware reload issues | mt792x shared | NULL checks in TX path + firmware reload fix |
+| 03 | add mutex protection in critical paths | mt7921 | Mutex fixes for reset/ROC/PM paths |
+| 04 | fix deadlock in sta removal and suspend ROC abort | mt7921 | Async ROC abort for deadlock prevention |
+| 05 | add comprehensive NULL pointer protection for MLO | mt7925 | NULL checks for link structures in MLO |
+| 06 | add mutex protection in critical paths | mt7925 | Mutex fixes for reset/ROC/PM/resume paths |
+| 07 | add MCU command error handling | mt7925 | Error checking for AMPDU/BSS MCU commands |
+| 08 | add lockdep assertions for mutex verification | mt7925 | Debug assertions for mutex verification |
+| 09 | fix MLO roaming and ROC setup issues | mt7925 | Key removal fix + ROC setup warning fix |
+| 10 | fix BA session teardown during beacon loss | mt7925 | Race condition fix in BA teardown |
+| 11 | fix ROC deadlocks and race conditions | mt7925 | Comprehensive ROC state machine fixes |
+
+### Patch Order
+
+Patches are ordered by subsystem dependency:
+```
+mt76 core → mt792x shared → mt7921 → mt7925
+```
+
+This ensures each patch builds on prior changes and can be applied incrementally.
+
 ## Supported Kernel Versions
 
 | Version | Tag | Patches | Status |
 |---------|-----|---------|--------|
-| 6.17.x | v6.17.13 | 26 patches | EOL but still used (Fedora 41, older Arch) |
-| 6.18.x | v6.18.5 | 27 patches | **Current stable** - Arch, Fedora 42 |
-| 6.19-rcX | v6.19-rc5 | 28 patches | Release candidate - bleeding edge |
-| nbd168 | wireless-next | 27 patches | OpenWRT staging tree |
+| 6.17.x | v6.17.13 | 11 patches | EOL but still used (Fedora 41, older Arch) |
+| 6.18.x | v6.18.5 | 11 patches | **Current stable** - Arch, Fedora 42 |
+| 6.19-rcX | v6.19-rc5 | 11 patches | Release candidate - bleeding edge |
+| nbd168 | wireless-next | 11 patches | OpenWRT staging tree (upstream target) |
 
 ## Key Differences Between Versions
 
-### 6.17.x vs 6.18.x
+### Function Renames
 
-1. **MLO Chanctx Functions** (patch 0009 on 6.18)
-   - 6.17 lacks some MLO chanctx code that was added in 6.18
-   - The `mt7925_mlo_add_chanctx` and related functions were refactored
-   - **Result**: 6.17 missing 1 patch
+The primary difference between kernel versions is function naming:
 
-2. **Error Handling Consolidation** (patch 0024 on 6.18)
-   - 6.18 has a consolidated error handling cleanup patch
-   - 6.17 doesn't need this patch (different code structure)
-   - **Result**: 6.17 missing 1 patch
+| Function | 6.17.x / 6.18.x | 6.19-rc / nbd168 |
+|----------|-----------------|------------------|
+| Regulatory update | `mt7925_regd_update(dev)` | `mt7925_mcu_regd_update(dev, alpha2, env)` |
+| Link selection | `mt7925_mac_select_links(mdev, vif)` | `mt76_select_links(vif, 2)` |
 
-3. **MT7921 Mutex Patches**
-   - 6.17: Two separate patches (0016 + 0018)
-   - 6.18: Combined into one patch (0018)
-   - **Result**: 6.17 has 1 extra patch
+### Affected Patches
 
-**Net difference**: 6.17 has 26 patches, 6.18 has 27 patches (-2 +1 = -1)
+**Patch 06** (mt7925 mutex protection) differs between versions:
+- 6.17/6.18: Uses `mt7925_regd_update(dev)` in pci.c resume path
+- 6.19/nbd168: Uses `mt7925_mcu_regd_update(dev, mdev->alpha2, dev->country_ie_env)`
 
-### 6.18.x vs 6.19-rc
+**Patch 05** (NULL pointer protection) differs in 6.17:
+- 6.17: Uses `mt7925_mac_select_links(mdev, vif)` in `mt7925_mac_set_links()`
+- 6.18+: Uses `mt76_select_links(vif, 2)`
 
-1. **MT7921 Mutex Patches**
-   - 6.18: Combined into one patch (0018)
-   - 6.19-rc: Two separate patches (0015 + 0019)
-   - **Result**: 6.19-rc has 1 extra patch
+### All Other Patches
 
-2. **Regulatory Domain Update Function**
-   - 6.18 uses: `mt7925_regd_update(dev)`
-   - 6.19-rc uses: `mt7925_mcu_regd_update(dev, mdev->alpha2, dev->country_ie_env)`
-   - The function was renamed and now takes additional parameters
-   - **Impact**: Resume path mutex patch differs in implementation
-
-3. **Reset Work Function**
-   - 6.18: `mt7925_regd_update(&dev->phy, "00")`
-   - 6.19-rc: `mt7925_regd_change(&dev->phy, "00")`
-   - Function renamed from `_update` to `_change`
-
-4. **Patch Ordering**
-   - Due to different code structure, patches are numbered differently
-   - Same fixes, different application order
-
-**Net difference**: 6.18 has 27 patches, 6.19-rc has 28 patches (+1)
+All other patches apply uniformly across kernel versions with only minor context adjustments (line numbers, surrounding code).
 
 ## Patch Categories
 
-### NULL Pointer Checks
-These patches add defensive NULL checks before dereferencing pointers, particularly for MLO (Multi-Link Operation) link structures:
+### Critical Fixes (Patches 01, 02, 04, 10, 11)
 
-- `mt792x_sta_to_link()` - Station to link conversion
-- `mt792x_vif_to_link()` - VIF to link conversion
-- `msta->deflink` - Default link pointer
-- `link_conf` - Link configuration
+These fix crashes and deadlocks:
 
-**Applies uniformly** across all kernel versions with minor line number adjustments.
+- **01**: List corruption causing crashes after device reset
+- **02**: NULL pointer dereference in TX path during MLO transitions
+- **04**: Deadlock when ROC abort called while holding mutex
+- **10**: Race condition between BA teardown and beacon loss
+- **11**: Multiple ROC state machine issues causing hangs
 
-### Mutex Protection
-These patches add `mt792x_mutex_acquire()/release()` around `ieee80211_iterate_*` calls:
+### Safety Improvements (Patches 03, 05, 06, 07)
 
-| Location | 6.17 | 6.18 | 6.19-rc |
-|----------|------|------|---------|
-| mac.c reset work | Patch 17 | Patch 02 | Patch 16 |
-| main.c runtime PM | Patch 02 | Patch 03 | Patch 17 |
-| pci.c resume path | Patch 14 | Patch 16 | Patch 18 |
-| mt7921 ROC/PM | Patch 16 | Patch 18 | Patch 15 |
+These add defensive checks and proper synchronization:
 
-### Error Handling
-These patches add proper error checking for MCU command responses:
+- **03/06**: Mutex protection around `ieee80211_iterate_*` calls
+- **05**: NULL checks before dereferencing MLO link pointers
+- **07**: Error checking for MCU command return values
 
-- AMPDU MCU commands
-- BSS info MCU commands
-- Key setup operations
+### Debug/Maintenance (Patches 08, 09)
 
-**Applies uniformly** with context adjustments.
+- **08**: Lockdep assertions (only active with CONFIG_LOCKDEP)
+- **09**: MLO roaming edge cases and warning fixes
 
-### Lockdep Assertions
-Debug assertions to verify mutex is held when expected. Uniform across versions.
+## Files Modified
 
-### ROC (Remain On Channel) Fixes
-Critical fixes for ROC state machine issues:
+### mt76 Core
+| File | Patch | Change |
+|------|-------|--------|
+| `mac80211.c` | 01 | Remove from sta_poll_list in wcid_cleanup |
 
-- **ROC Timer Race During Suspend** (patch 22/23): Cancels ROC timer and work in `mt7925_suspend()` before mac80211 finishes quiescing, preventing warnings and inconsistent state on resume.
+### mt792x Shared (MT7921 + MT7925)
+| File | Patch | Change |
+|------|-------|--------|
+| `mt792x_core.c` | 02 | NULL checks in TX, firmware reload fix |
+| `mt792x.h` | 02, 11 | ROC rate limiting structures, abort flag |
 
-- **Deadlock in STA Removal ROC Abort** (patch 21/22): Fixes potential deadlock in `mt7925_sta_remove_links()` where `mt7925_abort_roc()` was called without proper mutex handling.
+### MT7921
+| File | Patch | Change |
+|------|-------|--------|
+| `mt7921/main.c` | 03, 04 | Mutex protection, async ROC abort |
+| `mt7921/mac.c` | 03 | Mutex in reset work |
+| `mt7921/pci.c` | 03, 04 | Remove incorrect mutex wrappers |
+| `mt7921/sdio.c` | 04 | Remove incorrect mutex wrappers |
 
-- **ROC Rate Limiting** (patch 23/24): Adds exponential backoff rate limiting for ROC commands to prevent MCU overload during rapid reconnection cycles (especially MLO authentication failures).
-
-- **ROC Work Deadlock** (patch 24/25): Moves `cancel_work_sync(&phy->roc_work)` from inside `mt7925_set_roc()` to callers BEFORE mutex acquisition, preventing deadlock when roc_work is waiting for the mutex.
-
-- **MT7921 STA Removal/Suspend ROC Deadlock** (patch 27): Fixes deadlock in mt7921 driver mirroring the mt7925 pattern. Adds `mt7921_roc_abort_async()` for use by `mt7921_mac_sta_remove()` (called from `mt76_sta_remove()` which holds mutex), and removes incorrect mutex wrappers from suspend paths. The `roc_work` now checks abort flag before acquiring mutex.
-
-### Resource Leak Fixes
-- **WCID Table Leak** (patch 24/25): Adds proper error cleanup path in `mt7925_mac_link_sta_add()` that clears the wcid pointer and frees the allocated index on failure, preventing WCID table exhaustion.
-
-- **List Corruption in WCID Cleanup** (patch 20): Fixes `mt76_wcid_cleanup()` to remove entries from `sta_poll_list` before reset, preventing list corruption when `mt76_wcid_add_poll()` later tries to add the entry back.
-
-### BA Session Handling
-- **BA Session Teardown During Beacon Loss** (patch 21): Fixes race condition between BA session teardown and beacon loss handling that could cause system hangs.
+### MT7925
+| File | Patch | Change |
+|------|-------|--------|
+| `mt7925/main.c` | 05-11 | NULL checks, mutex, error handling, ROC fixes |
+| `mt7925/mac.c` | 05, 06 | NULL checks, mutex in reset/assoc |
+| `mt7925/mcu.c` | 05, 08, 09 | NULL checks, lockdep, ROC setup |
+| `mt7925/pci.c` | 06 | Mutex in resume path |
+| `mt76.h` | 11 | MT76_STATE_ROC_ABORT flag |
 
 ## How to Port Patches to New Kernel Versions
 
 When a new kernel is released:
 
-1. **Sparse checkout the kernel source**:
+1. **Start from the closest version** (usually nbd168 for upstream):
    ```bash
-   git clone --depth 1 --filter=blob:none --sparse \
-     https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
-     -b vX.Y.Z linux-src
-   cd linux-src
-   git sparse-checkout set drivers/net/wireless/mediatek/mt76
+   cd linux-wifi
+   git checkout -B mt7925-upstream-v2-NEW nbd168/mt76  # or vX.Y.Z
    ```
 
-2. **Apply patches from closest version**:
+2. **Cherry-pick from the nbd168 branch**:
    ```bash
-   # Try 6.18 patches first for stable releases
-   git am ../kernels/6.18/*.patch
+   git cherry-pick mt7925-upstream-v2~10..mt7925-upstream-v2
    ```
 
-3. **Fix any conflicts**:
-   - Check function names - MediaTek renames functions between releases
-   - Check line numbers - code moves around
-   - Use `git apply --reject` to see what fails
+3. **Resolve any conflicts**:
+   - Check function names (regulatory, link selection)
+   - Use kernel version's naming convention
+   - Keep the logic/fix identical
 
-4. **Common issues**:
-   - Function renamed → grep for similar names
-   - Context mismatch → read the actual file and apply fix manually
-   - File moved → check git log for renames
-
-5. **Export clean patches**:
+4. **Export patches**:
    ```bash
-   git format-patch vX.Y.Z..HEAD -o ../kernels/X.Y/
+   git format-patch vX.Y.Z..HEAD -o ../mt7925/kernels/X.Y/
    ```
 
-6. **Validate**:
-   ```bash
-   ./scripts/validate-patches.sh X.Y
-   ```
+5. **Update this document** with any new differences found.
 
-## File Reference
+## Upstream Submission
 
-### Primary Files Modified
+The reorganized 11-patch series is designed for upstream submission to:
 
-| File | Purpose |
-|------|---------|
-| `mt7925/main.c` | Main driver callbacks, runtime PM, interface iteration |
-| `mt7925/mac.c` | MAC layer, reset handling, TX path |
-| `mt7925/mcu.c` | MCU command handling, firmware communication |
-| `mt7925/pci.c` | PCIe bus interface, suspend/resume |
-| `mt792x_core.c` | Shared MT7921/MT7925 code |
-| `mt7921/main.c` | MT7921 driver (affected by shared mutex fixes) |
-| `mt7921/mac.c` | MT7921 MAC layer |
-
-### Key Functions Patched
-
-| Function | File | Fix Type |
-|----------|------|----------|
-| `mt7925_mac_reset_work` | mac.c | Mutex protection |
-| `mt7925_set_runtime_pm` | main.c | Mutex protection |
-| `mt7925_mlo_pm_work` | main.c | Mutex protection |
-| `_mt7925_pci_resume` | pci.c | Mutex protection |
-| `mt7925_mac_link_sta_add` | main.c | NULL checks, WCID leak fix |
-| `mt7925_conf_tx` | main.c | NULL checks |
-| `mt76_connac_mcu_sta_tlv` | mcu.c | NULL checks |
-| `mt7925_set_roc` | main.c | Deadlock fix, rate limiting |
-| `mt7925_set_mlo_roc` | main.c | Deadlock fix, rate limiting |
-| `mt7925_remain_on_channel` | main.c | Deadlock fix |
-| `mt7925_mgd_prepare_tx` | main.c | Deadlock fix |
-| `mt7925_change_vif_links` | main.c | Deadlock fix |
-| `mt7925_suspend` | main.c | ROC timer race fix |
-| `mt7925_sta_remove_links` | main.c | ROC abort deadlock |
-| `mt76_wcid_cleanup` | mac80211.c | List corruption fix |
-| Various MLO functions | main.c, mcu.c | NULL checks |
-| `mt7921_roc_abort_sync` | mt7921/main.c | Deadlock fix |
-| `mt7921_roc_abort_async` | mt7921/main.c | Async abort (new) |
-| `mt7921_mac_sta_remove` | mt7921/main.c | Use async abort |
-| `mt7921_roc_work` | mt7921/main.c | Abort flag check |
-
-## Testing
-
-After porting patches:
-
-1. **Apply test**: `git apply --check *.patch`
-2. **Build test**: Compile the module against target kernel
-3. **Load test**: Load module and check dmesg for warnings
-4. **Functional test**: Connect to WiFi, check stability
-
-## Upstream Status
-
-These patches address issues found in production use. Some have been submitted to LKML (Linux Kernel Mailing List). Check the individual patch files for upstream submission status in their commit messages.
+1. **nbd168/wireless** (Felix Fietkau's staging tree) - Primary target
+2. **linux-wireless mailing list** - For mainline inclusion
+3. **OpenWRT mt76** - Community driver repository
 
 ## See Also
 
