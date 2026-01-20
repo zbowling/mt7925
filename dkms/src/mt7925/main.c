@@ -469,18 +469,19 @@ static void mt7925_roc_abort_async(struct mt792x_dev *dev)
 void mt7925_roc_abort_sync(struct mt792x_dev *dev)
 {
 	struct mt792x_phy *phy = &dev->phy;
-	bool was_roc;
 
-	dev_info(dev->mt76.dev, "ROC: abort_sync called\n");
+	if (!test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
+		return;
+
+	dev_info(dev->mt76.dev, "ROC: abort_sync clearing ROC state\n");
 
 	timer_delete_sync(&phy->roc_timer);
-	cancel_work_sync(&phy->roc_work);
-	was_roc = test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state);
-	dev_info(dev->mt76.dev, "ROC: abort_sync cleared ROC=%d\n", was_roc);
-	if (was_roc)
-		ieee80211_iterate_interfaces(mt76_hw(dev),
-					     IEEE80211_IFACE_ITER_RESUME_ALL,
-					     mt7925_roc_iter, (void *)phy);
+
+	cancel_work(&phy->roc_work);
+
+	ieee80211_iterate_interfaces(mt76_hw(dev),
+				     IEEE80211_IFACE_ITER_RESUME_ALL,
+				     mt7925_roc_iter, (void *)phy);
 }
 EXPORT_SYMBOL_GPL(mt7925_roc_abort_sync);
 
@@ -1362,9 +1363,8 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
 		return;
 	}
 
-	dev_info(mdev->dev, "STA: mac_link_sta_remove calling roc_abort_async\n");
-	/* Async abort - caller already holds mutex */
-	mt7925_roc_abort_async(dev);
+	dev_info(mdev->dev, "STA: mac_link_sta_remove calling roc_abort_sync\n");
+	mt7925_roc_abort_sync(dev);
 
 	mt76_connac_free_pending_tx_skbs(&dev->pm, &mlink->wcid);
 	mt76_connac_pm_wake(&dev->mphy, &dev->pm);
