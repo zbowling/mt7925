@@ -1,65 +1,23 @@
 From: Zac Bowling <zac@zacbowling.com>
-Subject: [PATCH v6 00/13] wifi: mt76: mt7925: stability fixes for deadlocks, NULL derefs, and race conditions
+Subject: [PATCH v6 00/13] wifi: mt76: stability fixes for deadlocks, NULL derefs, and race conditions
 
-This series addresses critical stability issues in the MT7925 WiFi driver
-that cause kernel panics, deadlocks, and system hangs on Framework Desktop
-systems and other hardware using the MT7925 WiFi card.
+TLDR: This series addresses stability issues in both the MT7921 and MT7925 
+WiFi drivers that cause kernel panics, deadlocks, and system hangs 
+on various systems using these drivers.
 
-This v6 series is rebased on Sean Wang's upstream deadlock fix [1] which is
-now included as patch 01/13. The remaining 12 patches are my stability fixes
-reorganized for cleaner upstream review.
+This v6 series is rebased on Sean Wang's upstream deadlock fix already sent
+which is now included as patch 01/13. The remaining 12 patches are my stability
+fixes.
 
 Changes since v5:
 - Rebased on Sean Wang's fix for mt7925_roc_abort_sync deadlock (now patch 1)
+  and removed my work around for the same issue as Sean's fix is better.
 - Fixed format string warning in patch 12: %lu -> %u for jiffies_to_msecs()
   return type (caught by kernel test robot)
 - Added patch 13: fix double wcid initialization race condition - removes
   duplicate mt76_wcid_init() call that occurred after rcu_assign_pointer(),
   which could cause list corruption, memory leaks, and race conditions
   (this is a pre-existing bug in upstream, not introduced by this series)
-
-Summary of the 13 patches:
-
-Patch 01: Sean Wang's fix for ROC abort deadlock (upstream)
-  Fixes cancel_work_sync() deadlock when called with mutex held.
-
-Patch 02: mt76 core - fix list corruption in mt76_wcid_cleanup
-  Prevents sta_poll_list corruption after device reset by using
-  list_del_init() instead of list_del().
-
-Patch 03: mt792x shared - fix NULL pointer and firmware reload issues
-  Fixes NULL deref in TX path and firmware reload failure after crash.
-
-Patches 04-05: mt7921 mutex and deadlock fixes
-  Adds mutex protection and fixes deadlocks in sta removal paths.
-  MT7921 shares code paths with MT7925.
-
-Patches 06-09: mt7925 safety improvements
-  - Comprehensive NULL pointer protection for MLO state transitions
-  - Mutex protection in reset, ROC abort, runtime PM, and resume paths
-  - MCU command error handling for AMPDU, BSS info, and key setup
-  - Lockdep assertions for debugging mutex violations
-
-Patches 10-11: mt7925 MLO and BA session fixes
-  - Key removal and ROC setup fixes during MLO roaming
-  - BA session teardown callback fix during beacon loss
-
-Patch 12: mt7925 ROC deadlock and race condition fixes
-  Comprehensive fix for ROC handling: deadlock in sta removal, timer race
-  during suspend, rate limiting for MLO auth, WCID leak, and async abort
-  race condition.
-
-Patch 13: mt7925 double wcid initialization race fix
-  Removes duplicate mt76_wcid_init() after RCU publish that could corrupt
-  list heads and cause memory leaks.
-
-Testing:
-Tested extensively on Framework Desktop (AMD Ryzen AI Max 300 Series) with
-MT7925 (RZ717) WiFi card. System is now stable through suspend/resume cycles,
-MLO roaming, network switching, and firmware recovery scenarios that
-previously caused crashes or hangs.
-
-[1] https://lore.kernel.org/linux-wireless/sean.wang@mediatek.com
 
 Zac Bowling (12):
   wifi: mt76: fix list corruption in mt76_wcid_cleanup
