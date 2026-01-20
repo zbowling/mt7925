@@ -33,13 +33,14 @@ mt792x-lib-y := mt792x_core.o mt792x_mac.o mt792x_trace.o \
 
 CFLAGS_mt792x_trace.o := -I$(src)
 
-# mt7925-common module
-obj-m += mt7925/mt7925-common.o
-mt7925/mt7925-common-y := mt7925/mac.o mt7925/mcu.o mt7925/main.o mt7925/init.o mt7925/debugfs.o
+# mt7925-common module - built at root level with explicit paths
+obj-m += mt7925-common.o
+mt7925-common-y := \
+	mt7925/mac.o mt7925/mcu.o mt7925/main.o mt7925/init.o mt7925/debugfs.o
 
-# mt7925e PCIe module
-obj-m += mt7925/mt7925e.o
-mt7925/mt7925e-y := mt7925/pci.o mt7925/pci_mac.o mt7925/pci_mcu.o
+# mt7925e PCIe module - built at root level with explicit paths
+obj-m += mt7925e.o
+mt7925e-y := mt7925/pci.o mt7925/pci_mac.o mt7925/pci_mcu.o
 
 # Build targets
 all:
