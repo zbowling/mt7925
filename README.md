@@ -4,7 +4,7 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Status
 
-**Patches:** 11 patches (reorganized from 27) for each kernel version, tested and prepared for upstream submission.
+**Patches:** 12 patches (v6) for each kernel version - includes Sean Wang's upstream deadlock fix + 11 stability patches.
 
 **DKMS:** v1.3.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
 
@@ -54,40 +54,41 @@ sudo ./install.sh
 
 | Version | Patches | Status | Notes |
 |---------|---------|--------|-------|
-| 6.18.x | 11 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
-| 6.19-rc | 11 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
-| 6.17.x | 11 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
-| nbd168 | 11 (`kernels/nbd168/`) | **Upstream target** | nbd168/wireless tree |
+| 6.18.x | 12 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
+| 6.19-rc | 12 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
+| 6.17.x | 12 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
+| nbd168 | 12 (`kernels/nbd168/`) | **Upstream target** | nbd168/wireless tree |
 
-## Patch Series (v2)
+## Patch Series (v6)
 
-Reorganized 27 individual fixes into **11 cleaner, logically-grouped patches**:
+**12 patches** - Sean Wang's upstream deadlock fix as base + 11 stability patches:
 
 | # | Patch | Category |
 |---|-------|----------|
-| 01 | mt76: fix list corruption in mt76_wcid_cleanup | Critical (mt76 core) |
-| 02 | mt792x: fix NULL pointer and firmware reload issues | Critical (mt792x shared) |
-| 03 | mt7921: add mutex protection in critical paths | Safety (mt7921) |
-| 04 | mt7921: fix deadlock in sta removal and suspend ROC abort | Critical (mt7921) |
-| 05 | mt7925: add comprehensive NULL pointer protection for MLO | Safety (mt7925) |
-| 06 | mt7925: add mutex protection in critical paths | Safety (mt7925) |
-| 07 | mt7925: add MCU command error handling | Safety (mt7925) |
-| 08 | mt7925: add lockdep assertions for mutex verification | Debug (mt7925) |
-| 09 | mt7925: fix MLO roaming and ROC setup issues | MLO (mt7925) |
-| 10 | mt7925: fix BA session teardown during beacon loss | Critical (mt7925) |
-| 11 | mt7925: fix ROC deadlocks and race conditions | Critical (mt7925) |
+| 01 | mt7925: fix potential deadlock in roc_abort_sync | **Critical** (Sean Wang's upstream fix) |
+| 02 | mt76: fix list corruption in mt76_wcid_cleanup | Critical (mt76 core) |
+| 03 | mt792x: fix NULL pointer and firmware reload issues | Critical (mt792x shared) |
+| 04 | mt7921: add mutex protection in critical paths | Safety (mt7921) |
+| 05 | mt7921: fix deadlock in sta removal and suspend ROC abort | Critical (mt7921) |
+| 06 | mt7925: add comprehensive NULL pointer protection for MLO | Safety (mt7925) |
+| 07 | mt7925: add mutex protection in critical paths | Safety (mt7925) |
+| 08 | mt7925: add MCU command error handling | Safety (mt7925) |
+| 09 | mt7925: add lockdep assertions for mutex verification | Debug (mt7925) |
+| 10 | mt7925: fix MLO roaming and ROC setup issues | MLO (mt7925) |
+| 11 | mt7925: fix BA session teardown during beacon loss | Critical (mt7925) |
+| 12 | mt7925: fix ROC deadlocks and race conditions | Critical (mt7925) |
 
-**Order:** `mt76 core → mt792x shared → mt7921 → mt7925`
+**Order:** `Sean's fix → mt76 core → mt792x shared → mt7921 → mt7925`
 
 ## Repository Structure
 
 ```
 mt7925/
 ├── kernels/                    # Patches organized by kernel version
-│   ├── 6.17/                   # 11 patches for v6.17.13
-│   ├── 6.18/                   # 11 patches for v6.18.5
-│   ├── 6.19-rc/                # 11 patches for v6.19-rc5
-│   └── nbd168/                 # 11 patches for nbd168/wireless (upstream)
+│   ├── 6.17/                   # 12 patches for v6.17.13
+│   ├── 6.18/                   # 12 patches for v6.18.5
+│   ├── 6.19-rc/                # 12 patches for v6.19-rc5
+│   └── nbd168/                 # 12 patches for nbd168/wireless (upstream)
 ├── dkms/                       # DKMS package (v1.3.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
@@ -155,11 +156,11 @@ sudo ./uninstall.sh
 
 The MT7925 WiFi driver has several critical bugs:
 
-1. **NULL Pointer Dereference** - Kernel panics during reset or state transitions
-2. **Mutex Deadlock in Reset/ROC** - System hangs during network switching
-3. **Mutex Deadlock in Power Management** - Deadlocks during suspend/resume
-4. **Missing Error Handling** - MCU command failures cause inconsistent state
-5. **ROC Work Deadlock** - `cancel_work_sync` called while holding mutex
+1. **ROC Deadlock** - `cancel_work_sync` called while holding mutex (Sean's fix)
+2. **NULL Pointer Dereference** - Kernel panics during reset or state transitions
+3. **Mutex Deadlock in Reset/ROC** - System hangs during network switching
+4. **Mutex Deadlock in Power Management** - Deadlocks during suspend/resume
+5. **Missing Error Handling** - MCU command failures cause inconsistent state
 6. **WCID Resource Leak** - WCID table exhaustion on repeated sta add failures
 7. **List Corruption** - `sta_poll_list` corruption after device reset
 8. **Suspend/Resume Race** - ROC timer firing during quiescing causes hangs
@@ -196,10 +197,12 @@ make CC=clang LD=ld.lld LLVM=1 -j$(nproc) M=drivers/net/wireless/mediatek/mt76
 
 ## Upstream Status
 
-Patches reorganized for upstream submission to:
+Patches prepared for upstream submission to:
 - **nbd168/wireless** (Felix Fietkau's staging tree)
 - **linux-wireless mailing list**
 - **OpenWRT mt76**
+
+Patch 01 (Sean Wang's deadlock fix) is already in the upstream queue.
 
 ## Related Issues
 
