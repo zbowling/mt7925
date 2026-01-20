@@ -1,7 +1,7 @@
 From 099fae9b5d87fd09358378497d953434b4fbc40d Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zbowling@gmail.com>
 Date: Thu, 1 Jan 2026 14:01:50 -0800
-Subject: [PATCH 13/25] wifi: mt76: mt792x: fix firmware reload failure after
+Subject: [PATCH 13/26] wifi: mt76: mt792x: fix firmware reload failure after
  previous load crash
 
 If the firmware loading process crashes or is interrupted after

@@ -4,9 +4,9 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Status
 
-**Patches:** 25-27 patches (depending on kernel version) tested and submitted to LKML for upstream inclusion.
+**Patches:** 26-28 patches (depending on kernel version) tested and submitted to LKML for upstream inclusion.
 
-**DKMS:** v1.2.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
+**DKMS:** v1.3.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
 
 ## Quick Start
 
@@ -55,21 +55,21 @@ sudo ./install.sh
 
 | Version | Patches | Status | Notes |
 |---------|---------|--------|-------|
-| 6.18.x | 26 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
-| 6.19-rc | 27 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
-| 6.17.x | 25 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
-| nbd168 | 26 (`kernels/nbd168/`) | Upstream staging | nbd168/wireless tree |
+| 6.18.x | 27 (`kernels/6.18/`) | **Current stable** | Arch, Fedora 42, CachyOS |
+| 6.19-rc | 28 (`kernels/6.19-rc/`) | Release candidate | Bleeding edge |
+| 6.17.x | 26 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
+| nbd168 | 27 (`kernels/nbd168/`) | Upstream staging | nbd168/wireless tree |
 
 ## Repository Structure
 
 ```
 mt7925/
 ├── kernels/                    # Patches organized by kernel version
-│   ├── 6.17/                   # 25 patches for v6.17.13
-│   ├── 6.18/                   # 26 patches for v6.18.5
-│   ├── 6.19-rc/                # 27 patches for v6.19-rc5
-│   └── nbd168/                 # 26 patches for nbd168/wireless
-├── dkms/                       # DKMS package (v1.2.0, requires 6.17+)
+│   ├── 6.17/                   # 26 patches for v6.17.13
+│   ├── 6.18/                   # 27 patches for v6.18.5
+│   ├── 6.19-rc/                # 28 patches for v6.19-rc5
+│   └── nbd168/                 # 27 patches for nbd168/wireless
+├── dkms/                       # DKMS package (v1.3.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
 │   ├── dkms.conf               # DKMS configuration
@@ -160,7 +160,7 @@ The MT7925 WiFi driver has several critical bugs:
 - Processes stuck in D state (uninterruptible sleep)
 - Hangs during suspend/resume cycles
 
-## Patches (25-27 per kernel)
+## Patches (26-28 per kernel)
 
 | # | Patch | Category |
 |---|-------|----------|
@@ -173,16 +173,17 @@ The MT7925 WiFi driver has several critical bugs:
 | 11 | add-lockdep-assertions | Debug |
 | 12-13 | fix-MLO-roaming-issues | MLO |
 | 14-17 | add-NULL-checks-and-mutex | Safety |
-| 18 | mt7921-fix-missing-mutex | MT7921 |
-| 19 | mt7921-fix-mutex-deadlocks | MT7921 |
-| 20 | fix-list-corruption-in-wcid-cleanup | Critical (mt76 core) |
-| 21 | fix-BA-session-teardown-beacon-loss | Critical |
-| 22 | fix-deadlock-in-sta-removal-ROC-abort | Critical |
-| 23 | fix-ROC-timer-race-during-suspend | Critical |
-| 24 | add-ROC-rate-limiting-MLO-auth-failures | Stability |
+| 18 | mt7921-fix-mutex-handling | MT7921 |
+| 19 | fix-list-corruption-in-wcid-cleanup | Critical (mt76 core) |
+| 20 | fix-BA-session-teardown-beacon-loss | Critical |
+| 21 | fix-deadlock-in-sta-removal-ROC-abort | Critical |
+| 22 | fix-ROC-timer-race-during-suspend | Critical |
+| 23 | add-ROC-rate-limiting-MLO-auth-failures | Stability |
+| 24 | improve-error-handling-code-cleanup | Cleanup |
 | 25 | fix-deadlock-and-WCID-leak-bugs | Critical |
 | 26 | fix-race-condition-in-async-ROC-abort | Critical |
-| 27 | clean-up-verbose-comments-for-upstream | Cleanup |
+| 27 | mt7921-fix-deadlock-sta-removal-suspend | Critical (MT7921) |
+| 28 | clean-up-verbose-comments (6.19 only) | Cleanup |
 
 ## Building with Clang
 

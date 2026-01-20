@@ -1,7 +1,7 @@
 From 493a6bfebbde1fb2dc4e75d41a48b8102eb58c09 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Thu, 1 Jan 2026 12:09:42 -0800
-Subject: [PATCH 10/27] wifi: mt76: mt7925: fix key removal failure during MLO
+Subject: [PATCH 10/28] wifi: mt76: mt7925: fix key removal failure during MLO
  roaming
 
 During MLO roaming, mac80211 may request key removal after the link state

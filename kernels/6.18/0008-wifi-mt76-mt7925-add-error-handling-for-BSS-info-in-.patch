@@ -1,7 +1,7 @@
 From 5f2555f026c8894b83aa3853a68af52341e779b8 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 31 Dec 2025 17:21:51 -0800
-Subject: [PATCH 08/26] wifi: mt76: mt7925: add error handling for BSS info in
+Subject: [PATCH 08/27] wifi: mt76: mt7925: add error handling for BSS info in
  key setup
 
 Check return value of mt7925_mcu_add_bss_info() in mt7925_set_key_link()

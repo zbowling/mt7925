@@ -1,7 +1,7 @@
 From 09c433e91c09ba1ce62374d2aceedd54b6c9a96e Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 15:29:29 -0800
-Subject: [PATCH 26/26] wifi: mt76: mt7925: fix race condition in async ROC
+Subject: [PATCH 26/27] wifi: mt76: mt7925: fix race condition in async ROC
  abort
 
 Fix multiple issues in the async ROC abort mechanism:

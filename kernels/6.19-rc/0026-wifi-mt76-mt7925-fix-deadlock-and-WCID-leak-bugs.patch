@@ -1,7 +1,7 @@
 From 1a3a1132bde57b4bd9c604d15a1510ba9db858a7 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 15:00:33 -0800
-Subject: [PATCH 26/27] wifi: mt76: mt7925: fix deadlock and WCID leak bugs
+Subject: [PATCH 26/28] wifi: mt76: mt7925: fix deadlock and WCID leak bugs
 
 Fix two bugs identified by code review:
 

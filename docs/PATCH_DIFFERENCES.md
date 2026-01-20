@@ -10,10 +10,10 @@ The MT7925 WiFi 7 driver is part of the mt76 driver family in the Linux kernel. 
 
 | Version | Tag | Patches | Status |
 |---------|-----|---------|--------|
-| 6.17.x | v6.17.13 | 25 patches | EOL but still used (Fedora 41, older Arch) |
-| 6.18.x | v6.18.5 | 26 patches | **Current stable** - Arch, Fedora 42 |
-| 6.19-rcX | v6.19-rc5 | 27 patches | Release candidate - bleeding edge |
-| nbd168 | wireless-next | 26 patches | OpenWRT staging tree |
+| 6.17.x | v6.17.13 | 26 patches | EOL but still used (Fedora 41, older Arch) |
+| 6.18.x | v6.18.5 | 27 patches | **Current stable** - Arch, Fedora 42 |
+| 6.19-rcX | v6.19-rc5 | 28 patches | Release candidate - bleeding edge |
+| nbd168 | wireless-next | 27 patches | OpenWRT staging tree |
 
 ## Key Differences Between Versions
 
@@ -34,7 +34,7 @@ The MT7925 WiFi 7 driver is part of the mt76 driver family in the Linux kernel. 
    - 6.18: Combined into one patch (0018)
    - **Result**: 6.17 has 1 extra patch
 
-**Net difference**: 6.17 has 25 patches, 6.18 has 26 patches (-2 +1 = -1)
+**Net difference**: 6.17 has 26 patches, 6.18 has 27 patches (-2 +1 = -1)
 
 ### 6.18.x vs 6.19-rc
 
@@ -58,7 +58,7 @@ The MT7925 WiFi 7 driver is part of the mt76 driver family in the Linux kernel. 
    - Due to different code structure, patches are numbered differently
    - Same fixes, different application order
 
-**Net difference**: 6.18 has 26 patches, 6.19-rc has 27 patches (+1)
+**Net difference**: 6.18 has 27 patches, 6.19-rc has 28 patches (+1)
 
 ## Patch Categories
 
@@ -104,6 +104,8 @@ Critical fixes for ROC state machine issues:
 - **ROC Rate Limiting** (patch 23/24): Adds exponential backoff rate limiting for ROC commands to prevent MCU overload during rapid reconnection cycles (especially MLO authentication failures).
 
 - **ROC Work Deadlock** (patch 24/25): Moves `cancel_work_sync(&phy->roc_work)` from inside `mt7925_set_roc()` to callers BEFORE mutex acquisition, preventing deadlock when roc_work is waiting for the mutex.
+
+- **MT7921 STA Removal/Suspend ROC Deadlock** (patch 27): Fixes deadlock in mt7921 driver mirroring the mt7925 pattern. Adds `mt7921_roc_abort_async()` for use by `mt7921_mac_sta_remove()` (called from `mt76_sta_remove()` which holds mutex), and removes incorrect mutex wrappers from suspend paths. The `roc_work` now checks abort flag before acquiring mutex.
 
 ### Resource Leak Fixes
 - **WCID Table Leak** (patch 24/25): Adds proper error cleanup path in `mt7925_mac_link_sta_add()` that clears the wcid pointer and frees the allocated index on failure, preventing WCID table exhaustion.
@@ -186,6 +188,10 @@ When a new kernel is released:
 | `mt7925_sta_remove_links` | main.c | ROC abort deadlock |
 | `mt76_wcid_cleanup` | mac80211.c | List corruption fix |
 | Various MLO functions | main.c, mcu.c | NULL checks |
+| `mt7921_roc_abort_sync` | mt7921/main.c | Deadlock fix |
+| `mt7921_roc_abort_async` | mt7921/main.c | Async abort (new) |
+| `mt7921_mac_sta_remove` | mt7921/main.c | Use async abort |
+| `mt7921_roc_work` | mt7921/main.c | Abort flag check |
 
 ## Testing
 
