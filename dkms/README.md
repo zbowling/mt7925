@@ -1,6 +1,6 @@
 # MT7925 DKMS Package
 
-**Version:** 1.1.0
+**Version:** 1.3.0
 
 This DKMS package provides a patched MT7925 WiFi driver with fixes for:
 - NULL pointer dereferences in MLO (Multi-Link Operation) paths
@@ -70,11 +70,11 @@ This will:
 dkms status
 
 # Rebuild for current kernel
-sudo dkms build mt76-mt7925/1.1.0
-sudo dkms install mt76-mt7925/1.1.0
+sudo dkms build mt76-mt7925/1.3.0
+sudo dkms install mt76-mt7925/1.3.0
 
 # Remove
-sudo dkms remove mt76-mt7925/1.1.0 --all
+sudo dkms remove mt76-mt7925/1.3.0 --all
 ```
 
 ## Troubleshooting
@@ -96,6 +96,69 @@ sudo dmesg | grep -i mt76
 
 ### Secure Boot
 If you have Secure Boot enabled, you may need to sign the modules or disable Secure Boot.
+
+## Debug Logging
+
+The DKMS version includes **significantly more debug logging** than the upstream kernel patchsets. This helps diagnose issues that are difficult to reproduce.
+
+### What's Logged
+
+The driver logs detailed information for:
+- **ROC (Remain On Channel):** MCU commands, grants, timeouts, abort operations
+- **MLO (Multi-Link Operation):** Link changes, VIF/STA link additions/removals
+- **Keys:** Key installation/removal for each link
+- **Channel Context:** Frequency assignments and BSS changes
+- **Power Management:** Suspend/resume operations
+- **Station Management:** Link station add/remove operations
+
+### Collecting Logs for Bug Reports
+
+If you experience issues (disconnects, hangs, timeouts), please collect logs:
+
+**Option 1: Recent kernel messages (quick)**
+```bash
+# Get last 500 lines of mt7925-related messages
+sudo dmesg | grep -E "(mt7925|mt76|wlan)" | tail -500 > mt7925_dmesg.log
+```
+
+**Option 2: Full journal since boot (comprehensive)**
+```bash
+# All kernel messages this boot
+journalctl -k -b > kernel_journal.log
+
+# Or filtered to WiFi-related
+journalctl -k -b | grep -E "(mt7925|mt76|wlan|wifi)" > wifi_journal.log
+```
+
+**Option 3: Live monitoring (for reproducing issues)**
+```bash
+# Watch logs in real-time while reproducing the issue
+sudo dmesg -w | grep -E "(mt7925|mt76|ROC|MLO|KEY|CHANCTX|PM:)"
+```
+
+### Filing an Issue
+
+**File issues at: https://github.com/zbowling/mt7925/issues**
+
+When filing an issue, please include:
+1. **Log output** from one of the methods above
+2. **Kernel version:** `uname -r`
+3. **DKMS version:** `dkms status | grep mt76`
+4. **Hardware info:** `lspci | grep -i network`
+5. **Steps to reproduce** (if known)
+6. **What you were doing** when the issue occurred (suspend/resume, roaming, connecting to MLO AP, etc.)
+
+### Log Prefixes Reference
+
+| Prefix | Meaning |
+|--------|---------|
+| `ROC:` | Remain On Channel operations (scanning, MLO discovery) |
+| `MLO:` | Multi-Link Operation link management |
+| `KEY:` | Encryption key installation/removal |
+| `CHANCTX:` | Channel context (frequency) management |
+| `STA:` | Station link management |
+| `MGD:` | Managed mode (prepare_tx) operations |
+| `PM:` | Power management (suspend/resume) |
 
 ## Modules Included
 
