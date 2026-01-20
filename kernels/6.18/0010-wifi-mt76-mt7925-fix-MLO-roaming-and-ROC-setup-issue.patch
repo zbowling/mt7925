@@ -1,7 +1,7 @@
 From 1f2d0d8fbf756f09b2424e8a2bab5589f8cbf527 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:05:11 -0800
-Subject: [PATCH 10/12] wifi: mt76: mt7925: fix MLO roaming and ROC setup
+Subject: [PATCH 10/13] wifi: mt76: mt7925: fix MLO roaming and ROC setup
  issues
 
 Fix two issues related to MLO roaming and remain-on-channel operations:
