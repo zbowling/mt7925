@@ -599,7 +599,7 @@ static int mt7925_set_roc(struct mt792x_phy *phy,
 			msleep(jiffies_to_msecs(throttle));
 		} else {
 			dev_dbg(phy->dev->mt76.dev,
-				"mt7925: ROC throttled, %lu ms remaining\n",
+				"mt7925: ROC throttled, %u ms remaining\n",
 				jiffies_to_msecs(throttle));
 			return -EBUSY;
 		}
@@ -650,7 +650,7 @@ static int mt7925_set_mlo_roc(struct mt792x_phy *phy,
 			msleep(jiffies_to_msecs(throttle));
 		} else {
 			dev_dbg(phy->dev->mt76.dev,
-				"mt7925: MLO ROC throttled, %lu ms remaining\n",
+				"mt7925: MLO ROC throttled, %u ms remaining\n",
 				jiffies_to_msecs(throttle));
 			return -EBUSY;
 		}
