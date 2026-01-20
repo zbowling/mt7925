@@ -1,7 +1,7 @@
 From 6c9da91db28f744149ee9aad71741a03f1a8e837 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:45:45 -0800
-Subject: [PATCH 03/11] wifi: mt76: mt7921: add mutex protection in critical
+Subject: [PATCH 03/12] wifi: mt76: mt7921: add mutex protection in critical
  paths
 
 Add proper mutex protection for mt7921 driver operations that access

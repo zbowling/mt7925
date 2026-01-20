@@ -1,7 +1,7 @@
 From 9e67bdbb1fa9e0ce3afdf17d2e927801843ffa45 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:04:53 -0800
-Subject: [PATCH 02/11] wifi: mt76: mt792x: fix NULL pointer and firmware
+Subject: [PATCH 02/12] wifi: mt76: mt792x: fix NULL pointer and firmware
  reload issues
 
 This patch combines two fixes for the shared mt792x code used by both
