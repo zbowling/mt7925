@@ -1,0 +1,141 @@
+# 6 GHz Disconnect → AP Comeback Rejection → ROC Timeout → Firmware Reload
+# Date: 2026-01-19 ~20:30
+# Kernel: 6.18.6-2-cachyos
+# DKMS: mt76-mt7925/1.3.0 (with enhanced debug logging)
+# Status: BEHAVIORAL - Recovery works but pattern is suspicious
+
+## Summary
+Repeated pattern observed: WiFi disconnects from 6 GHz, attempts to reconnect to
+5 GHz, AP temporarily rejects association (comeback), then loses auth state,
+leading to ROC timeouts and firmware reload. Recovery is successful but the
+pattern suggests firmware instability after certain AP rejection sequences.
+
+## Pattern Observed (Multiple Times This Session)
+
+1. Station on 6 GHz (6535 MHz) gets disconnected
+2. Driver attempts to connect to 5 GHz AP (5765 MHz)
+3. AP sends AssocResp with status=30 (comeback duration 1000 TU / 1024 ms)
+4. During retry after comeback period, AP sends deauth with reason 6
+   (CLASS2_FRAME_FROM_NONAUTH_STA - "you're not authenticated")
+5. Driver attempts re-authentication
+6. ROC (Remain On Channel) MCU commands timeout (no grant in 4s)
+7. After 2 consecutive ROC timeouts, firmware reload triggered
+8. After reload, connection succeeds to 5 GHz
+
+## Key Observations
+
+1. **6 GHz instability**: Disconnects frequently originate from 6 GHz band
+2. **AP comeback rejection**: AP status=30 means "temporarily busy, try later"
+3. **Auth state lost**: AP forgets authentication during 1024ms comeback wait
+4. **ROC timeouts after deauth**: MCU stops responding to ROC commands
+5. **2-timeout reload works**: Firmware reload at count=2 recovers the situation
+
+## Suspicious Aspects
+
+- Why does the MCU stop granting ROC after CLASS2 deauth?
+- Is there firmware state corruption from the comeback→deauth sequence?
+- Why is 6 GHz particularly unstable?
+- Should we clear more MCU state after CLASS2 deauth?
+
+## Timeline (from dmesg)
+
+### Disconnect from 6 GHz and Association Attempt
+[ 5871.601678] ROC: roc_work running, state ROC=1 ABORT=0
+[ 5871.601687] ROC: roc_work normal completion path
+[ 5871.635815] STA: mac_link_sta_remove called, link_id=0
+[ 5871.635822] STA: mac_link_sta_remove calling roc_abort_async
+[ 5871.635825] ROC: abort_async called, ROC=0
+[ 5871.676386] CHANCTX: unassign_vif_chanctx link_id=0 freq=6535 is_mld=0
+[ 5871.676389] CHANCTX: unassign_vif_chanctx done
+
+### Attempt to Connect to 5 GHz
+[ 5872.023048] CHANCTX: assign_vif_chanctx link_id=0 freq=5765 is_mld=0
+[ 5872.051490] wlan0: authenticate with de:b3:70:f8:9e:7d
+[ 5872.051498] ROC: set_roc called, type=0 dur=1000 state ROC=0 ABORT=0
+[ 5872.051499] ROC: sending MCU set_roc token=63
+[ 5872.062310] ROC: grant received, success
+[ 5872.066556] wlan0: authenticated
+
+### AP Rejects Association (Comeback)
+[ 5872.068683] wlan0: associate with de:b3:70:f8:9e:7d (try 1/3)
+[ 5872.068704] ROC: sending MCU set_roc token=64
+[ 5872.083334] ROC: grant received, success
+[ 5872.100781] wlan0: RX AssocResp from de:b3:70:f8:9e:7d (capab=0x1111 status=30 aid=0)
+[ 5872.100797] wlan0: de:b3:70:f8:9e:7d rejected association temporarily; comeback duration 1000 TU (1024 ms)
+
+### Retry After Comeback - AP Lost Auth State
+[ 5873.136701] wlan0: associate with de:b3:70:f8:9e:7d (try 2/3)
+[ 5873.136739] ROC: sending MCU set_roc token=65
+[ 5873.147396] ROC: grant received, success
+[ 5873.160763] wlan0: deauthenticated from de:b3:70:f8:9e:7d while associating (Reason: 6=CLASS2_FRAME_FROM_NONAUTH_STA)
+
+### Re-authentication Attempt - ROC Timeouts Begin
+[ 5884.681535] MGD: prepare_tx called, dur=2000
+[ 5884.681540] ROC: sending MCU set_roc token=66
+[ 5888.688792] ROC: wait_event_timeout - no grant in 4s
+[ 5888.691252] ROC: timeout recorded, count=1 backoff=100ms
+[ 5888.691666] wlan0: aborting authentication by local choice (Reason: 3=DEAUTH_LEAVING)
+
+### Second ROC Timeout
+[ 5888.691680] ROC: throttle short wait 100 ms
+[ 5888.792780] ROC: sending MCU set_roc token=67
+[ 5892.849810] ROC: wait_event_timeout - no grant in 4s
+[ 5892.852272] ROC: timeout recorded, count=2 backoff=200ms
+
+### Firmware Reload Triggered
+[ 5908.618302] mt7925e 0000:bf:00.0: HW/SW Version: 0x8a108a10, Build Time: 20260106153007a
+[ 5908.957595] mt7925e 0000:bf:00.0: WM Firmware Version: ____000000, Build Time: 20260106153120
+
+### Successful Reconnection After Reload
+[ 5920.812050] CHANCTX: assign_vif_chanctx link_id=0 freq=5765 is_mld=0
+[ 5920.838048] ROC: sending MCU set_roc token=68
+[ 5921.193321] ROC: grant received, success
+[ 5921.258395] wlan0: authenticated
+[ 5921.329930] wlan0: associated
+[ 5922.370523] KEY: set_key returning 0
+
+## Final State After Recovery
+Connected to de:b3:70:f8:9e:7d (on wlan0)
+    SSID: Winternet is coming
+    freq: 5765.0
+    signal: -47 dBm
+    rx bitrate: 1200.9 MBit/s 80MHz EHT-MCS 11 EHT-NSS 2 EHT-GI 0
+
+## Earlier Instance (Same Session)
+
+Similar pattern at ~5520s:
+- Deauth from e2:b3:70:f8:9e:7c (CLASS2_FRAME_FROM_NONAUTH_STA)
+- ROC timeout token=58 (count=1)
+- ROC timeout token=59 (count=2)
+- Firmware reload at 5556s
+- Reconnected to 5 GHz successfully
+
+## Theories
+
+1. **Firmware ROC state corruption**: After CLASS2 deauth during association,
+   the firmware's ROC state machine may be corrupted, causing it to ignore
+   subsequent ROC grant requests.
+
+2. **AP band steering gone wrong**: AP may be steering clients off 6 GHz
+   but handling the transition poorly (comeback + lost auth state).
+
+3. **Missing cleanup after deauth**: Driver may need to send additional MCU
+   commands to reset ROC state after certain deauth scenarios.
+
+4. **6 GHz regulatory/DFS issues**: 6 GHz operation may have additional
+   constraints causing unexpected disconnects.
+
+## Potential Improvements
+
+1. Add MCU state reset after CLASS2_FRAME_FROM_NONAUTH_STA deauth
+2. Consider clearing ROC state more aggressively after association failures
+3. Investigate why 6 GHz is unstable (signal? AP config? regulatory?)
+4. Consider reducing ROC timeout threshold for faster recovery
+5. Add more logging around the deauth → ROC timeout transition
+
+## Environment
+
+- AP: Ubiquiti (tri-band with 2.4/5/6 GHz)
+- Multiple BSSIDs observed (d8:b3:70:*, de:b3:70:*, e2:b3:70:*)
+- MLO capable but often falling back to single-link
+- System: AMD laptop with MT7925 WiFi 7 card
