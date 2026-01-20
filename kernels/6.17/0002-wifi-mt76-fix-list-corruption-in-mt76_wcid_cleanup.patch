@@ -1,4 +1,4 @@
-From ddddcf185f6d0a183264d65d490bbecfd9b148d5 Mon Sep 17 00:00:00 2001
+From da7b93b3f51f4fe12e95fa6cbfc87ee6574b46dd Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 16:28:26 -0800
 Subject: [PATCH 02/12] wifi: mt76: fix list corruption in mt76_wcid_cleanup

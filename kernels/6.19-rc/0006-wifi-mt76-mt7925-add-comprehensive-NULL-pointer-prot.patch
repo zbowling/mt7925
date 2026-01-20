@@ -1,4 +1,4 @@
-From 8afb5fee43bd4824aeb7edcd62c539576463b674 Mon Sep 17 00:00:00 2001
+From de9e58526a73ada93d6e60f111cfb73e78f9e523 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:03:12 -0800
 Subject: [PATCH 06/12] wifi: mt76: mt7925: add comprehensive NULL pointer

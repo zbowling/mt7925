@@ -1,4 +1,4 @@
-From 6a3a6d2f7215734697b6cb1571ad9c361f2529f5 Mon Sep 17 00:00:00 2001
+From 6e38050b99ceff12dc67dd6ac9d95a031b64c7b2 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:05:11 -0800
 Subject: [PATCH 10/12] wifi: mt76: mt7925: fix MLO roaming and ROC setup

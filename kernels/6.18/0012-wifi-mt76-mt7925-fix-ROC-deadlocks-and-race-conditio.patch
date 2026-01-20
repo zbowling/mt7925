@@ -1,4 +1,4 @@
-From 57d9cb0c84e0ff4e75f3b647a0b59dccbd8dc663 Mon Sep 17 00:00:00 2001
+From 77174aec02e1aaf4ba9269adbf68c4ea6a5e4f9b Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Fri, 16 Jan 2026 21:59:42 -0800
 Subject: [PATCH 12/12] wifi: mt76: mt7925: fix ROC deadlocks and race
@@ -73,7 +73,7 @@ index 7753afa3d883..6b54022df5be 100644
  	MT76_STATE_WED_RESET,
  };
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 7efa33afd953..79b1c337562a 100644
+index 7efa33afd953..6e2fcd242958 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -445,6 +445,24 @@ static void mt7925_roc_iter(void *priv, u8 *mac,
@@ -201,7 +201,7 @@ index 7efa33afd953..79b1c337562a 100644
 +			msleep(jiffies_to_msecs(throttle));
 +		} else {
 +			dev_dbg(phy->dev->mt76.dev,
-+				"mt7925: ROC throttled, %lu ms remaining\n",
++				"mt7925: ROC throttled, %u ms remaining\n",
 +				jiffies_to_msecs(throttle));
 +			return -EBUSY;
 +		}
@@ -241,7 +241,7 @@ index 7efa33afd953..79b1c337562a 100644
 +			msleep(jiffies_to_msecs(throttle));
 +		} else {
 +			dev_dbg(phy->dev->mt76.dev,
-+				"mt7925: MLO ROC throttled, %lu ms remaining\n",
++				"mt7925: MLO ROC throttled, %u ms remaining\n",
 +				jiffies_to_msecs(throttle));
 +			return -EBUSY;
 +		}
