@@ -79,7 +79,7 @@ When adding patches to DKMS that aren't in the mainline patchsets:
 
 **Source:** Local fix based on user crash reports
 
-**Author:** Zac Bowling <zbowling@gmail.com>
+**Author:** Zac Bowling <zac@zacbowling.com>
 
 **Status:** Patch 0022 - pending submission to linux-wireless
 
