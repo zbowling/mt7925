@@ -1,7 +1,7 @@
 From 9aa2fdf59472a9cf5af50408f8f723dc565bfe42 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 16:05:31 -0800
-Subject: [PATCH 05/12] wifi: mt76: mt7921: fix deadlock in sta removal and
+Subject: [PATCH 05/13] wifi: mt76: mt7921: fix deadlock in sta removal and
  suspend ROC abort
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

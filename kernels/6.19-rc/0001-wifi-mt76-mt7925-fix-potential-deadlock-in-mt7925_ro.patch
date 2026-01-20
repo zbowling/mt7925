@@ -1,7 +1,7 @@
 From 3bc5aa2e557255cf79bdb601243820643339bf18 Mon Sep 17 00:00:00 2001
 From: Sean Wang <sean.wang@mediatek.com>
 Date: Mon, 15 Dec 2025 17:38:49 -0800
-Subject: [PATCH 01/12] wifi: mt76: mt7925: fix potential deadlock in
+Subject: [PATCH 01/13] wifi: mt76: mt7925: fix potential deadlock in
  mt7925_roc_abort_sync
 
 roc_abort_sync() can deadlock with roc_work(). roc_work() holds
