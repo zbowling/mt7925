@@ -1,7 +1,7 @@
 From 34e5a468cc319343399c6320a283f759e5e03f9c Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Fri, 16 Jan 2026 21:59:42 -0800
-Subject: [PATCH 11/11] wifi: mt76: mt7925: fix ROC deadlocks and race
+Subject: [PATCH 11/12] wifi: mt76: mt7925: fix ROC deadlocks and race
  conditions
 
 Fix multiple interrelated issues in the remain-on-channel (ROC) handling

@@ -1,7 +1,7 @@
 From b8070beb5f27014b9492c58583446e41fbb13541 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:03:12 -0800
-Subject: [PATCH 05/11] wifi: mt76: mt7925: add comprehensive NULL pointer
+Subject: [PATCH 05/12] wifi: mt76: mt7925: add comprehensive NULL pointer
  protection for MLO
 
 Add NULL pointer checks for functions that return pointers to link-related

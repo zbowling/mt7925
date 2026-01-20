@@ -1,7 +1,7 @@
 From 62cc53c35a45c76977b61712816adfa25d8c24a9 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:03:32 -0800
-Subject: [PATCH 06/11] wifi: mt76: mt7925: add mutex protection in critical
+Subject: [PATCH 06/12] wifi: mt76: mt7925: add mutex protection in critical
  paths
 
 Add proper mutex protection for mt7925 driver operations that access
