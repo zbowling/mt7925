@@ -1,7 +1,7 @@
 From e79c76626eea4d3463a9023dbf795e3e9b6d99c8 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 14:36:54 -0800
-Subject: [PATCH 25/27] wifi: mt76: mt7925: improve error handling and code
+Subject: [PATCH 25/28] wifi: mt76: mt7925: improve error handling and code
  cleanup
 
 Address suggestions from code review:
