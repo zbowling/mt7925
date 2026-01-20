@@ -139,3 +139,106 @@ Similar pattern at ~5520s:
 - Multiple BSSIDs observed (d8:b3:70:*, de:b3:70:*, e2:b3:70:*)
 - MLO capable but often falling back to single-link
 - System: AMD laptop with MT7925 WiFi 7 card
+
+---
+
+## Update: 6 GHz Regulatory Root Cause Identified
+
+### Additional Instance (Same Session ~6230s)
+
+Another disconnect with more detail revealing the root cause:
+
+```
+6230.29s - ROAM: "disconnect from 5 GHz for new auth to 6 GHz"
+           de:b3:70:f8:9e:7d (5 GHz) → de:b3:70:f8:9e:7e (6 GHz)
+6230.49s - WARNING: "regulatory prevented using AP config, downgraded"
+6230.49s - CHANCTX: assign freq=6535 (6 GHz)
+6230.52s - Auth sent to 6 GHz AP
+6230.87s - ROC grant received
+6232.88s - ROC completed... but NO "authenticated" message!
+6232.93s - STA removed (auth failed silently)
+6232.97s - CHANCTX: unassign 6 GHz
+6233.31s - CHANCTX: assign 5 GHz (fallback)
+6234.45s - CLASS2_FRAME_FROM_NONAUTH_STA deauth on 5 GHz
+6250.67s - ROC timeout token=74 (count=1)
+6254.83s - ROC timeout token=75 (count=2)
+6257.84s - MCU Message 00020027 (ROC command) timeout
+6258.03s - FIRMWARE RELOAD
+6288.35s - Successfully reconnected to 5 GHz
+```
+
+### Regulatory Domain Analysis
+
+```
+$ iw reg get
+country US: DFS-FCC
+...
+(5925 - 7125 @ 320), (N/A, 12), (N/A), NO-OUTDOOR, PASSIVE-SCAN
+```
+
+**6 GHz band restrictions:**
+- **12 dBm max power** (very low - 5 GHz allows 24-30 dBm)
+- **NO-OUTDOOR** flag
+- **PASSIVE-SCAN** only (no active probing)
+
+Compare to 5 GHz:
+- 5150-5250: 23 dBm
+- 5250-5350: 24 dBm (DFS)
+- 5470-5730: 24 dBm (DFS)
+- 5730-5850: 30 dBm
+
+### Root Cause
+
+The 6 GHz instability is caused by **regulatory power mismatch**:
+
+1. **AP advertises higher power/capabilities** than US regulatory allows
+2. **Driver "downgrades"** the connection to comply with 12 dBm limit
+3. **12 dBm is too weak** - AP may not hear client responses
+4. **6 GHz auth fails silently** (sent auth, never got response)
+5. **Fallback to 5 GHz** causes AP state confusion (CLASS2 deauth)
+6. **MCU gets stuck** after the failed roam sequence
+7. **ROC timeouts** trigger firmware reload
+8. **Recovery succeeds** after reload
+
+### Why 6 GHz is Essentially Unusable
+
+At 12 dBm (16 mW), the 6 GHz radio is severely handicapped:
+- 5 GHz at 30 dBm = 1000 mW (62x more power)
+- 5 GHz at 24 dBm = 250 mW (15x more power)
+- 6 GHz at 12 dBm = 16 mW
+
+This explains:
+- Frequent 6 GHz disconnects
+- Silent auth failures (AP can't hear the weak response)
+- System constantly trying to roam to 6 GHz then failing
+
+### Cascade Failure Sequence
+
+```
+Roam to 6 GHz (regulatory downgrade)
+    ↓
+6 GHz auth fails (12 dBm too weak)
+    ↓
+Fallback to 5 GHz
+    ↓
+5 GHz AP state confused → CLASS2 deauth
+    ↓
+Re-auth attempts
+    ↓
+MCU stops responding to ROC
+    ↓
+ROC timeouts (count reaches 2)
+    ↓
+Firmware reload triggered
+    ↓
+Recovery succeeds
+```
+
+### Recommendations
+
+1. **Disable 6 GHz roaming** if possible (AP or client side)
+2. **Check if AFC (Automated Frequency Coordination)** is available
+   - AFC can allow higher 6 GHz power in some regions
+3. **Investigate why MCU hangs** after failed 6 GHz roam
+   - The ROC timeout after CLASS2 deauth suggests firmware bug
+4. **Consider adding driver workaround** to avoid 6 GHz when power is restricted
