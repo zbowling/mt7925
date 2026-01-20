@@ -1,4 +1,4 @@
-From f2817f4ce1b4bcb05eefbef1a015a73cc1860715 Mon Sep 17 00:00:00 2001
+From a5f0752dbe09877c9fc20665fb6f305dc56f78d9 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Mon, 19 Jan 2026 16:05:31 -0800
 Subject: [PATCH 04/11] wifi: mt76: mt7921: fix deadlock in sta removal and
@@ -30,13 +30,13 @@ scenarios correctly.
 Fixes: b74d48c46f ("wifi: mt76: mt7921: fix mutex handling in multiple paths")
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
- .../net/wireless/mediatek/mt76/mt7921/main.c  | 27 ++++++++++++++-----
+ .../net/wireless/mediatek/mt76/mt7921/main.c  | 29 +++++++++++++++----
  .../net/wireless/mediatek/mt76/mt7921/pci.c   |  2 --
  .../net/wireless/mediatek/mt76/mt7921/sdio.c  |  2 --
- 3 files changed, 21 insertions(+), 10 deletions(-)
+ 3 files changed, 23 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/main.c b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
-index 9315dbdf88..9805967db0 100644
+index 9315dbdf8880..07d1d0d497f1 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 @@ -367,17 +367,24 @@ static void mt7921_roc_iter(void *priv, u8 *mac,
@@ -69,21 +69,23 @@ index 9315dbdf88..9805967db0 100644
  	if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
  		ieee80211_iterate_interfaces(mt76_hw(dev),
  					     IEEE80211_IFACE_ITER_RESUME_ALL,
-@@ -392,6 +399,13 @@ void mt7921_roc_work(struct work_struct *work)
+@@ -392,6 +399,15 @@ void mt7921_roc_work(struct work_struct *work)
  	phy = (struct mt792x_phy *)container_of(work, struct mt792x_phy,
  						roc_work);
  
-+	/* Check abort flag before acquiring mutex to prevent deadlock */
++	/* Check abort flag before acquiring mutex to prevent deadlock.
++	 * Only send expired callback if ROC was actually active.
++	 */
 +	if (test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state)) {
-+		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
-+		ieee80211_remain_on_channel_expired(phy->mt76->hw);
++		if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
++			ieee80211_remain_on_channel_expired(phy->mt76->hw);
 +		return;
 +	}
 +
  	if (!test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
  		return;
  
-@@ -887,7 +901,8 @@ void mt7921_mac_sta_remove(struct mt76_dev *mdev, struct ieee80211_vif *vif,
+@@ -887,7 +903,8 @@ void mt7921_mac_sta_remove(struct mt76_dev *mdev, struct ieee80211_vif *vif,
  	struct mt792x_dev *dev = container_of(mdev, struct mt792x_dev, mt76);
  	struct mt792x_sta *msta = (struct mt792x_sta *)sta->drv_priv;
  
@@ -94,7 +96,7 @@ index 9315dbdf88..9805967db0 100644
  	mt76_connac_pm_wake(&dev->mphy, &dev->pm);
  
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/pci.c b/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
-index 9f76b334b9..ec96861832 100644
+index 9f76b334b93d..ec9686183251 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
 @@ -426,9 +426,7 @@ static int mt7921_pci_suspend(struct device *device)
@@ -108,7 +110,7 @@ index 9f76b334b9..ec96861832 100644
  	err = mt792x_mcu_drv_pmctrl(dev);
  	if (err < 0)
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c b/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
-index 92ea281181..3421e53dc9 100644
+index 92ea2811816f..3421e53dc948 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
 @@ -219,9 +219,7 @@ static int mt7921s_suspend(struct device *__dev)

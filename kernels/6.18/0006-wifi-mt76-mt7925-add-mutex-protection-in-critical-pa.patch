@@ -1,4 +1,4 @@
-From abf6f42507b768216748e228f2c5d9665e1b8d06 Mon Sep 17 00:00:00 2001
+From 62cc53c35a45c76977b61712816adfa25d8c24a9 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:03:32 -0800
 Subject: [PATCH 06/11] wifi: mt76: mt7925: add mutex protection in critical
@@ -36,34 +36,13 @@ management transitions and recovery operations.
 Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 device")
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
- compile_flags.txt                                | 13 +++++++++++++
- drivers/net/wireless/mediatek/mt76/mt7925/mac.c  |  2 ++
- drivers/net/wireless/mediatek/mt76/mt7925/main.c |  6 ++++--
- drivers/net/wireless/mediatek/mt76/mt7925/pci.c  |  4 ++++
- 4 files changed, 23 insertions(+), 2 deletions(-)
- create mode 100644 compile_flags.txt
+ drivers/net/wireless/mediatek/mt76/mt7925/mac.c  | 2 ++
+ drivers/net/wireless/mediatek/mt76/mt7925/main.c | 6 ++++--
+ drivers/net/wireless/mediatek/mt76/mt7925/pci.c  | 5 ++++-
+ 3 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/compile_flags.txt b/compile_flags.txt
-new file mode 100644
-index 0000000000..6ca0ca1fc0
---- /dev/null
-+++ b/compile_flags.txt
-@@ -0,0 +1,13 @@
-+-I/home/zbowling/projects/linux-wifi/include
-+-I/home/zbowling/projects/linux-wifi/include/uapi
-+-I/home/zbowling/projects/linux-wifi/arch/x86/include
-+-I/home/zbowling/projects/linux-wifi/arch/x86/include/generated
-+-I/home/zbowling/projects/linux-wifi/arch/x86/include/uapi
-+-I/home/zbowling/projects/linux-wifi/arch/x86/include/generated/uapi
-+-include
-+/home/zbowling/projects/linux-wifi/include/linux/compiler_types.h
-+-D__KERNEL__
-+-DCONFIG_X86_64
-+-DCONFIG_64BIT
-+-std=gnu11
-+-Wno-unknown-warning-option
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
-index 958f575647..a4109dc721 100644
+index 958f575647da..a4109dc72163 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 @@ -1330,9 +1330,11 @@ void mt7925_mac_reset_work(struct work_struct *work)
@@ -79,7 +58,7 @@ index 958f575647..a4109dc721 100644
  
  	mt792x_mutex_acquire(dev);
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index a946373c57..d6ed665010 100644
+index a946373c57bd..d6ed6650100c 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -747,9 +747,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)
@@ -122,7 +101,7 @@ index a946373c57..d6ed665010 100644
  
  static bool is_valid_alpha2(const char *alpha2)
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
-index 8eb1fe1082..b6c90c5f7e 100644
+index 8eb1fe1082d1..47d944f1d6ba 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
 @@ -454,7 +454,9 @@ static int mt7925_pci_suspend(struct device *device)
@@ -135,7 +114,7 @@ index 8eb1fe1082..b6c90c5f7e 100644
  
  	err = mt792x_mcu_drv_pmctrl(dev);
  	if (err < 0)
-@@ -581,10 +583,12 @@ static int _mt7925_pci_resume(struct device *device, bool restore)
+@@ -581,13 +583,14 @@ static int _mt7925_pci_resume(struct device *device, bool restore)
  	}
  
  	/* restore previous ds setting */
@@ -147,6 +126,9 @@ index 8eb1fe1082..b6c90c5f7e 100644
 +	mt792x_mutex_release(dev);
  failed:
  	pm->suspended = false;
+-
+ 	if (err < 0 || restore)
+ 		mt792x_reset(&dev->mt76);
  
 -- 
 2.52.0

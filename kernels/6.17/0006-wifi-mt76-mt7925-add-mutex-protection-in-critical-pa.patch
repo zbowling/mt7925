@@ -1,4 +1,4 @@
-From e83bd79eec11f8e3a04a4d30bc27e1e20ab79e54 Mon Sep 17 00:00:00 2001
+From 09e17892f41d056932d7beba4224b3f47ea8a4c7 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Sun, 4 Jan 2026 16:03:32 -0800
 Subject: [PATCH 06/11] wifi: mt76: mt7925: add mutex protection in critical
@@ -42,7 +42,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  3 files changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
-index 3f7f974a50..2cff703e78 100644
+index 3f7f974a50a4..2cff703e78d9 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mac.c
 @@ -1331,9 +1331,11 @@ void mt7925_mac_reset_work(struct work_struct *work)
@@ -58,7 +58,7 @@ index 3f7f974a50..2cff703e78 100644
  }
  
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 84fc5c1bde..af32ecddb4 100644
+index 84fc5c1bde1e..af32ecddb445 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -755,9 +755,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)
@@ -101,7 +101,7 @@ index 84fc5c1bde..af32ecddb4 100644
  
  static bool is_valid_alpha2(const char *alpha2)
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
-index 8eb1fe1082..b6c90c5f7e 100644
+index 8eb1fe1082d1..b6c90c5f7e91 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/pci.c
 @@ -454,7 +454,9 @@ static int mt7925_pci_suspend(struct device *device)

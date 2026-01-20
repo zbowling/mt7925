@@ -399,10 +399,12 @@ void mt7921_roc_work(struct work_struct *work)
 	phy = (struct mt792x_phy *)container_of(work, struct mt792x_phy,
 						roc_work);
 
-	/* Check abort flag before acquiring mutex to prevent deadlock */
+	/* Check abort flag before acquiring mutex to prevent deadlock.
+	 * Only send expired callback if ROC was actually active.
+	 */
 	if (test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state)) {
-		clear_bit(MT76_STATE_ROC, &phy->mt76->state);
-		ieee80211_remain_on_channel_expired(phy->mt76->hw);
+		if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
+			ieee80211_remain_on_channel_expired(phy->mt76->hw);
 		return;
 	}
 

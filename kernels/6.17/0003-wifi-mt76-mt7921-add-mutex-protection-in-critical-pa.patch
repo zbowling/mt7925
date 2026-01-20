@@ -1,4 +1,4 @@
-From e5d0f6f196b32ce5ac26d8a111c5317e0ed91962 Mon Sep 17 00:00:00 2001
+From c753646a856ba3b1c63d9819bd79c7c1130d843c Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:45:45 -0800
 Subject: [PATCH 03/11] wifi: mt76: mt7921: add mutex protection in critical
@@ -44,7 +44,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  4 files changed, 14 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/mac.c b/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
-index bce26389ab..4fc0d5a2c1 100644
+index bce26389ab18..4fc0d5a2c160 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
 @@ -693,9 +693,11 @@ void mt7921_mac_reset_work(struct work_struct *work)
@@ -60,7 +60,7 @@ index bce26389ab..4fc0d5a2c1 100644
  }
  
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/main.c b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
-index 67383c41a3..e5529c55ad 100644
+index 67383c41a319..e5529c55ad4b 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 @@ -373,6 +373,11 @@ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
@@ -96,7 +96,7 @@ index 67383c41a3..e5529c55ad 100644
  	if (valid_vif_num > 1) {
  		phy->power_type = MT_AP_DEFAULT;
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/pci.c b/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
-index a0c9df3c2c..9c8357e275 100644
+index a0c9df3c2cc7..9c8357e27565 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
 @@ -426,7 +426,9 @@ static int mt7921_pci_suspend(struct device *device)
@@ -110,7 +110,7 @@ index a0c9df3c2c..9c8357e275 100644
  	err = mt792x_mcu_drv_pmctrl(dev);
  	if (err < 0)
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c b/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
-index d8d36b3c30..2e2932e8d9 100644
+index d8d36b3c3068..2e2932e8d9b0 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
 @@ -219,7 +219,9 @@ static int mt7921s_suspend(struct device *__dev)

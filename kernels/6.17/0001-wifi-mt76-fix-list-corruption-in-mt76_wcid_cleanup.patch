@@ -1,4 +1,4 @@
-From e22fe3f8193866b747defd257fe4fe41efcebc1d Mon Sep 17 00:00:00 2001
+From 762f247cac18743253ffaf1750aca9f6c190a5c4 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 16:28:26 -0800
 Subject: [PATCH 01/11] wifi: mt76: fix list corruption in mt76_wcid_cleanup
@@ -22,7 +22,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mac80211.c b/drivers/net/wireless/mediatek/mt76/mac80211.c
-index 4fa045e87a..b773110036 100644
+index 4fa045e87a81..b773110036f7 100644
 --- a/drivers/net/wireless/mediatek/mt76/mac80211.c
 +++ b/drivers/net/wireless/mediatek/mt76/mac80211.c
 @@ -1709,6 +1709,16 @@ void mt76_wcid_cleanup(struct mt76_dev *dev, struct mt76_wcid *wcid)

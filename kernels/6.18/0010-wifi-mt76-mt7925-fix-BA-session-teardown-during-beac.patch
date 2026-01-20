@@ -1,4 +1,4 @@
-From f6c818b79223a990cd90f3dec1204b50ff6d2aea Mon Sep 17 00:00:00 2001
+From ef095f68d32fb5cc0137f74477afe0f3e285d577 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 16:35:55 -0800
 Subject: [PATCH 10/11] wifi: mt76: mt7925: fix BA session teardown during
@@ -25,7 +25,7 @@ Signed-off-by: Zac Bowling <zac@zacbowling.com>
  1 file changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index b6e3002faf..99bc2b0227 100644
+index b6e3002faf41..99bc2b022701 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -1315,9 +1315,13 @@ mt7925_ampdu_action(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
