@@ -1,8 +1,11 @@
-From 795ca272d1058e5c20c8b18dcecb193cbfc687bb Mon Sep 17 00:00:00 2001
+From d4e86543270b92962eb0c3c6b8025e192b135d2e Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Wed, 14 Jan 2026 20:45:45 -0800
-Subject: [PATCH 04/13] wifi: mt76: mt7921: add mutex protection in critical
+Subject: [PATCH 04/12] wifi: mt76: mt7921: add mutex protection in critical
  paths
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Add proper mutex protection for mt7921 driver operations that access
 hardware state without proper synchronization. This fixes multiple race
@@ -36,12 +39,35 @@ in the mt7921 driver.
 
 Fixes: 5c14a5f944b9 ("wifi: mt76: mt7921: introduce remain_on_channel support")
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
+
+wifi: mt76: mt7921: fix deadlock in sta removal and suspend ROC abort
+
+Fix deadlock scenarios in mt7921 ROC (Remain On Channel) abort paths:
+
+1. Suspend path deadlock (pci.c, sdio.c):
+   - Previous fix (b74d48c46f) added mutex around mt7921_roc_abort_sync
+   - But roc_work acquires mutex, so cancel_work_sync can deadlock
+   - Fix: Remove mutex wrappers since mt7921_roc_abort_sync doesn't
+     actually need them (it only calls timer_delete_sync, cancel_work_sync,
+     and ieee80211_iterate_interfaces which handles its own locking)
+
+2. sta_remove path deadlock:
+   - mt7921_mac_sta_remove is called from mt76_sta_remove which holds mutex
+   - Calling mt7921_roc_abort_sync → cancel_work_sync can deadlock if
+     roc_work is waiting for the mutex
+   - Fix: Add mt7921_roc_abort_async (matching mt7925 pattern) that sets
+     abort flag and schedules work instead of blocking
+   - Add abort flag checking in mt7921_roc_work to handle async abort
+
+The fix mirrors the mt7925 implementation which already handles these
+scenarios correctly.
+
+Fixes: b74d48c46f ("wifi: mt76: mt7921: fix mutex handling in multiple paths")
+Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
- drivers/net/wireless/mediatek/mt76/mt7921/mac.c  | 2 ++
- drivers/net/wireless/mediatek/mt76/mt7921/main.c | 9 +++++++++
- drivers/net/wireless/mediatek/mt76/mt7921/pci.c  | 2 ++
- drivers/net/wireless/mediatek/mt76/mt7921/sdio.c | 2 ++
- 4 files changed, 15 insertions(+)
+ .../net/wireless/mediatek/mt76/mt7921/mac.c   |  2 ++
+ .../net/wireless/mediatek/mt76/mt7921/main.c  | 28 ++++++++++++++++++-
+ 2 files changed, 29 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/mac.c b/drivers/net/wireless/mediatek/mt76/mt7921/mac.c
 index bce26389ab18..4fc0d5a2c160 100644
@@ -60,22 +86,45 @@ index bce26389ab18..4fc0d5a2c160 100644
  }
  
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/main.c b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
-index 67383c41a319..6601500bef8c 100644
+index 67383c41a319..ccc5d0a794c8 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7921/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7921/main.c
-@@ -373,6 +373,11 @@ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
+@@ -367,6 +367,18 @@ static void mt7921_roc_iter(void *priv, u8 *mac,
+ 	mt7921_mcu_abort_roc(phy, mvif, phy->roc_token_id);
+ }
  
- 	timer_delete_sync(&phy->roc_timer);
- 	cancel_work_sync(&phy->roc_work);
-+	/* Note: caller must hold mutex if ieee80211_iterate_interfaces is
-+	 * needed for ROC cleanup. Some call sites (like mt7921_mac_sta_remove)
-+	 * already hold the mutex via mt76_sta_remove(). For suspend paths,
-+	 * the mutex should be acquired before calling this function.
++/* Async ROC abort - safe to call while holding mutex.
++ * Sets abort flag and schedules roc_work for cleanup.
++ */
++static void mt7921_roc_abort_async(struct mt792x_dev *dev)
++{
++	struct mt792x_phy *phy = &dev->phy;
++
++	set_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
++	timer_delete(&phy->roc_timer);
++	ieee80211_queue_work(phy->mt76->hw, &phy->roc_work);
++}
++
+ void mt7921_roc_abort_sync(struct mt792x_dev *dev)
+ {
+ 	struct mt792x_phy *phy = &dev->phy;
+@@ -387,6 +399,15 @@ void mt7921_roc_work(struct work_struct *work)
+ 	phy = (struct mt792x_phy *)container_of(work, struct mt792x_phy,
+ 						roc_work);
+ 
++	/* Check abort flag before acquiring mutex to prevent deadlock.
++	 * Only send expired callback if ROC was actually active.
 +	 */
- 	if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
- 		ieee80211_iterate_interfaces(mt76_hw(dev),
- 					     IEEE80211_IFACE_ITER_RESUME_ALL,
-@@ -619,6 +624,7 @@ void mt7921_set_runtime_pm(struct mt792x_dev *dev)
++	if (test_and_clear_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state)) {
++		if (test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
++			ieee80211_remain_on_channel_expired(phy->mt76->hw);
++		return;
++	}
++
+ 	if (!test_and_clear_bit(MT76_STATE_ROC, &phy->mt76->state))
+ 		return;
+ 
+@@ -619,6 +640,7 @@ void mt7921_set_runtime_pm(struct mt792x_dev *dev)
  	bool monitor = !!(hw->conf.flags & IEEE80211_CONF_MONITOR);
  
  	pm->enable = pm->enable_user && !monitor;
@@ -83,7 +132,7 @@ index 67383c41a319..6601500bef8c 100644
  	ieee80211_iterate_active_interfaces(hw,
  					    IEEE80211_IFACE_ITER_RESUME_ALL,
  					    mt7921_pm_interface_iter, dev);
-@@ -765,6 +771,9 @@ mt7921_regd_set_6ghz_power_type(struct ieee80211_vif *vif, bool is_add)
+@@ -765,6 +787,9 @@ mt7921_regd_set_6ghz_power_type(struct ieee80211_vif *vif, bool is_add)
  	struct mt792x_dev *dev = phy->dev;
  	u32 valid_vif_num = 0;
  
@@ -93,34 +142,16 @@ index 67383c41a319..6601500bef8c 100644
  	ieee80211_iterate_active_interfaces(mt76_hw(dev),
  					    IEEE80211_IFACE_ITER_RESUME_ALL,
  					    mt7921_calc_vif_num, &valid_vif_num);
-diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/pci.c b/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
-index a0c9df3c2cc7..9c8357e27565 100644
---- a/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
-+++ b/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
-@@ -426,7 +426,9 @@ static int mt7921_pci_suspend(struct device *device)
- 	cancel_delayed_work_sync(&pm->ps_work);
- 	cancel_work_sync(&pm->wake_work);
+@@ -879,7 +904,8 @@ void mt7921_mac_sta_remove(struct mt76_dev *mdev, struct ieee80211_vif *vif,
+ 	struct mt792x_dev *dev = container_of(mdev, struct mt792x_dev, mt76);
+ 	struct mt792x_sta *msta = (struct mt792x_sta *)sta->drv_priv;
  
-+	mt792x_mutex_acquire(dev);
- 	mt7921_roc_abort_sync(dev);
-+	mt792x_mutex_release(dev);
+-	mt7921_roc_abort_sync(dev);
++	/* Async abort - caller already holds mutex */
++	mt7921_roc_abort_async(dev);
+ 	mt76_connac_free_pending_tx_skbs(&dev->pm, &msta->deflink.wcid);
+ 	mt76_connac_pm_wake(&dev->mphy, &dev->pm);
  
- 	err = mt792x_mcu_drv_pmctrl(dev);
- 	if (err < 0)
-diff --git a/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c b/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
-index d8d36b3c3068..2e2932e8d9b0 100644
---- a/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
-+++ b/drivers/net/wireless/mediatek/mt76/mt7921/sdio.c
-@@ -219,7 +219,9 @@ static int mt7921s_suspend(struct device *__dev)
- 	cancel_delayed_work_sync(&pm->ps_work);
- 	cancel_work_sync(&pm->wake_work);
- 
-+	mt792x_mutex_acquire(dev);
- 	mt7921_roc_abort_sync(dev);
-+	mt792x_mutex_release(dev);
- 
- 	err = mt792x_mcu_drv_pmctrl(dev);
- 	if (err < 0)
 -- 
 2.52.0
 
