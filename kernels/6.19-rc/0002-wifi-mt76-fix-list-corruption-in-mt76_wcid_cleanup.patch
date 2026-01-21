@@ -1,7 +1,7 @@
 From 58457e83f3dc58470bfc7bcef7788c2752b11974 Mon Sep 17 00:00:00 2001
 From: Zac Bowling <zac@zacbowling.com>
 Date: Thu, 15 Jan 2026 16:28:26 -0800
-Subject: [PATCH 02/13] wifi: mt76: fix list corruption in mt76_wcid_cleanup
+Subject: [PATCH 02/12] wifi: mt76: fix list corruption in mt76_wcid_cleanup
 
 mt76_wcid_cleanup() was not removing wcid entries from sta_poll_list
 before mt76_reset_device() reinitializes the master list. This leaves
