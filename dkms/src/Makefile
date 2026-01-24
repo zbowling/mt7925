@@ -37,6 +37,20 @@ mt792x-lib-y := mt792x_core.o mt792x_mac.o mt792x_trace.o \
 
 CFLAGS_mt792x_trace.o := -I$(src)
 
+# mt76-usb transport module
+obj-m += mt76-usb.o
+mt76-usb-y := usb.o usb_trace.o
+
+CFLAGS_usb_trace.o := -I$(src)
+
+# mt792x-usb helpers (shared USB helpers for mt792x family)
+obj-m += mt792x-usb.o
+mt792x-usb-y := mt792x_usb.o
+
+# mt76-sdio transport module
+obj-m += mt76-sdio.o
+mt76-sdio-y := sdio.o sdio_txrx.o
+
 # ============================================================
 # MT7921 modules (included for ABI compatibility with mt792x-lib)
 # ============================================================
