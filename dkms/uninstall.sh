@@ -5,8 +5,6 @@
 set -e
 
 PACKAGE_NAME="mt76-mt7925"
-PACKAGE_VERSION="1.1.0"
-DKMS_SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
 
 # Colors
 RED='\033[0;31m'
@@ -36,7 +34,10 @@ check_root() {
 unload_modules() {
     log_info "Unloading DKMS mt76 modules..."
 
-    for mod in mt7925e mt7925_common mt7925-common mt792x_lib mt792x-lib \
+    # Unload in dependency order (leaf modules first)
+    for mod in mt7925e mt7925_common mt7925-common \
+               mt7921e mt7921s mt7921u mt7921_common mt7921-common \
+               mt792x_lib mt792x-lib \
                mt76_connac_lib mt76-connac-lib mt76; do
         if lsmod | grep -q "^${mod//-/_}"; then
             rmmod "${mod//-/_}" 2>/dev/null || true
@@ -45,17 +46,26 @@ unload_modules() {
 }
 
 remove_dkms() {
-    if dkms status | grep -q "${PACKAGE_NAME}"; then
-        log_info "Removing ${PACKAGE_NAME} from DKMS..."
-        dkms remove "${PACKAGE_NAME}/${PACKAGE_VERSION}" --all || true
+    # Find all installed versions and remove them
+    local versions
+    versions=$(dkms status | grep "${PACKAGE_NAME}" | sed 's/.*\///; s/,.*//' | sort -u)
+
+    if [[ -n "$versions" ]]; then
+        for version in $versions; do
+            log_info "Removing ${PACKAGE_NAME}/${version} from DKMS..."
+            dkms remove "${PACKAGE_NAME}/${version}" --all || true
+        done
     else
         log_info "DKMS package not found, skipping..."
     fi
 
-    if [[ -d "$DKMS_SRC" ]]; then
-        log_info "Removing source directory ${DKMS_SRC}..."
-        rm -rf "$DKMS_SRC"
-    fi
+    # Remove all source directories for any version
+    for src_dir in /usr/src/${PACKAGE_NAME}-*; do
+        if [[ -d "$src_dir" ]]; then
+            log_info "Removing source directory ${src_dir}..."
+            rm -rf "$src_dir"
+        fi
+    done
 }
 
 cleanup_legacy_files() {
@@ -73,12 +83,14 @@ restore_stock_modules() {
 
     log_info "Loading stock modules..."
 
-    # Try to load stock modules
+    # Try to load stock modules (kernel will auto-load the right one for the hardware)
     modprobe mt76 2>/dev/null || log_warn "Could not load mt76 (may not be available)"
     modprobe mt76_connac_lib 2>/dev/null || true
     modprobe mt792x_lib 2>/dev/null || true
-    modprobe mt7925_common 2>/dev/null || true
-    modprobe mt7925e 2>/dev/null || log_warn "Could not load mt7925e (may need reboot)"
+
+    # Try mt7925 first (newer chip), then mt7921
+    modprobe mt7925e 2>/dev/null || modprobe mt7921e 2>/dev/null || \
+        log_warn "Could not load WiFi driver (may need reboot)"
 }
 
 verify_removal() {
@@ -90,7 +102,7 @@ verify_removal() {
 
     echo ""
     echo "Loaded modules:"
-    lsmod | grep -E "mt76|mt792|mt7925" || echo "No mt76 modules loaded"
+    lsmod | grep -E "mt76|mt792|mt7921|mt7925" || echo "No mt76 modules loaded"
 }
 
 main() {
