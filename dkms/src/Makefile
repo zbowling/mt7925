@@ -59,6 +59,7 @@ mt76-sdio-y := sdio.o sdio_txrx.o
 obj-m += mt7921-common.o
 mt7921-common-y := \
 	mt7921/mac.o mt7921/mcu.o mt7921/main.o mt7921/init.o mt7921/debugfs.o
+mt7921-common-$(CONFIG_NL80211_TESTMODE) += mt7921/testmode.o
 
 # mt7921e PCIe module
 obj-m += mt7921e.o
@@ -80,6 +81,7 @@ mt7921u-y := mt7921/usb.o
 obj-m += mt7925-common.o
 mt7925-common-y := \
 	mt7925/mac.o mt7925/mcu.o mt7925/main.o mt7925/init.o mt7925/debugfs.o
+mt7925-common-$(CONFIG_NL80211_TESTMODE) += mt7925/testmode.o
 
 # mt7925e PCIe module
 obj-m += mt7925e.o

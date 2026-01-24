@@ -50,7 +50,7 @@ unload_modules() {
 remove_dkms() {
     # Find all installed versions and remove them
     local versions
-    versions=$(dkms status | grep "${PACKAGE_NAME}" | sed 's/.*\///; s/,.*//' | sort -u)
+    versions=$(dkms status | grep "^${PACKAGE_NAME}/" | sed 's/.*\///; s/[,:].*//; s/ .*//' | sort -u)
 
     if [[ -n "$versions" ]]; then
         for version in $versions; do

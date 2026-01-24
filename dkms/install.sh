@@ -105,15 +105,24 @@ check_dependencies() {
 }
 
 remove_existing() {
-    if dkms status | grep -q "${PACKAGE_NAME}"; then
-        log_info "Removing existing ${PACKAGE_NAME} installation..."
-        dkms remove "${PACKAGE_NAME}/${PACKAGE_VERSION}" --all 2>/dev/null || true
+    # Remove all installed versions (not just current)
+    local versions
+    versions=$(dkms status | grep "^${PACKAGE_NAME}/" | sed 's/.*\///; s/[,:].*//; s/ .*//' | sort -u)
+
+    if [[ -n "$versions" ]]; then
+        for version in $versions; do
+            log_info "Removing ${PACKAGE_NAME}/${version} from DKMS..."
+            dkms remove "${PACKAGE_NAME}/${version}" --all 2>/dev/null || true
+        done
     fi
 
-    if [[ -d "$DKMS_SRC" ]]; then
-        log_info "Removing existing source directory..."
-        rm -rf "$DKMS_SRC"
-    fi
+    # Remove all source directories for any version
+    for src_dir in /usr/src/${PACKAGE_NAME}-*; do
+        if [[ -d "$src_dir" ]]; then
+            log_info "Removing source directory ${src_dir}..."
+            rm -rf "$src_dir"
+        fi
+    done
 }
 
 unload_modules() {
@@ -171,11 +180,23 @@ install_dkms() {
 load_modules() {
     log_info "Loading new modules..."
 
+    # Load core modules
     modprobe mt76
     modprobe mt76-connac-lib
     modprobe mt792x-lib
-    modprobe mt7925-common
-    modprobe mt7925e
+
+    # Try to load WiFi driver - the right one will load based on hardware
+    if modprobe mt7925e 2>/dev/null; then
+        log_info "Loaded mt7925e (PCIe)"
+    elif modprobe mt7921e 2>/dev/null; then
+        log_info "Loaded mt7921e (PCIe)"
+    elif modprobe mt7921u 2>/dev/null; then
+        log_info "Loaded mt7921u (USB)"
+    elif modprobe mt7921s 2>/dev/null; then
+        log_info "Loaded mt7921s (SDIO)"
+    else
+        log_warn "No WiFi hardware detected (driver will load on next boot/plug)"
+    fi
 
     log_info "Modules loaded successfully"
 }
