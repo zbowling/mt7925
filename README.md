@@ -6,7 +6,7 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 **Patches:** 12 patches (v7) for each kernel version - includes Sean Wang's upstream deadlock fix + 11 stability patches.
 
-**DKMS:** v1.3.0 - requires kernel 6.17+ (uses APIs not available in older kernels)
+**DKMS:** v1.4.0 - requires kernel 6.17+ (includes MT7921 for ABI compatibility)
 
 ## Quick Start
 
@@ -43,7 +43,9 @@ sudo make modules_install install
 
 ### Option 3: DKMS Package (Beta - Kernel 6.17+ Only)
 
-> **Warning:** The DKMS package requires kernel 6.17 or newer. It will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs.
+> **Note:** The DKMS package now includes both MT7925 and MT7921 drivers for ABI compatibility. If you have an MT7921 chip, the DKMS will also work for you.
+
+> **Warning:** Requires kernel 6.17 or newer. Will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs.
 
 ```bash
 cd dkms
