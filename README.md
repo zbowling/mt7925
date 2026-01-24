@@ -44,7 +44,7 @@ sudo make modules_install install
 ### Option 3: DKMS Package (Beta - Kernel 6.17+ Only)
 
 > **Note:** The DKMS package now includes both MT7925 and MT7921 drivers for ABI compatibility. If you have an MT7921 chip, the DKMS will also work for you.
-
+>
 > **Warning:** Requires kernel 6.17 or newer. Will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs.
 
 ```bash

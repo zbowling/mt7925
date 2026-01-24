@@ -185,14 +185,15 @@ load_modules() {
     modprobe mt76-connac-lib
     modprobe mt792x-lib
 
-    # Try to load WiFi driver - the right one will load based on hardware
-    if modprobe mt7925e 2>/dev/null; then
+    # Try to load WiFi driver and confirm it bound to hardware via sysfs
+    # modprobe succeeds even without hardware, so check driver binding
+    if modprobe mt7925e 2>/dev/null && compgen -G "/sys/bus/pci/drivers/mt7925e/*:*" > /dev/null; then
         log_info "Loaded mt7925e (PCIe)"
-    elif modprobe mt7921e 2>/dev/null; then
+    elif modprobe mt7921e 2>/dev/null && compgen -G "/sys/bus/pci/drivers/mt7921e/*:*" > /dev/null; then
         log_info "Loaded mt7921e (PCIe)"
-    elif modprobe mt7921u 2>/dev/null; then
+    elif modprobe mt7921u 2>/dev/null && compgen -G "/sys/bus/usb/drivers/mt7921u/*:*" > /dev/null; then
         log_info "Loaded mt7921u (USB)"
-    elif modprobe mt7921s 2>/dev/null; then
+    elif modprobe mt7921s 2>/dev/null && compgen -G "/sys/bus/sdio/drivers/mt7921s/*:*" > /dev/null; then
         log_info "Loaded mt7921s (SDIO)"
     else
         log_warn "No WiFi hardware detected (driver will load on next boot/plug)"
