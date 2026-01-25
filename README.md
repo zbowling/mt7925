@@ -198,7 +198,13 @@ This creates a `mt7925-debug-*.txt` file with:
 
 ## Telemetry
 
-The installer collects anonymous telemetry to help improve the driver:
+The installer offers **opt-in** anonymous telemetry to help improve the driver.
+On interactive terminals, you'll be prompted during installation; the default is "yes".
+
+**Why enable telemetry?**
+- Helps find issues people are having
+- Discovers new operating systems that should be tested
+- Fully anonymized - no way to identify individual users
 
 **Data collected:**
 - Kernel version (e.g., `6.18.5-arch1-1`)
@@ -208,13 +214,15 @@ The installer collects anonymous telemetry to help improve the driver:
 
 **NOT collected:** IP addresses, MAC addresses, hostnames, usernames
 
-**Opt-out:**
-```bash
-# Single install
-sudo MT7925_TELEMETRY=0 ./install.sh
+Your preference is saved to `/etc/mt7925-telemetry.conf` for future installs.
 
-# Permanent (add to /etc/environment)
-MT7925_TELEMETRY=0
+**Override with environment variable:**
+```bash
+# Force enable
+sudo MT7925_TELEMETRY=1 ./install.sh
+
+# Force disable
+sudo MT7925_TELEMETRY=0 ./install.sh
 ```
 
 ## Problem Description

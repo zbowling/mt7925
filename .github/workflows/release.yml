@@ -130,7 +130,7 @@ jobs:
             su builder -c "makepkg --noconfirm"
 
             # Fix permissions so host can access the built package
-            chown -R '"$(id -u):$(id -g)"' /build/*.pkg.tar.zst
+            chmod 666 /build/*.pkg.tar.zst
           '
 
           # Move built package

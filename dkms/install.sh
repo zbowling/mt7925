@@ -15,13 +15,95 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# Opt-out telemetry (set MT7925_TELEMETRY=0 to disable)
+# Telemetry config file location
+TELEMETRY_CONFIG="/etc/mt7925-telemetry.conf"
+
+# Check if telemetry is enabled (opt-in)
+check_telemetry_enabled() {
+    # Environment variable override takes precedence
+    if [[ -n "${MT7925_TELEMETRY:-}" ]]; then
+        [[ "${MT7925_TELEMETRY}" == "1" ]] && return 0
+        return 1
+    fi
+
+    # Check saved preference
+    if [[ -f "$TELEMETRY_CONFIG" ]]; then
+        local saved=$(cat "$TELEMETRY_CONFIG" 2>/dev/null)
+        [[ "$saved" == "1" ]] && return 0
+        return 1
+    fi
+
+    # No preference set yet
+    return 2
+}
+
+# Save telemetry preference
+save_telemetry_preference() {
+    echo "$1" > "$TELEMETRY_CONFIG" 2>/dev/null || true
+}
+
+# Prompt user for telemetry consent (interactive terminals only)
+prompt_telemetry_consent() {
+    # Skip if environment variable is set
+    if [[ -n "${MT7925_TELEMETRY:-}" ]]; then
+        return
+    fi
+
+    # Skip if preference already saved
+    if [[ -f "$TELEMETRY_CONFIG" ]]; then
+        return
+    fi
+
+    # Only prompt in interactive terminals
+    if [[ ! -t 0 ]]; then
+        # Non-interactive: default to disabled
+        TELEMETRY_ENABLED=0
+        return
+    fi
+
+    echo ""
+    echo -e "${YELLOW}--- Telemetry ---${NC}"
+    echo "Help improve this driver by enabling anonymous telemetry."
+    echo ""
+    echo "What's collected (fully anonymized):"
+    echo "  - Kernel version, distro name, hardware ID"
+    echo "  - Install success/failure"
+    echo ""
+    echo "NOT collected: IP addresses, MAC addresses, hostnames, usernames"
+    echo ""
+    echo "This helps me find issues people are having and discover new"
+    echo "operating systems I should be testing on."
+    echo ""
+
+    read -r -p "Enable telemetry? [Y/n] " response
+    case "$response" in
+        [nN][oO]|[nN])
+            TELEMETRY_ENABLED=0
+            save_telemetry_preference 0
+            echo "Telemetry disabled. You can enable later with: sudo MT7925_TELEMETRY=1 ./install.sh"
+            ;;
+        *)
+            TELEMETRY_ENABLED=1
+            save_telemetry_preference 1
+            echo "Telemetry enabled. Thank you for helping improve this driver!"
+            ;;
+    esac
+    echo ""
+}
+
+# Opt-in telemetry
 send_telemetry() {
     local event="$1"
     local error_type="${2:-none}"
 
-    # Enabled by default - set MT7925_TELEMETRY=0 to disable
-    [[ "${MT7925_TELEMETRY:-1}" == "0" ]] && return 0
+    # Check if telemetry is enabled
+    check_telemetry_enabled
+    local status=$?
+    if [[ $status -eq 1 ]]; then
+        return 0  # Explicitly disabled
+    elif [[ $status -eq 2 ]]; then
+        return 0  # No preference set (shouldn't happen after prompt)
+    fi
 
     # Collect safe system info
     local kernel=$(uname -r)
@@ -262,15 +344,10 @@ main() {
     echo "========================================"
     echo ""
 
-    # Show telemetry notice
-    if [[ "${MT7925_TELEMETRY:-1}" != "0" ]]; then
-        echo "Anonymous telemetry is enabled to help improve this driver."
-        echo "Data collected: kernel version, distro, hardware ID (no personal info)"
-        echo "To disable: sudo MT7925_TELEMETRY=0 ./install.sh"
-        echo ""
-    fi
-
     check_root
+
+    # Prompt for telemetry consent (after root check so we can save preference)
+    prompt_telemetry_consent
     check_kernel_version
     check_dependencies
     remove_existing
