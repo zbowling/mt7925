@@ -5,7 +5,7 @@ Name:           %{module_name}-dkms
 Version:        %{version}
 Release:        1%{?dist}
 Summary:        MediaTek MT7925/MT7921 WiFi driver with MLO fixes (DKMS)
-License:        GPL-2.0-only
+License:        ISC AND GPL-2.0-only
 URL:            https://github.com/zbowling/mt7925
 Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch

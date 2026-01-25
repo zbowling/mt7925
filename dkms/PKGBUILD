@@ -5,7 +5,7 @@ pkgrel=1
 pkgdesc="MediaTek MT7925/MT7921 WiFi driver with MLO fixes (DKMS)"
 arch=('any')
 url="https://github.com/zbowling/mt7925"
-license=('GPL2')
+license=('ISC' 'GPL-2.0-only')
 depends=('dkms' 'linux-firmware')
 optdepends=(
     'linux-headers: build for default kernel'
