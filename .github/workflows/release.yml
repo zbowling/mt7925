@@ -117,7 +117,11 @@ jobs:
           sed -i "s|^sha256sums=.*|sha256sums=('${CHECKSUM}')|" dkms/PKGBUILD
 
           # Build in Arch Linux container
-          docker run --rm -v "$PWD/dkms:/build" -w /build archlinux:latest bash -c '
+          mkdir -p dist
+          docker run --rm \
+            -v "$PWD/dkms:/build" \
+            -v "$PWD/dist:/dist" \
+            -w /build archlinux:latest bash -c '
             # Install base-devel and runtime deps (makepkg needs sudo for deps)
             pacman -Syu --noconfirm base-devel dkms linux-firmware
 
@@ -129,13 +133,13 @@ jobs:
             # Build package (deps already installed, so -s is a no-op)
             su builder -c "makepkg --noconfirm"
 
-            # Fix permissions so host can access the built package
-            chmod 666 /build/*.pkg.tar.zst
+            # Copy built package to dist (as root, so host can access it)
+            cp /build/*.pkg.tar.zst /dist/
           '
 
-          # Move built package
-          if compgen -G 'dkms/*.pkg.tar.zst' >/dev/null; then
-            mv dkms/*.pkg.tar.zst dist/
+          # Verify package was built
+          if compgen -G 'dist/*.pkg.tar.zst' >/dev/null; then
+            echo "Arch package built successfully"
           else
             echo "Warning: No Arch package found" >&2
           fi
