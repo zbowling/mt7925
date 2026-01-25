@@ -188,6 +188,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Update PKGBUILD with release checksum
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          # Download the release tarball and calculate checksum
+          TARBALL_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mt76-mt7925-dkms-${VERSION}.tar.gz"
+          curl -sL "$TARBALL_URL" -o /tmp/release.tar.gz
+          CHECKSUM=$(sha256sum /tmp/release.tar.gz | cut -d' ' -f1)
+
+          # Update PKGBUILD with real checksum
+          sed -i "s|^sha256sums=.*|sha256sums=('${CHECKSUM}')|" dkms/PKGBUILD
+
+          echo "Updated PKGBUILD with checksum: ${CHECKSUM}"
+
       - name: Publish to AUR
         uses: KSXGitHub/github-actions-deploy-aur@v3
         with:

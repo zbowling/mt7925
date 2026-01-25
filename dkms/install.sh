@@ -107,17 +107,13 @@ send_telemetry() {
     local distro=$(lsb_release -ds 2>/dev/null || cat /etc/os-release 2>/dev/null | grep ^PRETTY_NAME | cut -d'"' -f2 || echo "unknown")
     local hw_id=$(lspci -nn 2>/dev/null | grep -i "7925\|7921" | grep -oP '\[14c3:[0-9a-f]+\]' | head -1 || echo "unknown")
 
-    # URL-encode the data for GoatCounter pixel tracking
-    # GoatCounter pixel endpoint: GET /count?p=<path>&t=<title>&e=true
-    # We encode: event type in path, system info in title
-    local encoded_path=$(printf '%s' "${event}" | sed 's/ /%20/g; s/\//%2F/g')
+    # GoatCounter pixel tracking: GET /count?p=<path>&t=<title>&e=true
+    # Event type in path, system info in title (--data-urlencode handles encoding)
     local title="${PACKAGE_VERSION}|${kernel}|${distro}|${hw_id}|${error_type}"
-    local encoded_title=$(printf '%s' "${title}" | sed 's/ /%20/g; s/|/%7C/g; s/\//%2F/g')
 
     # Send to GoatCounter pixel endpoint (fire and forget, don't block install)
-    # Using GET request to the count endpoint with event flag
     curl -s --max-time 5 -G "https://zbowling.goatcounter.com/count" \
-        --data-urlencode "p=${encoded_path}" \
+        --data-urlencode "p=${event}" \
         --data-urlencode "t=${title}" \
         --data "e=true" \
         >/dev/null 2>&1 &
