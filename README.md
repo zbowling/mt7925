@@ -10,7 +10,9 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Quick Start
 
-### Option 1: DKMS Package (Recommended - Kernel 6.17+)
+### Option 1: DKMS Package (Kernel 6.17+)
+
+> **Experimental:** These packages are new and lightly tested. Please [report issues](https://github.com/zbowling/mt7925/issues) if you encounter problems!
 
 The easiest way to install the fixed drivers. Supports both MT7925 and MT7921 chipsets.
 
@@ -20,18 +22,28 @@ yay -S mt76-mt7925-dkms
 
 # Debian/Ubuntu (kernel 6.17+)
 wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.0_all.deb
-sudo dpkg -i mt76-mt7925-dkms_1.4.0_all.deb
+sudo apt install ./mt76-mt7925-dkms_1.4.0_all.deb
 
 # Fedora/RHEL
 wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms-1.4.0-1.noarch.rpm
-sudo dnf install mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+sudo dnf install ./mt76-mt7925-dkms-1.4.0-1.noarch.rpm
 
 # Or install from source
 cd dkms
 sudo ./install.sh
 ```
 
+**Uninstall:**
+```bash
+# Arch: sudo pacman -R mt76-mt7925-dkms
+# Debian/Ubuntu: sudo apt remove mt76-mt7925-dkms
+# Fedora: sudo dnf remove mt76-mt7925-dkms
+# Manual: cd dkms && sudo ./uninstall.sh
+```
+
 > **Note:** Requires kernel 6.17 or newer. For older kernels (Ubuntu 24.04's 6.8, etc.), use the patch method below.
+
+See [docs/INSTALL_PACKAGES.md](docs/INSTALL_PACKAGES.md) for detailed installation instructions.
 
 ### Option 2: Apply Patches to Your Kernel
 
@@ -191,39 +203,39 @@ This creates a `mt7925-debug-*.txt` file with:
 
 ### Report an Issue
 
+**Your feedback helps!** These packages are experimental and I need help finding bugs.
+
 1. Run `sudo ./dkms/collect-logs.sh`
 2. Go to [New Issue](https://github.com/zbowling/mt7925/issues/new)
 3. Select "Bug Report" template
 4. Paste the debug log output
 
-## Telemetry
+Even if the install works perfectly, let me know which distro/kernel you're using - it helps me know what's tested!
 
-The installer offers **opt-in** anonymous telemetry to help improve the driver.
-On interactive terminals, you'll be prompted during installation; the default is "yes".
+## Telemetry (Opt-In)
+
+The installer offers **optional, opt-in** telemetry to help improve the driver.
+
+During installation, you'll be prompted:
+```
+Enable telemetry? [y/N]
+```
+
+**Default is NO** - press Enter to skip, or type `y` to enable.
 
 **Why enable telemetry?**
 - Helps find issues people are having
-- Discovers new operating systems that should be tested
+- Discovers new operating systems to test
 - Fully anonymized - no way to identify individual users
 
-**Data collected:**
-- Kernel version (e.g., `6.18.5-arch1-1`)
-- Distribution (e.g., `Arch Linux`)
-- Hardware ID (e.g., `[14c3:7925]`)
-- DKMS version and install result
+**Data collected (if enabled):**
+- Kernel version, distribution, hardware ID, install result
 
 **NOT collected:** IP addresses, MAC addresses, hostnames, usernames
 
-Your preference is saved to `/etc/mt7925-telemetry.conf` for future installs.
+Your preference is saved to `/etc/mt7925-telemetry.conf`.
 
-**Override with environment variable:**
-```bash
-# Force enable
-sudo MT7925_TELEMETRY=1 ./install.sh
-
-# Force disable
-sudo MT7925_TELEMETRY=0 ./install.sh
-```
+**Override:** `sudo MT7925_TELEMETRY=1 ./install.sh` (enable) or `MT7925_TELEMETRY=0` (disable)
 
 ## Problem Description
 
