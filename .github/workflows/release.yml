@@ -62,7 +62,7 @@ jobs:
           # Install Debian packaging tools
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            debhelper dh-dkms dpkg-dev fakeroot
+            debhelper dh-dkms dpkg-dev fakeroot build-essential dkms
 
           # Update changelog version if needed
           cd dkms
