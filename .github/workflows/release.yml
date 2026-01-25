@@ -118,11 +118,16 @@ jobs:
 
           # Build in Arch Linux container
           docker run --rm -v "$PWD/dkms:/build" -w /build archlinux:latest bash -c '
-            pacman -Syu --noconfirm base-devel
-            # makepkg cannot run as root, create a build user
+            # Install base-devel and runtime deps (makepkg needs sudo for deps)
+            pacman -Syu --noconfirm base-devel dkms linux-firmware
+
+            # Create build user with passwordless sudo
             useradd -m builder
+            echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
             chown -R builder:builder /build
-            su builder -c "makepkg -s --noconfirm"
+
+            # Build package (deps already installed, so -s is a no-op)
+            su builder -c "makepkg --noconfirm"
           '
 
           # Move built package
