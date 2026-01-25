@@ -329,7 +329,9 @@ verify_installation() {
 
     echo ""
     echo "WiFi interfaces:"
-    ip link show | grep -E "wlan|wlp" || echo "No WiFi interfaces found (may need reboot)"
+    # Interface may take a few seconds to initialize after module load
+    sleep 2
+    ip link show | grep -E "wlan|wlp" || echo "No WiFi interfaces found yet (wait a few seconds or replug device)"
 }
 
 main() {
