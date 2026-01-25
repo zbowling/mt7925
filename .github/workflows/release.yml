@@ -128,6 +128,9 @@ jobs:
 
             # Build package (deps already installed, so -s is a no-op)
             su builder -c "makepkg --noconfirm"
+
+            # Fix permissions so host can access the built package
+            chown -R '"$(id -u):$(id -g)"' /build/*.pkg.tar.zst
           '
 
           # Move built package
