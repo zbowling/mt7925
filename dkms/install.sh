@@ -15,6 +15,44 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# Opt-out telemetry (set MT7925_TELEMETRY=0 to disable)
+send_telemetry() {
+    local event="$1"
+    local error_type="${2:-none}"
+
+    # Enabled by default - set MT7925_TELEMETRY=0 to disable
+    [[ "${MT7925_TELEMETRY:-1}" == "0" ]] && return 0
+
+    # Collect safe system info
+    local kernel=$(uname -r)
+    local distro=$(lsb_release -ds 2>/dev/null || cat /etc/os-release 2>/dev/null | grep ^PRETTY_NAME | cut -d'"' -f2 || echo "unknown")
+    local hw_id=$(lspci -nn 2>/dev/null | grep -i "7925\|7921" | grep -oP '\[14c3:[0-9a-f]+\]' | head -1 || echo "unknown")
+
+    # Send to GoatCounter (fire and forget, don't block install)
+    curl -s --max-time 5 -X POST "https://zbowling.goatcounter.com/api/event" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"event\": \"${event}\",
+            \"props\": {
+                \"kernel\": \"${kernel}\",
+                \"distro\": \"${distro}\",
+                \"hardware\": \"${hw_id}\",
+                \"version\": \"${PACKAGE_VERSION}\",
+                \"error\": \"${error_type}\"
+            }
+        }" >/dev/null 2>&1 &
+}
+
+# Error handler for telemetry
+handle_error() {
+    local error_type="${1:-unknown}"
+    send_telemetry "install_failure" "$error_type"
+    exit 1
+}
+
+# Trap for unexpected failures (e.g., DKMS build errors)
+trap 'send_telemetry "install_failure" "build_failed"' ERR
+
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -30,6 +68,7 @@ log_error() {
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         log_error "This script must be run as root (use sudo)"
+        # Don't send telemetry for root check - not an installation failure
         exit 1
     fi
 }
@@ -49,7 +88,7 @@ check_kernel_version() {
         echo "  1. Upgrade to a newer kernel (6.17+)"
         echo "  2. Apply patches directly to your kernel source"
         echo "     See kernels/ directory for version-specific patches"
-        exit 1
+        handle_error "kernel_too_old"
     fi
 
     log_info "Kernel version $KVER is supported"
@@ -63,7 +102,7 @@ check_dependencies() {
         echo "  Arch/Manjaro: sudo pacman -S dkms"
         echo "  Ubuntu/Debian: sudo apt install dkms"
         echo "  Fedora: sudo dnf install dkms"
-        exit 1
+        handle_error "dkms_missing"
     fi
 
     if [[ ! -d "/lib/modules/$(uname -r)/build" ]]; then
@@ -71,7 +110,7 @@ check_dependencies() {
         echo "  Arch/Manjaro: sudo pacman -S linux-headers"
         echo "  Ubuntu/Debian: sudo apt install linux-headers-$(uname -r)"
         echo "  Fedora: sudo dnf install kernel-devel"
-        exit 1
+        handle_error "headers_missing"
     fi
 
     # Check if kernel was built with clang (CONFIG_CC_IS_CLANG=y)
@@ -82,14 +121,14 @@ check_dependencies() {
             echo "  Arch/Manjaro: sudo pacman -S clang lld"
             echo "  Ubuntu/Debian: sudo apt install clang lld"
             echo "  Fedora: sudo dnf install clang lld"
-            exit 1
+            handle_error "clang_missing"
         fi
         if ! command -v ld.lld &> /dev/null; then
             log_error "Kernel was built with clang but lld (LLVM linker) is not installed"
             echo "  Arch/Manjaro: sudo pacman -S lld"
             echo "  Ubuntu/Debian: sudo apt install lld"
             echo "  Fedora: sudo dnf install lld"
-            exit 1
+            handle_error "lld_missing"
         fi
         log_info "LLVM toolchain (clang + lld) found - Makefile will auto-detect"
     fi
@@ -223,6 +262,14 @@ main() {
     echo "========================================"
     echo ""
 
+    # Show telemetry notice
+    if [[ "${MT7925_TELEMETRY:-1}" != "0" ]]; then
+        echo "Anonymous telemetry is enabled to help improve this driver."
+        echo "Data collected: kernel version, distro, hardware ID (no personal info)"
+        echo "To disable: sudo MT7925_TELEMETRY=0 ./install.sh"
+        echo ""
+    fi
+
     check_root
     check_kernel_version
     check_dependencies
@@ -244,6 +291,9 @@ main() {
     echo "If WiFi doesn't work, try rebooting."
     echo "To check status: dkms status"
     echo "To uninstall: sudo ./uninstall.sh"
+
+    # Send success telemetry
+    send_telemetry "install_success"
 }
 
 main "$@"

@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report a crash, hang, or other issue with the MT7925/MT7921 driver
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Before submitting
+        1. Run the log collection script: `sudo ./dkms/collect-logs.sh`
+        2. Attach the output below
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the issue. What were you doing when it occurred?
+      placeholder: "WiFi disconnects when switching networks..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      options:
+        - Kernel panic / system crash
+        - System hang / freeze
+        - WiFi disconnects frequently
+        - WiFi won't connect
+        - Slow speeds
+        - Driver won't load
+        - DKMS build failure
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Installation Method
+      options:
+        - DKMS (install.sh)
+        - AUR package (yay/paru)
+        - DEB package
+        - RPM package
+        - Kernel patches
+        - Pre-patched kernel fork
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Debug Logs
+      description: |
+        Run `sudo ./dkms/collect-logs.sh` and paste the output here.
+        Or manually provide: kernel version, dkms status, dmesg | grep mt76
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce the issue?
+      placeholder: |
+        1. Connect to WiFi network
+        2. Wait 5 minutes
+        3. System hangs
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have kernel 6.17 or newer
+          required: true
+        - label: I ran collect-logs.sh and attached the output
+          required: false
+        - label: I searched existing issues for duplicates
+          required: true

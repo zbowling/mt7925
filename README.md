@@ -105,6 +105,7 @@ mt7925/
 ├── dkms/                       # DKMS package (v1.4.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
+│   ├── collect-logs.sh         # Debug log collector for bug reports
 │   ├── dkms.conf               # DKMS configuration
 │   ├── PKGBUILD                # Arch Linux AUR package
 │   ├── mt76-mt7925-dkms.spec   # RPM spec file
@@ -168,6 +169,52 @@ modinfo mt7925e                # Check module info
 ```bash
 cd dkms
 sudo ./uninstall.sh
+```
+
+## Troubleshooting
+
+### Collect Debug Logs
+
+If you're experiencing issues, collect debug logs for a bug report:
+
+```bash
+cd dkms
+sudo ./collect-logs.sh
+```
+
+This creates a `mt7925-debug-*.txt` file with:
+- System information (kernel, distro, architecture)
+- Hardware detection (PCI WiFi devices)
+- DKMS status and loaded modules
+- Kernel messages related to mt76/WiFi
+- Firmware file status
+
+### Report an Issue
+
+1. Run `sudo ./dkms/collect-logs.sh`
+2. Go to [New Issue](https://github.com/zbowling/mt7925/issues/new)
+3. Select "Bug Report" template
+4. Paste the debug log output
+
+## Telemetry
+
+The installer collects anonymous telemetry to help improve the driver:
+
+**Data collected:**
+- Kernel version (e.g., `6.18.5-arch1-1`)
+- Distribution (e.g., `Arch Linux`)
+- Hardware ID (e.g., `[14c3:7925]`)
+- DKMS version and install result
+
+**NOT collected:** IP addresses, MAC addresses, hostnames, usernames
+
+**Opt-out:**
+```bash
+# Single install
+sudo MT7925_TELEMETRY=0 ./install.sh
+
+# Permanent (add to /etc/environment)
+MT7925_TELEMETRY=0
 ```
 
 ## Problem Description
