@@ -68,7 +68,7 @@ override_dh_dkms:
 
 override_dh_auto_install:
 	mkdir -p debian/mt76-mt7925-dkms/usr/src/mt76-mt7925-$(VERSION)/
-	cp -a src/* debian/mt76-mt7925-dkms/usr/src/mt76-mt7925-$(VERSION)/
+	cp -a src debian/mt76-mt7925-dkms/usr/src/mt76-mt7925-$(VERSION)/
 	cp dkms.conf debian/mt76-mt7925-dkms/usr/src/mt76-mt7925-$(VERSION)/
 ```
 

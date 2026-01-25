@@ -23,7 +23,7 @@ Requires kernel 6.17 or newer.
 
 %install
 mkdir -p %{buildroot}%{_usrsrc}/%{module_name}-%{version}
-cp -r src/* %{buildroot}%{_usrsrc}/%{module_name}-%{version}/
+cp -r src %{buildroot}%{_usrsrc}/%{module_name}-%{version}/
 cp dkms.conf %{buildroot}%{_usrsrc}/%{module_name}-%{version}/
 
 %post

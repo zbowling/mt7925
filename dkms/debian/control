@@ -2,7 +2,7 @@ Source: mt76-mt7925-dkms
 Section: kernel
 Priority: optional
 Maintainer: Zac Bowling <zac@zacbowling.com>
-Build-Depends: debhelper-compat (= 13), dkms
+Build-Depends: debhelper-compat (= 13), dh-dkms, dkms
 Standards-Version: 4.6.0
 Homepage: https://github.com/zbowling/mt7925
 Vcs-Git: https://github.com/zbowling/mt7925.git
