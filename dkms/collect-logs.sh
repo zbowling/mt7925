@@ -18,7 +18,7 @@ echo "Collecting system information..."
     echo '```'
     echo "Kernel: $(uname -r)"
     echo "Architecture: $(uname -m)"
-    echo "Distro: $(lsb_release -ds 2>/dev/null || cat /etc/os-release 2>/dev/null | grep ^PRETTY_NAME | cut -d'"' -f2)"
+    echo "Distro: $(lsb_release -ds 2>/dev/null || ( . /etc/os-release 2>/dev/null && echo "$PRETTY_NAME" ) || echo "unknown")"
     echo '```'
     echo ""
 

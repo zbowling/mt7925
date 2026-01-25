@@ -104,7 +104,7 @@ send_telemetry() {
 
     # Collect safe system info
     local kernel=$(uname -r)
-    local distro=$(lsb_release -ds 2>/dev/null || cat /etc/os-release 2>/dev/null | grep ^PRETTY_NAME | cut -d'"' -f2 || echo "unknown")
+    local distro=$(lsb_release -ds 2>/dev/null || ( . /etc/os-release 2>/dev/null && echo "$PRETTY_NAME" ) || echo "unknown")
     local hw_id=$(lspci -nn 2>/dev/null | grep -i "7925\|7921" | grep -oP '\[14c3:[0-9a-f]+\]' | head -1 || echo "unknown")
 
     # GoatCounter pixel tracking: GET /count?p=<path>&t=<title>&e=true

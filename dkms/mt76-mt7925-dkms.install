@@ -8,10 +8,14 @@ post_install() {
 }
 
 pre_upgrade() {
-    # Remove the old version before upgrading
-    # $2 contains the old package version
-    local old_ver="${2:-${_dkms_ver}}"
-    dkms remove "${_dkms_pkg}/${old_ver}" --all 2>/dev/null || true
+    # Remove all installed versions before upgrading
+    # Note: pacman .install scripts don't receive old version as argument,
+    # so we query dkms status to find installed versions
+    local installed_versions
+    installed_versions=$(dkms status "${_dkms_pkg}" 2>/dev/null | sed -n "s|^${_dkms_pkg}/\([^,]*\),.*|\1|p" | sort -u)
+    for ver in $installed_versions; do
+        dkms remove "${_dkms_pkg}/${ver}" --all 2>/dev/null || true
+    done
 }
 
 post_upgrade() {

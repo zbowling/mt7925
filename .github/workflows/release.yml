@@ -114,7 +114,8 @@ jobs:
           # Calculate checksum
           CHECKSUM=$(sha256sum "dkms/mt76-mt7925-dkms-${VERSION}.tar.gz" | cut -d' ' -f1)
 
-          # Update PKGBUILD to use local file and real checksum
+          # Update PKGBUILD to use local file, correct version, and real checksum
+          sed -i "s|^pkgver=.*|pkgver=${VERSION}|" dkms/PKGBUILD
           sed -i "s|^source=.*|source=(\"mt76-mt7925-dkms-${VERSION}.tar.gz\")|" dkms/PKGBUILD
           sed -i "s|^sha256sums=.*|sha256sums=('${CHECKSUM}')|" dkms/PKGBUILD
 
@@ -194,19 +195,35 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
-      - name: Update PKGBUILD with release checksum
+      - name: Update PKGBUILD with release version and checksum
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           # Download the release tarball and calculate checksum
           TARBALL_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mt76-mt7925-dkms-${VERSION}.tar.gz"
-          curl -sL "$TARBALL_URL" -o /tmp/release.tar.gz
+
+          # Use -f to fail on HTTP errors, --retry for transient failures
+          if ! curl -fSL --retry 3 --retry-delay 5 "$TARBALL_URL" -o /tmp/release.tar.gz; then
+            echo "Error: Failed to download release tarball" >&2
+            exit 1
+          fi
+
           CHECKSUM=$(sha256sum /tmp/release.tar.gz | cut -d' ' -f1)
 
-          # Update PKGBUILD with real checksum
+          # Verify checksum looks valid (64 hex chars)
+          if [[ ! "$CHECKSUM" =~ ^[a-f0-9]{64}$ ]]; then
+            echo "Error: Invalid checksum computed: $CHECKSUM" >&2
+            exit 1
+          fi
+
+          # Update PKGBUILD with version, source URL, and checksum
+          sed -i "s|^pkgver=.*|pkgver=${VERSION}|" dkms/PKGBUILD
+          sed -i "s|^source=.*|source=(\"https://github.com/${{ github.repository }}/releases/download/v\${pkgver}/\${pkgname}-\${pkgver}.tar.gz\")|" dkms/PKGBUILD
           sed -i "s|^sha256sums=.*|sha256sums=('${CHECKSUM}')|" dkms/PKGBUILD
 
-          echo "Updated PKGBUILD with checksum: ${CHECKSUM}"
+          echo "Updated PKGBUILD:"
+          echo "  pkgver=${VERSION}"
+          echo "  checksum=${CHECKSUM}"
 
       - name: Publish to AUR
         uses: KSXGitHub/github-actions-deploy-aur@v3
