@@ -107,16 +107,27 @@ send_telemetry() {
     local distro=$(lsb_release -ds 2>/dev/null || ( . /etc/os-release 2>/dev/null && echo "$PRETTY_NAME" ) || echo "unknown")
     local hw_id=$(lspci -nn 2>/dev/null | grep -i "7925\|7921" | grep -oP '\[14c3:[0-9a-f]+\]' | head -1 || echo "unknown")
 
-    # GoatCounter pixel tracking: GET /count?p=<path>&t=<title>&e=true
-    # Event type in path, system info in title (--data-urlencode handles encoding)
-    local title="${PACKAGE_VERSION}|${kernel}|${distro}|${hw_id}|${error_type}"
-
-    # Send to GoatCounter pixel endpoint (fire and forget, don't block install)
-    curl -s --max-time 5 -G "https://zbowling.goatcounter.com/count" \
-        --data-urlencode "p=${event}" \
-        --data-urlencode "t=${title}" \
-        --data "e=true" \
-        >/dev/null 2>&1 &
+    # GoatCounter API: POST /api/v0/count with JSON payload
+    # Requires GOATCOUNTER_TOKEN env var (create at goatcounter.com settings > API)
+    local token="${GOATCOUNTER_TOKEN:-}"
+    if [[ -z "$token" ]]; then
+        # Fallback to pixel endpoint (may not work for server-side requests)
+        local title="${PACKAGE_VERSION}|${kernel}|${distro}|${hw_id}|${error_type}"
+        curl -s --max-time 5 -G "https://zbowling.goatcounter.com/count" \
+            --data-urlencode "p=/install/${event}" \
+            --data-urlencode "t=${title}" \
+            --data "e=true" \
+            -H "User-Agent: MT7925-DKMS/${PACKAGE_VERSION}" \
+            >/dev/null 2>&1 &
+    else
+        # Use proper API with authentication
+        local payload="{\"no_sessions\":true,\"hits\":[{\"path\":\"/install/${event}\",\"title\":\"${PACKAGE_VERSION}|${kernel}|${distro}|${hw_id}|${error_type}\",\"event\":true}]}"
+        curl -s --max-time 5 -X POST "https://zbowling.goatcounter.com/api/v0/count" \
+            -H "Authorization: Bearer ${token}" \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            >/dev/null 2>&1 &
+    fi
 }
 
 # Error handler for telemetry
