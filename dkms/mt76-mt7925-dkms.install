@@ -7,11 +7,21 @@ post_install() {
     dkms install "${_dkms_pkg}/${_dkms_ver}"
 }
 
-pre_upgrade() { pre_remove; }
-post_upgrade() { post_install; }
+pre_upgrade() {
+    # Remove the old version before upgrading
+    # $2 contains the old package version
+    local old_ver="${2:-${_dkms_ver}}"
+    dkms remove "${_dkms_pkg}/${old_ver}" --all 2>/dev/null || true
+}
+
+post_upgrade() {
+    post_install
+}
 
 pre_remove() {
     dkms remove "${_dkms_pkg}/${_dkms_ver}" --all 2>/dev/null || true
 }
 
-post_remove() { depmod -a; }
+post_remove() {
+    depmod -a
+}

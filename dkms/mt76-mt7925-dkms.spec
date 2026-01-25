@@ -5,7 +5,7 @@ Name:           %{module_name}-dkms
 Version:        %{version}
 Release:        1%{?dist}
 Summary:        MediaTek MT7925/MT7921 WiFi driver with MLO fixes (DKMS)
-License:        GPL-2.0
+License:        GPL-2.0-only
 URL:            https://github.com/zbowling/mt7925
 Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
@@ -36,3 +36,10 @@ dkms remove -m %{module_name} -v %{version} --all --rpm_safe_upgrade || :
 
 %files
 %{_usrsrc}/%{module_name}-%{version}
+
+%changelog
+* Sat Jan 25 2026 Zac Bowling <zac@zacbowling.com> - 1.4.0-1
+- Initial DKMS package release
+- USB/SDIO transport modules for full MT7921 support
+- MT7921 included for ABI compatibility with mt792x-lib
+- MLO and ROC fixes for WiFi 7 support

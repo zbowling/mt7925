@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (without v prefix, e.g., 1.4.0)'
+        required: true
+        type: string
 
 jobs:
   build-packages:
@@ -12,11 +17,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version from tag
+      - name: Get version from tag or input
         id: version
         env:
           REF: ${{ github.ref }}
-        run: echo "VERSION=${REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            echo "VERSION=${INPUT_VERSION}" >> "$GITHUB_OUTPUT"
+          elif [[ "$REF" == refs/tags/v* ]]; then
+            echo "VERSION=${REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Error: No version provided and ref is not a tag: $REF" >&2
+            exit 1
+          fi
 
       - name: Create source tarball
         env:
@@ -43,7 +57,13 @@ jobs:
           desc: "MediaTek MT7925/MT7921 WiFi driver with MLO fixes (DKMS)"
 
       - name: Move DEB
-        run: mv *.deb dist/
+        run: |
+          if compgen -G './*.deb' >/dev/null; then
+            mv ./*.deb dist/
+          else
+            echo "Warning: No DEB package found" >&2
+            exit 1
+          fi
 
       # Build RPM package
       - name: Build RPM
@@ -52,7 +72,12 @@ jobs:
           spec_file: dkms/mt76-mt7925-dkms.spec
 
       - name: Move RPM
-        run: mv *.rpm dist/ 2>/dev/null || true
+        run: |
+          if compgen -G './*.rpm' >/dev/null; then
+            mv ./*.rpm dist/
+          else
+            echo "Warning: No RPM package found" >&2
+          fi
 
       # Build Arch package
       - name: Build Arch Package
@@ -61,7 +86,12 @@ jobs:
           PKGBUILD: dkms/PKGBUILD
 
       - name: Move Arch Package
-        run: mv *.pkg.tar.zst dist/ 2>/dev/null || true
+        run: |
+          if compgen -G './*.pkg.tar.zst' >/dev/null; then
+            mv ./*.pkg.tar.zst dist/
+          else
+            echo "Warning: No Arch package found" >&2
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -83,7 +113,7 @@ jobs:
           path: dist
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           generate_release_notes: true

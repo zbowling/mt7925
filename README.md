@@ -91,7 +91,7 @@ mt7925/
 │   ├── 6.18/                   # 12 patches for v6.18.5
 │   ├── 6.19-rc/                # 12 patches for v6.19-rc5
 │   └── nbd168/                 # 12 patches for nbd168/wireless (upstream)
-├── dkms/                       # DKMS package (v1.3.0, requires 6.17+)
+├── dkms/                       # DKMS package (v1.4.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
 │   ├── dkms.conf               # DKMS configuration

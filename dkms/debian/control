@@ -5,6 +5,8 @@ Maintainer: Zac Bowling <zac@zacbowling.com>
 Build-Depends: debhelper-compat (= 13), dkms
 Standards-Version: 4.6.0
 Homepage: https://github.com/zbowling/mt7925
+Vcs-Git: https://github.com/zbowling/mt7925.git
+Vcs-Browser: https://github.com/zbowling/mt7925
 
 Package: mt76-mt7925-dkms
 Architecture: all
