@@ -54,26 +54,28 @@ jobs:
             --exclude='modules.order' --exclude='.cache' \
             dkms/src dkms/dkms.conf dkms/README.md LICENSE
 
-      # Build DEB package
+      # Build DEB package using proper Debian packaging
       - name: Build DEB
-        uses: jiro4989/build-deb-action@v3
-        with:
-          package: mt76-mt7925-dkms
-          package_root: dkms
-          maintainer: "Zac Bowling <zac@zacbowling.com>"
-          version: ${{ steps.version.outputs.VERSION }}
-          arch: all
-          depends: dkms, linux-firmware
-          desc: "MediaTek MT7925/MT7921 WiFi driver with MLO fixes (DKMS)"
-
-      - name: Move DEB
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
-          if compgen -G './*.deb' >/dev/null; then
-            mv ./*.deb dist/
-          else
-            echo "Error: No DEB package found" >&2
-            exit 1
+          # Install Debian packaging tools
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            debhelper dh-dkms dpkg-dev fakeroot
+
+          # Update changelog version if needed
+          cd dkms
+          if ! grep -q "(${VERSION}-1)" debian/changelog; then
+            sed -i "1s/([^)]*)/($VERSION-1)/" debian/changelog
           fi
+
+          # Build the package
+          dpkg-buildpackage -us -uc -b
+
+          # Move built package to dist
+          cd ..
+          mv *.deb dist/ || { echo "Error: No DEB package found"; exit 1; }
 
       # Build RPM package using rpmbuild directly
       - name: Build RPM
