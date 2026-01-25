@@ -1,0 +1,17 @@
+_dkms_pkg="mt76-mt7925"
+_dkms_ver="1.4.0"
+
+post_install() {
+    dkms add "${_dkms_pkg}/${_dkms_ver}"
+    dkms build "${_dkms_pkg}/${_dkms_ver}"
+    dkms install "${_dkms_pkg}/${_dkms_ver}"
+}
+
+pre_upgrade() { pre_remove; }
+post_upgrade() { post_install; }
+
+pre_remove() {
+    dkms remove "${_dkms_pkg}/${_dkms_ver}" --all 2>/dev/null || true
+}
+
+post_remove() { depmod -a; }
