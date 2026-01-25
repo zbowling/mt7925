@@ -57,7 +57,6 @@ prompt_telemetry_consent() {
     # Only prompt in interactive terminals
     if [[ ! -t 0 ]]; then
         # Non-interactive: default to disabled
-        TELEMETRY_ENABLED=0
         return
     fi
 
@@ -78,12 +77,10 @@ prompt_telemetry_consent() {
     read -r -p "Enable telemetry? [Y/n] " response
     case "$response" in
         [nN][oO]|[nN])
-            TELEMETRY_ENABLED=0
             save_telemetry_preference 0
             echo "Telemetry disabled. You can enable later with: sudo MT7925_TELEMETRY=1 ./install.sh"
             ;;
         *)
-            TELEMETRY_ENABLED=1
             save_telemetry_preference 1
             echo "Telemetry enabled. Thank you for helping improve this driver!"
             ;;
@@ -110,19 +107,20 @@ send_telemetry() {
     local distro=$(lsb_release -ds 2>/dev/null || cat /etc/os-release 2>/dev/null | grep ^PRETTY_NAME | cut -d'"' -f2 || echo "unknown")
     local hw_id=$(lspci -nn 2>/dev/null | grep -i "7925\|7921" | grep -oP '\[14c3:[0-9a-f]+\]' | head -1 || echo "unknown")
 
-    # Send to GoatCounter (fire and forget, don't block install)
-    curl -s --max-time 5 -X POST "https://zbowling.goatcounter.com/api/event" \
-        -H "Content-Type: application/json" \
-        -d "{
-            \"event\": \"${event}\",
-            \"props\": {
-                \"kernel\": \"${kernel}\",
-                \"distro\": \"${distro}\",
-                \"hardware\": \"${hw_id}\",
-                \"version\": \"${PACKAGE_VERSION}\",
-                \"error\": \"${error_type}\"
-            }
-        }" >/dev/null 2>&1 &
+    # URL-encode the data for GoatCounter pixel tracking
+    # GoatCounter pixel endpoint: GET /count?p=<path>&t=<title>&e=true
+    # We encode: event type in path, system info in title
+    local encoded_path=$(printf '%s' "${event}" | sed 's/ /%20/g; s/\//%2F/g')
+    local title="${PACKAGE_VERSION}|${kernel}|${distro}|${hw_id}|${error_type}"
+    local encoded_title=$(printf '%s' "${title}" | sed 's/ /%20/g; s/|/%7C/g; s/\//%2F/g')
+
+    # Send to GoatCounter pixel endpoint (fire and forget, don't block install)
+    # Using GET request to the count endpoint with event flag
+    curl -s --max-time 5 -G "https://zbowling.goatcounter.com/count" \
+        --data-urlencode "p=${encoded_path}" \
+        --data-urlencode "t=${title}" \
+        --data "e=true" \
+        >/dev/null 2>&1 &
 }
 
 # Error handler for telemetry
