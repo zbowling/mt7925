@@ -35,12 +35,11 @@ unload_modules() {
     log_info "Unloading DKMS mt76 modules..."
 
     # Unload in dependency order (leaf modules first)
-    for mod in mt7925e mt7925_common mt7925-common \
-               mt7921e mt7921s mt7921u mt7921_common mt7921-common \
-               mt792x_usb mt792x-usb mt76_usb mt76-usb \
-               mt76_sdio mt76-sdio \
-               mt792x_lib mt792x-lib \
-               mt76_connac_lib mt76-connac-lib mt76; do
+    # Note: kernel modules use underscores internally
+    for mod in mt7925e mt7925_common \
+               mt7921e mt7921s mt7921u mt7921_common \
+               mt792x_usb mt76_usb mt76_sdio \
+               mt792x_lib mt76_connac_lib mt76; do
         if lsmod | grep -q "^${mod//-/_}"; then
             rmmod "${mod//-/_}" 2>/dev/null || true
         fi

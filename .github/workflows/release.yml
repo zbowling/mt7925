@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'dkms/**'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
       version:
@@ -28,8 +34,10 @@ jobs:
           elif [[ "$REF" == refs/tags/v* ]]; then
             echo "VERSION=${REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
           else
-            echo "Error: No version provided and ref is not a tag: $REF" >&2
-            exit 1
+            # For PRs and branch pushes, use version from dkms.conf
+            VERSION=$(grep -oP 'PACKAGE_VERSION="\K[^"]+' dkms/dkms.conf)
+            echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "Using version from dkms.conf: ${VERSION}"
           fi
 
       - name: Create source tarball
@@ -37,8 +45,10 @@ jobs:
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           mkdir -p dist
+          # Create tarball with proper structure (LICENSE inside package dir)
           tar -czvf "dist/mt76-mt7925-dkms-${VERSION}.tar.gz" \
             --transform "s,^dkms/,mt76-mt7925-dkms-${VERSION}/," \
+            --transform "s,^LICENSE,mt76-mt7925-dkms-${VERSION}/LICENSE," \
             --exclude='*.o' --exclude='*.ko' --exclude='*.mod*' \
             --exclude='.*.cmd' --exclude='Module.symvers' \
             --exclude='modules.order' --exclude='.cache' \
@@ -61,7 +71,7 @@ jobs:
           if compgen -G './*.deb' >/dev/null; then
             mv ./*.deb dist/
           else
-            echo "Warning: No DEB package found" >&2
+            echo "Error: No DEB package found" >&2
             exit 1
           fi
 
@@ -79,7 +89,19 @@ jobs:
             echo "Warning: No RPM package found" >&2
           fi
 
-      # Build Arch package
+      # Build Arch package from local tarball
+      - name: Prepare Arch package build
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          # Copy tarball to where makepkg expects it
+          cp "dist/mt76-mt7925-dkms-${VERSION}.tar.gz" dkms/
+          # Calculate checksum and update PKGBUILD
+          CHECKSUM=$(sha256sum "dkms/mt76-mt7925-dkms-${VERSION}.tar.gz" | cut -d' ' -f1)
+          # Update PKGBUILD to use local file and real checksum
+          sed -i "s|^source=.*|source=(\"mt76-mt7925-dkms-${VERSION}.tar.gz\")|" dkms/PKGBUILD
+          sed -i "s|^sha256sums=.*|sha256sums=('${CHECKSUM}')|" dkms/PKGBUILD
+
       - name: Build Arch Package
         uses: FFY00/build-arch-package@v1
         with:
@@ -92,6 +114,13 @@ jobs:
           else
             echo "Warning: No Arch package found" >&2
           fi
+
+      # Restore PKGBUILD for AUR (uses remote URL)
+      - name: Restore PKGBUILD for AUR
+        run: git checkout dkms/PKGBUILD
+
+      - name: List built packages
+        run: ls -la dist/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
