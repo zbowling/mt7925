@@ -144,6 +144,9 @@ jobs:
             echo "Warning: No Arch package found" >&2
           fi
 
+          # Fix permissions changed by Docker before restoring PKGBUILD
+          sudo chown -R "$(id -u):$(id -g)" dkms/ || true
+
           # Restore PKGBUILD for AUR (uses remote URL)
           git checkout dkms/PKGBUILD
 
