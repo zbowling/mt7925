@@ -193,12 +193,11 @@ dkms/
 ├── mt76-mt7925-dkms.install    # Arch Linux DKMS hooks
 ├── mt76-mt7925-dkms.spec       # RPM spec file (Fedora/RHEL)
 └── debian/                     # Debian/Ubuntu packaging
-    ├── control                 # Package metadata
-    ├── rules                   # Build rules
+    ├── control                 # Package metadata (includes debhelper-compat)
+    ├── rules                   # Build rules (auto-extracts version from changelog)
     ├── changelog               # Version history
-    ├── compat                  # Debhelper compat level
     ├── copyright               # License info
-    └── source/format           # Source format
+    └── source/format           # Source format (3.0 quilt)
 ```
 
 ### Version Update Checklist
@@ -208,12 +207,11 @@ dkms/
 | File | Field to Update |
 |------|-----------------|
 | `dkms/dkms.conf` | `PACKAGE_VERSION="X.Y.Z"` |
-| `dkms/install.sh` | `VERSION="X.Y.Z"` (near top of file) |
+| `dkms/install.sh` | `PACKAGE_VERSION="X.Y.Z"` (near top of file) |
 | `dkms/PKGBUILD` | `pkgver=X.Y.Z` |
 | `dkms/mt76-mt7925-dkms.install` | `_dkms_ver="X.Y.Z"` |
 | `dkms/mt76-mt7925-dkms.spec` | `%define version X.Y.Z` |
-| `dkms/debian/rules` | `dh_dkms -V X.Y.Z` |
-| `dkms/debian/changelog` | Add new version entry at top |
+| `dkms/debian/changelog` | Add new version entry at top (debian/rules auto-extracts) |
 
 Example version bump workflow:
 ```bash

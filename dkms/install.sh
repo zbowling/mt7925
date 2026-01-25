@@ -74,15 +74,15 @@ prompt_telemetry_consent() {
     echo "operating systems I should be testing on."
     echo ""
 
-    read -r -p "Enable telemetry? [Y/n] " response
+    read -r -p "Enable telemetry? [y/N] " response
     case "$response" in
-        [nN][oO]|[nN])
-            save_telemetry_preference 0
-            echo "Telemetry disabled. You can enable later with: sudo MT7925_TELEMETRY=1 ./install.sh"
-            ;;
-        *)
+        [yY][eE][sS]|[yY])
             save_telemetry_preference 1
             echo "Telemetry enabled. Thank you for helping improve this driver!"
+            ;;
+        *)
+            save_telemetry_preference 0
+            echo "Telemetry disabled. You can enable later with: sudo MT7925_TELEMETRY=1 ./install.sh"
             ;;
     esac
     echo ""
