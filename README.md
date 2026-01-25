@@ -10,13 +10,35 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Quick Start
 
-### Option 1: Apply Patches to Your Kernel (Recommended)
+### Option 1: DKMS Package (Recommended - Kernel 6.17+)
+
+The easiest way to install the fixed drivers. Supports both MT7925 and MT7921 chipsets.
+
+```bash
+# Arch Linux (AUR)
+yay -S mt76-mt7925-dkms
+
+# Debian/Ubuntu (kernel 6.17+)
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.0_all.deb
+sudo dpkg -i mt76-mt7925-dkms_1.4.0_all.deb
+
+# Fedora/RHEL
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+sudo dnf install mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+
+# Or install from source
+cd dkms
+sudo ./install.sh
+```
+
+> **Note:** Requires kernel 6.17 or newer. For older kernels (Ubuntu 24.04's 6.8, etc.), use the patch method below.
+
+### Option 2: Apply Patches to Your Kernel
+
+For older kernels or when you prefer patching your kernel source:
 
 ```bash
 # Get kernel source matching your version
-# Ideally google how to fetch your linux kernel sources for your distro with all the your distro patches and config.
-
-# Or check out vanilla linux kernel
 git clone --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git -b v6.18.5
 cd linux
 
@@ -29,7 +51,7 @@ make -j$(nproc)
 sudo make modules_install install
 ```
 
-### Option 2: Use Pre-Patched Kernel
+### Option 3: Use Pre-Patched Kernel
 
 ```bash
 git clone https://github.com/zbowling/linux-wifi.git
@@ -41,17 +63,6 @@ make -j$(nproc)
 sudo make modules_install install
 ```
 
-### Option 3: DKMS Package (Beta - Kernel 6.17+ Only)
-
-> **Note:** The DKMS package now includes both MT7925 and MT7921 drivers for ABI compatibility. If you have an MT7921 chip, the DKMS will also work for you.
->
-> **Warning:** Requires kernel 6.17 or newer. Will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs.
-
-```bash
-cd dkms
-sudo ./install.sh
-```
-
 ## Supported Kernel Versions
 
 | Version | Patches | Status | Notes |
@@ -61,7 +72,7 @@ sudo ./install.sh
 | 6.17.x | 12 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
 | nbd168 | 12 (`kernels/nbd168/`) | **Upstream target** | nbd168/wireless tree |
 
-## Patch Series (v6)
+## Patch Series (v7)
 
 **12 patches** - Sean Wang's upstream deadlock fix as base + 11 stability patches:
 
@@ -95,6 +106,9 @@ mt7925/
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
 │   ├── dkms.conf               # DKMS configuration
+│   ├── PKGBUILD                # Arch Linux AUR package
+│   ├── mt76-mt7925-dkms.spec   # RPM spec file
+│   ├── debian/                 # Debian packaging
 │   └── src/                    # Pre-patched mt76 source
 ├── crashes/                    # Crash logs for debugging
 ├── docs/                       # Documentation for mt76 drivers
@@ -116,7 +130,7 @@ mt7925/
 | `mt7925-upstream-v2-6.19` | v6.19-rc5 | RC |
 | `mt7925-upstream-v2-6.17` | v6.17.13 | EOL |
 
-## DKMS Installation (Beta)
+## DKMS Installation
 
 ### Requirements
 
@@ -128,6 +142,8 @@ mt7925/
 ### Install
 
 ```bash
+# From package (see Quick Start above)
+# Or from source:
 cd dkms
 sudo ./install.sh
 ```
@@ -135,8 +151,8 @@ sudo ./install.sh
 The installer:
 1. Checks dependencies and kernel version
 2. Auto-detects clang-built kernels (uses `CC=clang LD=ld.lld LLVM=1`)
-3. Blacklists stock mt76 modules
-4. Builds 5 modules via DKMS: mt76, mt76-connac-lib, mt792x-lib, mt7925-common, mt7925e
+3. Installs to /updates/dkms/ (higher priority than stock modules)
+4. Builds 12 modules via DKMS: mt76, mt76-connac-lib, mt792x-lib, mt76-usb, mt792x-usb, mt76-sdio, mt7921-common, mt7921e, mt7921s, mt7921u, mt7925-common, mt7925e
 5. Loads the new modules
 
 ### Verify
@@ -221,4 +237,4 @@ Patch 01 (Sean Wang's deadlock fix) is already in the upstream queue.
 
 ## License
 
-BSD-2-Clause-Clear AND GPL-2.0-only (dual licensed, same as mt76 driver)
+ISC AND GPL-2.0-only (dual licensed, same as mt76 driver)
