@@ -235,3 +235,74 @@ jobs:
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+
+  publish-cloudsmith:
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: dist
+
+      - name: List packages
+        run: ls -la dist/
+
+      - name: Install Cloudsmith CLI
+        uses: cloudsmith-io/cloudsmith-cli-action@v1
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+
+      - name: Push packages to Cloudsmith
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          echo "Uploading packages to Cloudsmith..."
+
+          # Upload source tarball (raw format)
+          if compgen -G "dist/*.tar.gz" >/dev/null; then
+            for f in dist/*.tar.gz; do
+              echo "Uploading $f as raw package..."
+              cloudsmith push raw mt76/packages "$f" \
+                --version "$VERSION" \
+                --name "mt76-mt7925-dkms" \
+                --summary "MT7925/MT7921 WiFi driver source (DKMS)" \
+                --republish
+            done
+          fi
+
+          # Upload DEB package (debian/any-version for universal)
+          if compgen -G "dist/*.deb" >/dev/null; then
+            for f in dist/*.deb; do
+              echo "Uploading $f to Debian repository..."
+              cloudsmith push deb mt76/packages/any-distro/any-version "$f" --republish
+            done
+          fi
+
+          # Upload RPM package (rpm/any-distro/any-version for universal)
+          if compgen -G "dist/*.rpm" >/dev/null; then
+            for f in dist/*.rpm; do
+              echo "Uploading $f to RPM repository..."
+              cloudsmith push rpm mt76/packages/any-distro/any-version "$f" --republish
+            done
+          fi
+
+          # Upload Arch package (raw format since Cloudsmith doesn't have native pacman support)
+          if compgen -G "dist/*.pkg.tar.zst" >/dev/null; then
+            for f in dist/*.pkg.tar.zst; do
+              echo "Uploading $f as raw package..."
+              cloudsmith push raw mt76/packages "$f" \
+                --version "$VERSION" \
+                --name "mt76-mt7925-dkms-arch" \
+                --summary "MT7925/MT7921 WiFi driver (Arch Linux DKMS)" \
+                --republish
+            done
+          fi
+
+          echo "All packages uploaded to Cloudsmith!"
