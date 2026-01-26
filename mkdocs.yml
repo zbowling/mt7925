@@ -84,6 +84,7 @@ nav:
     - Overview: issues/index.md
     - Known Issues: issues/known-issues.md
     - Crash Analysis: issues/crash-analysis.md
+    - Crash Logs: issues/crash-logs.md
     - Debugging Guide: issues/debugging.md
   - Architecture:
     - Overview: architecture/index.md
