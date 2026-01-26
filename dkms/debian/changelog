@@ -1,3 +1,10 @@
+mt76-mt7925-dkms (1.4.1-1) unstable; urgency=medium
+
+  * Add Cloudsmith package repository publishing
+  * Add opt-in telemetry for install tracking
+
+ -- Zac Bowling <zac@zacbowling.com>  Sun, 26 Jan 2026 12:00:00 -0800
+
 mt76-mt7925-dkms (1.4.0-1) unstable; urgency=medium
 
   * Initial packaged release

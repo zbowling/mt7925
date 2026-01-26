@@ -5,7 +5,7 @@
 set -e
 
 PACKAGE_NAME="mt76-mt7925"
-PACKAGE_VERSION="1.4.0"
+PACKAGE_VERSION="1.4.1"
 
 # Session tracking for telemetry (correlate start/end events)
 SESSION_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N | sha256sum | head -c 32)

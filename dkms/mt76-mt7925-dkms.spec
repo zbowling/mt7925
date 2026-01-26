@@ -1,5 +1,5 @@
 %define module_name mt76-mt7925
-%define version 1.4.0
+%define version 1.4.1
 
 Name:           %{module_name}-dkms
 Version:        %{version}
@@ -38,6 +38,10 @@ dkms remove -m %{module_name} -v %{version} --all --rpm_safe_upgrade || :
 %{_usrsrc}/%{module_name}-%{version}
 
 %changelog
+* Sun Jan 26 2026 Zac Bowling <zac@zacbowling.com> - 1.4.1-1
+- Add Cloudsmith package repository publishing
+- Add opt-in telemetry for install tracking
+
 * Sat Jan 25 2026 Zac Bowling <zac@zacbowling.com> - 1.4.0-1
 - Initial DKMS package release
 - USB/SDIO transport modules for full MT7921 support

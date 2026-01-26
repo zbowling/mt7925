@@ -7,15 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-01-26
+
 ### Added
-- AUR, DEB, and RPM package support with GitHub Actions CI/CD
-- Automated release workflow for tagged versions
-- AUR publishing automation
+- Cloudsmith package repository publishing
+- Opt-in telemetry for install/uninstall tracking (PostHog)
+- Hardware detection (chip type, bus type, clang usage) in telemetry
+- Network wait + queue mechanism for telemetry after WiFi module replacement
+- Session tracking with duration metrics
 
 ### Changed
-- Updated documentation in AGENTS.md for DKMS packaging
+- AUR, DEB, and RPM packages now published to Cloudsmith
+- Updated documentation for telemetry
 
-## [1.4.0] - 2025-01-24
+## [1.4.0] - 2026-01-24
 
 ### Added
 - USB and SDIO transport modules (mt76-usb, mt76-sdio, mt792x-usb)
@@ -82,7 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - NULL pointer dereferences in MLO code paths
 - MCU command timeouts during rapid state changes
 
-[Unreleased]: https://github.com/zbowling/mt7925/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/zbowling/mt7925/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/zbowling/mt7925/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/zbowling/mt7925/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/zbowling/mt7925/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/zbowling/mt7925/compare/v1.1.0...v1.2.0

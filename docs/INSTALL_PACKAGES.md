@@ -52,13 +52,13 @@ Download the `.deb` package from the [latest release](https://github.com/zbowlin
 
 ```bash
 # Download (replace version as needed)
-wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.0_all.deb
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.1_all.deb
 
 # Install
-sudo apt install ./mt76-mt7925-dkms_1.4.0_all.deb
+sudo apt install ./mt76-mt7925-dkms_1.4.1_all.deb
 
 # Or using dpkg directly
-sudo dpkg -i mt76-mt7925-dkms_1.4.0_all.deb
+sudo dpkg -i mt76-mt7925-dkms_1.4.1_all.deb
 sudo apt-get install -f  # Fix any missing dependencies
 ```
 
@@ -72,13 +72,13 @@ Download the `.rpm` package from the [latest release](https://github.com/zbowlin
 
 ```bash
 # Download (replace version as needed)
-wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms-1.4.1-1.noarch.rpm
 
 # Install with dnf (handles dependencies)
-sudo dnf install ./mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+sudo dnf install ./mt76-mt7925-dkms-1.4.1-1.noarch.rpm
 
 # Or with rpm directly
-sudo rpm -ivh mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+sudo rpm -ivh mt76-mt7925-dkms-1.4.1-1.noarch.rpm
 ```
 
 **Tested on:** Fedora 42 (in CI only - needs real-world testing!)
@@ -104,7 +104,7 @@ After installation, verify everything is working:
 dkms status | grep mt76-mt7925
 
 # Should show something like:
-# mt76-mt7925/1.4.0, 6.18.7-2-cachyos, x86_64: installed
+# mt76-mt7925/1.4.1, 6.18.7-2-cachyos, x86_64: installed
 
 # Check modules are loaded
 lsmod | grep mt7925
@@ -157,7 +157,7 @@ The installer includes **optional, opt-in telemetry** to help me understand whic
 | `bus_type` | `pcie`, `usb`, `sdio` | Hardware interface type |
 | `hardware` | `[14c3:7925]` | PCI/USB device ID |
 | `uses_clang` | `true`/`false` | Whether kernel uses clang toolchain |
-| `version` | `1.4.0` | DKMS package version |
+| `version` | `1.4.1` | DKMS package version |
 | `session_id` | UUID | Correlate start/end events |
 | `duration_seconds` | `45` | How long install/uninstall took |
 | `error_type` | `build_failed`, `headers_missing` | Categorize failures |

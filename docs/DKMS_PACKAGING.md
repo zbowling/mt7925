@@ -19,7 +19,7 @@ Location: `dkms/PKGBUILD`
 ```bash
 # Key fields
 pkgname=mt76-mt7925-dkms
-pkgver=1.4.0
+pkgver=1.4.1
 depends=('dkms' 'linux-firmware')
 source=("https://github.com/.../mt76-mt7925-dkms-${pkgver}.tar.gz")
 ```
@@ -86,7 +86,7 @@ Location: `dkms/mt76-mt7925-dkms.spec`
 **Key Sections:**
 ```spec
 %define module mt76-mt7925
-%define version 1.4.0
+%define version 1.4.1
 
 Name:       %{module}-dkms
 Version:    %{version}
@@ -119,7 +119,7 @@ Location: `dkms/dkms.conf`
 
 ```bash
 PACKAGE_NAME="mt76-mt7925"
-PACKAGE_VERSION="1.4.0"
+PACKAGE_VERSION="1.4.1"
 AUTOINSTALL="yes"
 
 # Build configuration
@@ -282,10 +282,10 @@ sudo dnf install mt76-mt7925-dkms-*.rpm
 
 ```bash
 # Check DKMS build logs
-sudo cat /var/lib/dkms/mt76-mt7925/1.4.0/build/make.log
+sudo cat /var/lib/dkms/mt76-mt7925/1.4.1/build/make.log
 
 # Manual build test
-cd /usr/src/mt76-mt7925-1.4.0
+cd /usr/src/mt76-mt7925-1.4.1
 make -C /lib/modules/$(uname -r)/build M=$PWD
 ```
 

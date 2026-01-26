@@ -201,7 +201,7 @@ Here's what an event looks like:
     "bus_type": "pcie",
     "hardware": "[14c3:7925]",
     "uses_clang": true,
-    "version": "1.4.0",
+    "version": "1.4.1",
     "session_id": "550e8400-e29b-41d4-a716-446655440000",
     "duration_seconds": 47,
     "error_type": "none"

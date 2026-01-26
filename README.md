@@ -6,7 +6,7 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 **Patches:** 12 patches (v7) for each kernel version - includes Sean Wang's upstream deadlock fix + 11 stability patches.
 
-**DKMS:** v1.4.0 - requires kernel 6.17+ (includes MT7921 for ABI compatibility)
+**DKMS:** v1.4.1 - requires kernel 6.17+ (includes MT7921 for ABI compatibility)
 
 ## Quick Start
 
@@ -21,12 +21,12 @@ The easiest way to install the fixed drivers. Supports both MT7925 and MT7921 ch
 yay -S mt76-mt7925-dkms
 
 # Debian/Ubuntu (kernel 6.17+)
-wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.0_all.deb
-sudo apt install ./mt76-mt7925-dkms_1.4.0_all.deb
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.1_all.deb
+sudo apt install ./mt76-mt7925-dkms_1.4.1_all.deb
 
 # Fedora/RHEL
-wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms-1.4.0-1.noarch.rpm
-sudo dnf install ./mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms-1.4.1-1.noarch.rpm
+sudo dnf install ./mt76-mt7925-dkms-1.4.1-1.noarch.rpm
 
 # Or install from source
 cd dkms
@@ -114,7 +114,7 @@ mt7925/
 │   ├── 6.18/                   # 12 patches for v6.18.5
 │   ├── 6.19-rc/                # 12 patches for v6.19-rc5
 │   └── nbd168/                 # 12 patches for nbd168/wireless (upstream)
-├── dkms/                       # DKMS package (v1.4.0, requires 6.17+)
+├── dkms/                       # DKMS package (v1.4.1, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
 │   ├── collect-logs.sh         # Debug log collector for bug reports
@@ -239,7 +239,7 @@ Enable telemetry? [y/N]
 | `bus_type` | `pcie`, `usb`, `sdio` | Hardware interface type |
 | `hardware` | `[14c3:7925]` | PCI device ID |
 | `uses_clang` | `true`/`false` | Build toolchain |
-| `version` | `1.4.0` | DKMS package version |
+| `version` | `1.4.1` | DKMS package version |
 | `session_id` | UUID | Correlate start/end events |
 | `duration_seconds` | `45` | Install/uninstall time |
 | `error_type` | `build_failed` | Failure categorization |
