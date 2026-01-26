@@ -75,3 +75,4 @@ compile_commands.json
 # DKMS package build directories
 dkms/pkg/
 dkms/src/mt76-mt7925-dkms-*/
+site/

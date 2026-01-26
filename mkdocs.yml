@@ -1,0 +1,106 @@
+site_name: MT7925 WiFi Driver
+site_description: Critical fixes for MediaTek MT7925 WiFi driver - resolves kernel panics, deadlocks, and system hangs
+site_url: https://zbowling.github.io/mt7925
+repo_url: https://github.com/zbowling/mt7925
+repo_name: zbowling/mt7925
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - tags
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/zbowling/mt7925
+  generator: false
+
+copyright: Copyright &copy; 2026 Zac Bowling - ISC License
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quick-start.md
+    - Requirements: getting-started/requirements.md
+  - Installation:
+    - Overview: installation/index.md
+    - Arch Linux (AUR): installation/arch-linux.md
+    - Debian/Ubuntu: installation/debian-ubuntu.md
+    - Fedora/RHEL: installation/fedora-rhel.md
+    - Manual Install: installation/manual.md
+    - Uninstalling: installation/uninstall.md
+  - Patches:
+    - Overview: patches/index.md
+    - Patch List: patches/patch-list.md
+    - Upstream Status: patches/upstream-status.md
+  - Crashes & Issues:
+    - Overview: issues/index.md
+    - Known Issues: issues/known-issues.md
+    - Crash Analysis: issues/crash-analysis.md
+    - Debugging Guide: issues/debugging.md
+  - Architecture:
+    - Overview: architecture/index.md
+    - Multi-Link Operation: architecture/mlo.md
+    - Locking Patterns: architecture/locking.md
+    - MCU Protocol: architecture/mcu-protocol.md
+    - Chipsets: architecture/chipsets.md
+  - Developer Guide:
+    - Overview: developer/index.md
+    - Contributing: developer/contributing.md
+    - Debugging: developer/debugging.md
+    - Debugfs Reference: developer/debugfs.md
+    - Sysfs Reference: developer/sysfs.md
+  - Reference:
+    - Overview: reference/index.md
+    - Data Structures: reference/data-structures.md
+    - File Reference: reference/file-reference.md
+    - Entry Points: reference/entry-points.md
+  - Changelog: changelog.md
+  - Telemetry: telemetry.md
