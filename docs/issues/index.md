@@ -30,6 +30,14 @@ This section documents known issues with the MT7925 driver, crash analysis, and 
 
     [:octicons-arrow-right-24: Crash reports](crash-analysis.md)
 
+-   :material-folder-alert:{ .lg .middle } __Crash Logs__
+
+    ---
+
+    Raw crash logs and kernel traces from testing
+
+    [:octicons-arrow-right-24: Browse logs](crash-logs.md)
+
 -   :material-wrench:{ .lg .middle } __Debugging Guide__
 
     ---
