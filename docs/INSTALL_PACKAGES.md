@@ -149,20 +149,44 @@ The installer includes **optional, opt-in telemetry** to help me understand whic
 
 ### What's Collected (If You Opt In)
 
-| Data | Example | Why |
-|------|---------|-----|
-| Kernel version | `6.18.7-2-cachyos` | Find kernel-specific bugs |
-| Distribution | `Arch Linux` | Discover distros to test |
-| Hardware ID | `[14c3:7925]` | Track device variants |
-| Install result | `success` / `failure` | Catch build issues |
+| Property | Example | Purpose |
+|----------|---------|---------|
+| `kernel` | `6.18.7-2-cachyos` | Find kernel-specific bugs |
+| `distro` | `Arch Linux` | Discover distros to test |
+| `chip` | `mt7925` or `mt7921` | Track which chipset is installed |
+| `bus_type` | `pcie`, `usb`, `sdio` | Hardware interface type |
+| `hardware` | `[14c3:7925]` | PCI/USB device ID |
+| `uses_clang` | `true`/`false` | Whether kernel uses clang toolchain |
+| `version` | `1.4.0` | DKMS package version |
+| `session_id` | UUID | Correlate start/end events |
+| `duration_seconds` | `45` | How long install/uninstall took |
+| `error_type` | `build_failed`, `headers_missing` | Categorize failures |
+
+### Events Tracked
+
+| Event | When | Purpose |
+|-------|------|---------|
+| `install_started` | Beginning of install | Track completion rates |
+| `install_success` | Successful install | Know what works |
+| `install_failure` | Install error | Identify common failures |
+| `uninstall_started` | Beginning of uninstall | Track uninstall patterns |
+| `uninstall_success` | Successful uninstall | Measure churn |
+| `uninstall_failure` | Uninstall error | Identify issues |
 
 ### What's NOT Collected
 
 - IP addresses
 - MAC addresses
-- Hostnames
-- Usernames
+- Hostnames or usernames
+- File paths or system contents
 - Any personally identifiable information
+
+### Technical Details
+
+- **Backend:** [PostHog](https://posthog.com) (privacy-focused analytics)
+- **API Key:** Write-only (cannot read data, safe to embed in code)
+- **Network Handling:** If WiFi is down after module replacement, events are queued to `/var/lib/mt7925-telemetry-queue` and sent on next install
+- **Timeout:** 5 second max per request, non-blocking
 
 ### How It Works
 
@@ -175,7 +199,7 @@ Enable telemetry? [y/N]
 - Press **Enter** or **n**: Telemetry disabled (default)
 - Press **y**: Telemetry enabled
 
-Your choice is saved to `/etc/mt7925-telemetry.conf` for future installs.
+Your choice is saved to `/etc/mt7925-telemetry.conf` for future installs/uninstalls.
 
 ### Environment Variable Override
 
@@ -191,7 +215,9 @@ sudo MT7925_TELEMETRY=0 ./install.sh
 
 This is a one-person project. Telemetry helps me:
 - Discover which distros and kernels people are using
+- Identify which chipsets (MT7925 vs MT7921) and bus types (PCIe vs USB) are common
 - Find out about build failures I can't reproduce locally
+- Measure install success rates and identify problematic configurations
 - Prioritize which systems to test
 
 It's completely optional, and I appreciate those who enable it!

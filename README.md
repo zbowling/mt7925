@@ -225,13 +225,30 @@ Enable telemetry? [y/N]
 
 **Why enable telemetry?**
 - Helps find issues people are having
-- Discovers new operating systems to test
+- Discovers which hardware/distros need testing
+- Measures install success rates and duration
 - Fully anonymized - no way to identify individual users
 
 **Data collected (if enabled):**
-- Kernel version, distribution, hardware ID, install result
 
-**NOT collected:** IP addresses, MAC addresses, hostnames, usernames
+| Property | Example | Purpose |
+|----------|---------|---------|
+| `kernel` | `6.18.7-2-cachyos` | Find kernel-specific bugs |
+| `distro` | `Arch Linux` | Discover distros to test |
+| `chip` | `mt7925` or `mt7921` | Track chipset variants |
+| `bus_type` | `pcie`, `usb`, `sdio` | Hardware interface type |
+| `hardware` | `[14c3:7925]` | PCI device ID |
+| `uses_clang` | `true`/`false` | Build toolchain |
+| `version` | `1.4.0` | DKMS package version |
+| `session_id` | UUID | Correlate start/end events |
+| `duration_seconds` | `45` | Install/uninstall time |
+| `error_type` | `build_failed` | Failure categorization |
+
+**Events tracked:** `install_started`, `install_success`, `install_failure`, `uninstall_started`, `uninstall_success`, `uninstall_failure`
+
+**NOT collected:** IP addresses, MAC addresses, hostnames, usernames, or any personally identifiable information.
+
+**Privacy:** Telemetry is sent to [PostHog](https://posthog.com) using a write-only API key. Data is fully anonymized with no user tracking.
 
 Your preference is saved to `/etc/mt7925-telemetry.conf`.
 

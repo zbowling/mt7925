@@ -9,6 +9,10 @@ PACKAGE_NAME="mt76-mt7925"
 PACKAGE_VERSION="1.4.0"
 DKMS_SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
 
+# Session tracking for telemetry (correlate start/end events)
+SESSION_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N | sha256sum | head -c 32)
+SESSION_START=$(date +%s)
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -17,6 +21,7 @@ NC='\033[0m'
 
 # Telemetry config file location
 TELEMETRY_CONFIG="/etc/mt7925-telemetry.conf"
+TELEMETRY_QUEUE="/var/lib/mt7925-telemetry-queue"
 
 # Check if telemetry is enabled (opt-in)
 check_telemetry_enabled() {
@@ -88,10 +93,140 @@ prompt_telemetry_consent() {
     echo ""
 }
 
-# Opt-in telemetry
+# Wait for network connectivity (WiFi may take time to reconnect after module reload)
+wait_for_network() {
+    local max_wait="${1:-30}"
+    local waited=0
+
+    while [[ $waited -lt $max_wait ]]; do
+        # Try to reach PostHog endpoint (or any reliable endpoint)
+        if curl -s --max-time 3 -o /dev/null "https://us.i.posthog.com/" 2>/dev/null; then
+            return 0
+        fi
+        sleep 2
+        waited=$((waited + 2))
+    done
+    return 1  # Timeout - network not available
+}
+
+# Queue telemetry event for later sending (when network is unavailable)
+queue_telemetry() {
+    local event="$1"
+    local error_type="$2"
+    local kernel="$3"
+    local distro="$4"
+    local hw_id="$5"
+    local version="$6"
+    local session_id="$7"
+    local duration="$8"
+    local chip="${9:-unknown}"
+    local bus_type="${10:-unknown}"
+    local uses_clang="${11:-false}"
+    local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+    # Append to queue file (one JSON object per line)
+    echo "{\"event\":\"${event}\",\"error_type\":\"${error_type}\",\"kernel\":\"${kernel}\",\"distro\":\"${distro}\",\"hardware\":\"${hw_id}\",\"version\":\"${version}\",\"session_id\":\"${session_id}\",\"duration_seconds\":${duration:-0},\"chip\":\"${chip}\",\"bus_type\":\"${bus_type}\",\"uses_clang\":${uses_clang},\"queued_at\":\"${timestamp}\"}" >> "$TELEMETRY_QUEUE" 2>/dev/null || true
+}
+
+# Send queued telemetry events (called at start of install when network is likely available)
+send_queued_telemetry() {
+    [[ ! -f "$TELEMETRY_QUEUE" ]] && return 0
+
+    # Check if telemetry is enabled before sending queued events
+    check_telemetry_enabled
+    local status=$?
+    [[ $status -ne 0 ]] && return 0
+
+    # Process each queued event
+    local failed_events=""
+
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+
+        # Extract fields from JSON (simple parsing)
+        local event=$(echo "$line" | grep -oP '"event"\s*:\s*"\K[^"]+' || echo "")
+        local error_type=$(echo "$line" | grep -oP '"error_type"\s*:\s*"\K[^"]+' || echo "none")
+        local kernel=$(echo "$line" | grep -oP '"kernel"\s*:\s*"\K[^"]+' || echo "")
+        local distro=$(echo "$line" | grep -oP '"distro"\s*:\s*"\K[^"]+' || echo "")
+        local hw_id=$(echo "$line" | grep -oP '"hardware"\s*:\s*"\K[^"]+' || echo "")
+        local version=$(echo "$line" | grep -oP '"version"\s*:\s*"\K[^"]+' || echo "")
+        local session_id=$(echo "$line" | grep -oP '"session_id"\s*:\s*"\K[^"]+' || echo "")
+        local duration=$(echo "$line" | grep -oP '"duration_seconds"\s*:\s*\K[0-9]+' || echo "0")
+        local chip=$(echo "$line" | grep -oP '"chip"\s*:\s*"\K[^"]+' || echo "unknown")
+        local bus_type=$(echo "$line" | grep -oP '"bus_type"\s*:\s*"\K[^"]+' || echo "unknown")
+        local uses_clang=$(echo "$line" | grep -oP '"uses_clang"\s*:\s*\K(true|false)' || echo "false")
+        local queued_at=$(echo "$line" | grep -oP '"queued_at"\s*:\s*"\K[^"]+' || echo "")
+
+        # Try to send
+        if curl -s --max-time 5 -X POST "https://us.i.posthog.com/capture/" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"api_key\": \"phc_NYTw1UQKJXKsgZUT16cn0OTbKoOMJEkUSbGwzMnNh0g\",
+                \"event\": \"${event}\",
+                \"distinct_id\": \"anonymous\",
+                \"properties\": {
+                    \"kernel\": \"${kernel}\",
+                    \"distro\": \"${distro}\",
+                    \"hardware\": \"${hw_id}\",
+                    \"chip\": \"${chip}\",
+                    \"bus_type\": \"${bus_type}\",
+                    \"uses_clang\": ${uses_clang},
+                    \"version\": \"${version}\",
+                    \"error_type\": \"${error_type}\",
+                    \"session_id\": \"${session_id}\",
+                    \"duration_seconds\": ${duration},
+                    \"queued_at\": \"${queued_at}\"
+                }
+            }" >/dev/null 2>&1; then
+            : # Success - don't re-queue
+        else
+            # Failed - keep in queue
+            failed_events="${failed_events}${line}\n"
+        fi
+    done < "$TELEMETRY_QUEUE"
+
+    # Rewrite queue with only failed events
+    if [[ -n "$failed_events" ]]; then
+        echo -e "$failed_events" > "$TELEMETRY_QUEUE"
+    else
+        rm -f "$TELEMETRY_QUEUE" 2>/dev/null || true
+    fi
+}
+
+# Detect hardware details for telemetry
+detect_hardware_info() {
+    # Detect chip and bus type
+    # PCIe devices (most common)
+    if lspci -nn 2>/dev/null | grep -qi "14c3:7925"; then
+        echo "mt7925:pcie"
+    elif lspci -nn 2>/dev/null | grep -qi "14c3:7921"; then
+        echo "mt7921:pcie"
+    # USB devices
+    elif lsusb 2>/dev/null | grep -qi "0e8d:7961"; then
+        echo "mt7921:usb"
+    # SDIO devices (check /sys/bus/sdio)
+    elif [[ -d /sys/bus/sdio/devices ]] && ls /sys/bus/sdio/devices/*/modalias 2>/dev/null | xargs grep -l "sdio:c00v037Ad7901" >/dev/null 2>&1; then
+        echo "mt7921:sdio"
+    else
+        echo "unknown:unknown"
+    fi
+}
+
+# Detect if kernel uses clang
+detect_uses_clang() {
+    if grep -q "CONFIG_CC_IS_CLANG=y" "/lib/modules/$(uname -r)/build/.config" 2>/dev/null; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+# Opt-in telemetry using PostHog
+# API key is write-only (safe to embed in public code)
 send_telemetry() {
     local event="$1"
     local error_type="${2:-none}"
+    local wait_for_net="${3:-false}"
 
     # Check if telemetry is enabled
     check_telemetry_enabled
@@ -104,29 +239,50 @@ send_telemetry() {
 
     # Collect safe system info
     local kernel=$(uname -r)
-    local distro=$(lsb_release -ds 2>/dev/null || ( . /etc/os-release 2>/dev/null && echo "$PRETTY_NAME" ) || echo "unknown")
+    local distro=$(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME" || echo "unknown")
     local hw_id=$(lspci -nn 2>/dev/null | grep -i "7925\|7921" | grep -oP '\[14c3:[0-9a-f]+\]' | head -1 || echo "unknown")
 
-    # GoatCounter API: POST /api/v0/count with JSON payload
-    # Requires GOATCOUNTER_TOKEN env var (create at goatcounter.com settings > API)
-    local token="${GOATCOUNTER_TOKEN:-}"
-    if [[ -z "$token" ]]; then
-        # Fallback to pixel endpoint (may not work for server-side requests)
-        local title="${PACKAGE_VERSION}|${kernel}|${distro}|${hw_id}|${error_type}"
-        curl -s --max-time 5 -G "https://zbowling.goatcounter.com/count" \
-            --data-urlencode "p=/install/${event}" \
-            --data-urlencode "t=${title}" \
-            --data "e=true" \
-            -H "User-Agent: MT7925-DKMS/${PACKAGE_VERSION}" \
-            >/dev/null 2>&1 &
-    else
-        # Use proper API with authentication
-        local payload="{\"no_sessions\":true,\"hits\":[{\"path\":\"/install/${event}\",\"title\":\"${PACKAGE_VERSION}|${kernel}|${distro}|${hw_id}|${error_type}\",\"event\":true}]}"
-        curl -s --max-time 5 -X POST "https://zbowling.goatcounter.com/api/v0/count" \
-            -H "Authorization: Bearer ${token}" \
-            -H "Content-Type: application/json" \
-            -d "$payload" \
-            >/dev/null 2>&1 &
+    # Detect hardware details
+    local hw_info=$(detect_hardware_info)
+    local chip=$(echo "$hw_info" | cut -d: -f1)
+    local bus_type=$(echo "$hw_info" | cut -d: -f2)
+    local uses_clang=$(detect_uses_clang)
+
+    # Calculate duration since session start
+    local duration=$(($(date +%s) - SESSION_START))
+
+    # If requested, wait for network (useful after WiFi module replacement)
+    if [[ "$wait_for_net" == "true" ]]; then
+        if ! wait_for_network 30; then
+            # Network not available - queue for later
+            queue_telemetry "$event" "$error_type" "$kernel" "$distro" "$hw_id" "$PACKAGE_VERSION" "$SESSION_ID" "$duration" "$chip" "$bus_type" "$uses_clang"
+            return 0
+        fi
+    fi
+
+    # PostHog capture API (write-only key, safe to embed)
+    # Try to send, queue on failure
+    if ! curl -s --max-time 5 -X POST "https://us.i.posthog.com/capture/" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"api_key\": \"phc_NYTw1UQKJXKsgZUT16cn0OTbKoOMJEkUSbGwzMnNh0g\",
+            \"event\": \"${event}\",
+            \"distinct_id\": \"anonymous\",
+            \"properties\": {
+                \"kernel\": \"${kernel}\",
+                \"distro\": \"${distro}\",
+                \"hardware\": \"${hw_id}\",
+                \"chip\": \"${chip}\",
+                \"bus_type\": \"${bus_type}\",
+                \"uses_clang\": ${uses_clang},
+                \"version\": \"${PACKAGE_VERSION}\",
+                \"error_type\": \"${error_type}\",
+                \"session_id\": \"${SESSION_ID}\",
+                \"duration_seconds\": ${duration}
+            }
+        }" >/dev/null 2>&1; then
+        # Failed to send - queue for later
+        queue_telemetry "$event" "$error_type" "$kernel" "$distro" "$hw_id" "$PACKAGE_VERSION" "$SESSION_ID" "$duration" "$chip" "$bus_type" "$uses_clang"
     fi
 }
 
@@ -355,6 +511,13 @@ main() {
 
     # Prompt for telemetry consent (after root check so we can save preference)
     prompt_telemetry_consent
+
+    # Send any queued telemetry from previous installs (network should be up now)
+    send_queued_telemetry
+
+    # Send install_started event (network is up, before we touch modules)
+    send_telemetry "install_started"
+
     check_kernel_version
     check_dependencies
     remove_existing
@@ -376,8 +539,8 @@ main() {
     echo "To check status: dkms status"
     echo "To uninstall: sudo ./uninstall.sh"
 
-    # Send success telemetry
-    send_telemetry "install_success"
+    # Send success telemetry (wait for network - WiFi may take time to reconnect)
+    send_telemetry "install_success" "none" "true"
 }
 
 main "$@"
