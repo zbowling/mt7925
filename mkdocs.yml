@@ -1,5 +1,5 @@
-site_name: MT7925 WiFi Driver
-site_description: Critical fixes for MediaTek MT7925 WiFi driver - resolves kernel panics, deadlocks, and system hangs
+site_name: Linux MT7921/MT7925 WiFi Driver Fixes
+site_description: Fixes for the MediaTek MT7921 and MT7925 WiFi drivers in stock Linux 6.17+ kernels - resolves kernel panics, deadlocks, and system hangs
 site_url: https://zbowling.github.io/mt7925
 repo_url: https://github.com/zbowling/mt7925
 repo_name: zbowling/mt7925
@@ -8,18 +8,18 @@ edit_uri: edit/main/docs/
 theme:
   name: material
   palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
     - scheme: slate
       primary: indigo
       accent: indigo
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
   features:
     - navigation.tabs
     - navigation.sections
@@ -50,6 +50,9 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - tables
   - attr_list
   - md_in_html
@@ -65,11 +68,14 @@ extra:
 copyright: Copyright &copy; 2026 Zac Bowling - ISC License
 
 nav:
-  - Home: index.md
-  - Getting Started:
-    - Quick Start: getting-started/quick-start.md
-    - Requirements: getting-started/requirements.md
-  - Installation:
+  - Home:
+    - Overview: index.md
+    - Changelog: changelog.md
+    - Telemetry: telemetry.md
+    - Quick Start: quick-start.md
+    - Contributing: contributing.md
+  - Install:
+    - Requirements: installation/requirements.md
     - Overview: installation/index.md
     - Arch Linux (AUR): installation/arch-linux.md
     - Debian/Ubuntu: installation/debian-ubuntu.md
@@ -86,22 +92,20 @@ nav:
     - Crash Analysis: issues/crash-analysis.md
     - Crash Logs: issues/crash-logs.md
     - Debugging Guide: issues/debugging.md
-  - Architecture:
+  - MT7921/MT7925 Driver Architecture:
     - Overview: architecture/index.md
     - Multi-Link Operation: architecture/mlo.md
     - Locking Patterns: architecture/locking.md
     - MCU Protocol: architecture/mcu-protocol.md
     - Chipsets: architecture/chipsets.md
-  - Developer Guide:
-    - Overview: developer/index.md
-    - Contributing: developer/contributing.md
-    - Debugging: developer/debugging.md
-    - Debugfs Reference: developer/debugfs.md
-    - Sysfs Reference: developer/sysfs.md
-  - Reference:
+  - Driver Reference:
     - Overview: reference/index.md
     - Data Structures: reference/data-structures.md
     - File Reference: reference/file-reference.md
     - Entry Points: reference/entry-points.md
-  - Changelog: changelog.md
-  - Telemetry: telemetry.md
+  - Project Guide:
+    - Overview: developer/index.md
+    - Debugging: developer/debugging.md
+    - Debugfs Reference: developer/debugfs.md
+    - Sysfs Reference: developer/sysfs.md
+

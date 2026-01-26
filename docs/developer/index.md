@@ -6,14 +6,6 @@ Resources for developers working with the MT7925 driver or contributing to this 
 
 <div class="grid cards" markdown>
 
--   :material-account-plus:{ .lg .middle } __Contributing__
-
-    ---
-
-    How to report issues, test patches, and submit fixes
-
-    [:octicons-arrow-right-24: Contribute](contributing.md)
-
 -   :material-bug:{ .lg .middle } __Debugging__
 
     ---

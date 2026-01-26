@@ -2,9 +2,21 @@
 
 Get the patched MT7925/MT7921 WiFi driver installed in under 5 minutes.
 
+These are quick install instructions to install or build the dynamic kernel module package and replace the drivers loaded by your system. For more detailed instructions, including patching your own kernel, are in the [full installation guide](installation/index.md).
+
 ## Choose Your Installation Method
 
-=== "Arch Linux"
+### Manual (from source)
+
+    Make sure you have kernel headers and development packages for your system. See [requirements](installation/requirements.md) for more detailed information.
+
+    ```bash
+    git clone https://github.com/zbowling/mt7925.git
+    cd mt7925/dkms
+    sudo ./install.sh
+    ```
+
+### Arch Linux
 
     ```bash
     # Using yay
@@ -14,7 +26,7 @@ Get the patched MT7925/MT7921 WiFi driver installed in under 5 minutes.
     paru -S mt76-mt7925-dkms
     ```
 
-=== "Debian/Ubuntu"
+### Debian/Ubuntu (Not fully tested)
 
     ```bash
     # Add repository (recommended - enables auto-updates)
@@ -25,7 +37,7 @@ Get the patched MT7925/MT7921 WiFi driver installed in under 5 minutes.
     sudo apt install mt76-mt7925-dkms
     ```
 
-=== "Fedora/RHEL"
+### Fedora/RHEL (Not fully tested)
 
     ```bash
     # Add repository (recommended - enables auto-updates)
@@ -35,13 +47,6 @@ Get the patched MT7925/MT7921 WiFi driver installed in under 5 minutes.
     sudo dnf install mt76-mt7925-dkms
     ```
 
-=== "Manual"
-
-    ```bash
-    git clone https://github.com/zbowling/mt7925.git
-    cd mt7925/dkms
-    sudo ./install.sh
-    ```
 
 ## Verify Installation
 
@@ -85,6 +90,6 @@ The DKMS package includes 12 kernel modules:
 
 ## Next Steps
 
-- [View Requirements](requirements.md) - Check system requirements
-- [Known Issues](../issues/known-issues.md) - Common problems and workarounds
-- [Debugging Guide](../issues/debugging.md) - Troubleshoot problems
+- [View Requirements](installation/requirements.md) - Check system requirements
+- [Known Issues](issues/known-issues.md) - Common problems and workarounds
+- [Debugging Guide](issues/debugging.md) - Troubleshoot problems
