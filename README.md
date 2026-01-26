@@ -20,13 +20,13 @@ The easiest way to install the fixed drivers. Supports both MT7925 and MT7921 ch
 # Arch Linux (AUR)
 yay -S mt76-mt7925-dkms
 
-# Debian/Ubuntu (kernel 6.17+)
-wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.1_all.deb
-sudo apt install ./mt76-mt7925-dkms_1.4.1_all.deb
+# Debian/Ubuntu - Add repository (recommended, auto-updates)
+curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/setup.deb.sh' | sudo -E bash
+sudo apt install mt76-mt7925-dkms
 
-# Fedora/RHEL
-wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms-1.4.1-1.noarch.rpm
-sudo dnf install ./mt76-mt7925-dkms-1.4.1-1.noarch.rpm
+# Fedora/RHEL - Add repository (recommended, auto-updates)
+curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/setup.rpm.sh' | sudo -E bash
+sudo dnf install mt76-mt7925-dkms
 
 # Or install from source
 cd dkms

@@ -48,6 +48,44 @@ The package will automatically:
 
 ### Debian / Ubuntu
 
+#### Option A: Add Repository (Recommended)
+
+Adding the repository enables automatic updates when new versions are released:
+
+```bash
+# Quick setup (recommended)
+curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/setup.deb.sh' | sudo -E bash
+
+# Install the package
+sudo apt update
+sudo apt install mt76-mt7925-dkms
+```
+
+<details>
+<summary>Manual repository configuration</summary>
+
+```bash
+# Install dependencies
+sudo apt install apt-transport-https curl gnupg
+
+# Import GPG key
+curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/gpg.5993EEFA4E82E600.key' | \
+  sudo gpg --dearmor -o /usr/share/keyrings/mt76-packages.gpg
+
+# Add repository (replace DISTRO and CODENAME for your system)
+# Example: ubuntu/noble, debian/bookworm
+echo "deb [signed-by=/usr/share/keyrings/mt76-packages.gpg] https://dl.cloudsmith.io/public/mt76/packages/deb/ubuntu noble main" | \
+  sudo tee /etc/apt/sources.list.d/mt76-packages.list
+
+# Install
+sudo apt update
+sudo apt install mt76-mt7925-dkms
+```
+
+</details>
+
+#### Option B: Manual Download
+
 Download the `.deb` package from the [latest release](https://github.com/zbowling/mt7925/releases/latest):
 
 ```bash
@@ -67,6 +105,42 @@ sudo apt-get install -f  # Fix any missing dependencies
 **Tested on:** Ubuntu 25.10 (in CI only - needs real-world testing!)
 
 ### Fedora / RHEL
+
+#### Option A: Add Repository (Recommended)
+
+Adding the repository enables automatic updates when new versions are released:
+
+```bash
+# Quick setup (recommended)
+curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/setup.rpm.sh' | sudo -E bash
+
+# Install the package
+sudo dnf install mt76-mt7925-dkms
+```
+
+<details>
+<summary>Manual repository configuration</summary>
+
+```bash
+# Import GPG key
+sudo rpm --import 'https://dl.cloudsmith.io/public/mt76/packages/gpg.5993EEFA4E82E600.key'
+
+# Add repository (Fedora)
+curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/config.rpm.txt?distro=fedora&codename=42' | \
+  sudo tee /etc/yum.repos.d/mt76-packages.repo
+
+# Or for RHEL/CentOS/Rocky
+curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/config.rpm.txt?distro=el&codename=9' | \
+  sudo tee /etc/yum.repos.d/mt76-packages.repo
+
+# Install
+sudo dnf makecache
+sudo dnf install mt76-mt7925-dkms
+```
+
+</details>
+
+#### Option B: Manual Download
 
 Download the `.rpm` package from the [latest release](https://github.com/zbowling/mt7925/releases/latest):
 
@@ -128,11 +202,19 @@ sudo pacman -R mt76-mt7925-dkms
 ### Debian / Ubuntu
 ```bash
 sudo apt remove mt76-mt7925-dkms
+
+# Optional: Remove repository
+sudo rm /etc/apt/sources.list.d/mt76-packages.list
+sudo rm /usr/share/keyrings/mt76-packages.gpg
 ```
 
 ### Fedora / RHEL
 ```bash
 sudo dnf remove mt76-mt7925-dkms
+
+# Optional: Remove repository
+sudo rm /etc/yum.repos.d/mt76-packages.repo
+sudo rm /etc/yum.repos.d/mt76-packages-source.repo
 ```
 
 ### Manual Install
