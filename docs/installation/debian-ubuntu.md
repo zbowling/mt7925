@@ -43,8 +43,9 @@ sudo apt install mt76-mt7925-dkms
 Download from [GitHub Releases](https://github.com/zbowling/mt7925/releases/latest):
 
 ```bash
-wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.1-1_all.deb
-sudo apt install ./mt76-mt7925-dkms_1.4.1-1_all.deb
+# Download the latest release (check GitHub for current version)
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_VERSION-1_all.deb
+sudo apt install ./mt76-mt7925-dkms_*_all.deb
 ```
 
 ## Verify Installation

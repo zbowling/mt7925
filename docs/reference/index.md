@@ -36,7 +36,7 @@ Technical reference documentation for the MT7925 driver.
 
 ### Module Hierarchy
 
-```
+```text
 mt7925e.ko
 ├── mt7925-common.ko
 │   ├── mt792x-lib.ko

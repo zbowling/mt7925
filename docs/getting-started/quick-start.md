@@ -60,8 +60,8 @@ ip link | grep wl
 
 You should see output like:
 
-```
-mt76-mt7925/1.4.1, 6.18.7-2-cachyos, x86_64: installed
+```text
+mt76-mt7925/x.y.z, 6.x.y-your-kernel, x86_64: installed
 ```
 
 ## What's Included

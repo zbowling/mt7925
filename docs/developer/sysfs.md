@@ -52,7 +52,7 @@ Controls the radio on/off state.
 
 ### Location
 
-```
+```text
 /sys/class/ieee80211/phy*/rfkill*/
 ```
 
@@ -94,7 +94,7 @@ echo 0 | sudo tee /sys/class/ieee80211/phy0/rfkill*/soft  # Unblock
 
 ### Location
 
-```
+```text
 /sys/class/ieee80211/phy*/
 ```
 
@@ -118,7 +118,7 @@ cat /sys/class/ieee80211/phy0/macaddress
 
 ### Location
 
-```
+```text
 /sys/class/net/wlan0/
 ```
 
@@ -159,7 +159,7 @@ lspci -d 14c3: | head -1
 
 Then access:
 
-```
+```text
 /sys/bus/pci/devices/0000:bf:00.0/
 ```
 

@@ -120,7 +120,7 @@ ethtool -i wlan0
 
 **Symptoms:**
 
-```
+```text
 mt7925e 0000:c0:00.0: Message 00020002 (seq 12) timeout
 ```
 
@@ -149,7 +149,7 @@ cat /sys/kernel/debug/ieee80211/phy0/mt76/mcu
 
 **Symptoms:**
 
-```
+```text
 BUG: kernel NULL pointer dereference
 mt7925e 0000:c0:00.0: Unable to handle kernel NULL pointer dereference
 ```
@@ -205,7 +205,7 @@ dmesg | grep lockdep
 
 **Symptoms:**
 
-```
+```text
 mt7925e 0000:c0:00.0: Firmware assertion
 mt7925e 0000:c0:00.0: Message 00020002 (seq 12) timeout
 ```

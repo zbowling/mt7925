@@ -22,7 +22,7 @@ module_pci_driver(mt7925_pci_driver);
 
 ### Probe Sequence
 
-```
+```text
 mt7925_pci_probe()
 ├── pci_enable_device()
 ├── pci_request_regions()
@@ -165,7 +165,7 @@ static irqreturn_t mt7925_irq_handler(int irq, void *dev_instance)
 
 ### Tasklet Processing
 
-```
+```text
 mt792x_irq_tasklet()
 ├── Process TX completions
 ├── Process RX

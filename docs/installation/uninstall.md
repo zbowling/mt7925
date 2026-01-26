@@ -50,8 +50,8 @@ sudo ./uninstall.sh
 If the uninstall script isn't available:
 
 ```bash
-# Remove from all kernels
-sudo dkms remove mt76-mt7925/1.4.1 --all
+# Remove from all kernels (replace x.y.z with your version)
+sudo dkms remove mt76-mt7925/x.y.z --all
 
 # Remove source directory
 sudo rm -rf /usr/src/mt76-mt7925-*

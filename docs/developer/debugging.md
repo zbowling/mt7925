@@ -8,7 +8,7 @@ Advanced debugging techniques for driver developers working on the MT7925 driver
 
 Enable these options for debugging:
 
-```
+```ini
 CONFIG_MT76_DEBUG=y           # MT76 debug messages
 CONFIG_MT76_TRACER=y          # MT76 tracepoints
 CONFIG_PROVE_LOCKING=y        # Lockdep for deadlock detection
@@ -29,7 +29,7 @@ modprobe mt7925e dyndbg=+p
 
 ### Location
 
-```
+```text
 /sys/kernel/debug/ieee80211/phyN/mt76/
 ```
 
@@ -185,7 +185,7 @@ crash /var/crash/vmcore /usr/lib/debug/vmlinux
 
 ### crash Commands
 
-```
+```text
 crash> bt              # Backtrace
 crash> log             # Kernel log
 crash> mod -t          # List loaded modules

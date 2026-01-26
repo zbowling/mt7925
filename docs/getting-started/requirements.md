@@ -83,7 +83,7 @@ lsusb | grep -i "0e8d:7961"
 ```
 
 Example output for MT7925:
-```
+```text
 03:00.0 Network controller [0280]: MEDIATEK Corp. MT7925 Wi-Fi 7 (802.11be) PCI Express [14c3:7925]
 ```
 

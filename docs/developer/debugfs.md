@@ -4,7 +4,7 @@ The MT7925 driver exposes debugging interfaces through the Linux debugfs filesys
 
 ## Location
 
-```
+```text
 /sys/kernel/debug/ieee80211/phyN/mt76/
 ```
 
