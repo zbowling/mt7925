@@ -218,6 +218,16 @@ cleanup_legacy_files() {
         log_info "Removing obsolete blacklist file..."
         rm -f /etc/modprobe.d/mt76-dkms-blacklist.conf
     fi
+
+    # Remove telemetry config and queue files
+    if [[ -f "$TELEMETRY_CONFIG" ]]; then
+        log_info "Removing telemetry config..."
+        rm -f "$TELEMETRY_CONFIG"
+    fi
+    if [[ -f "$TELEMETRY_QUEUE" ]]; then
+        log_info "Removing telemetry queue..."
+        rm -f "$TELEMETRY_QUEUE"
+    fi
 }
 
 restore_stock_modules() {
