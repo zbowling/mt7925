@@ -1,0 +1,30 @@
+# Authors and Contributors
+
+This project contains patches and fixes for the MediaTek MT7925/MT7921 WiFi
+driver based on the upstream mt76 driver.
+
+## Original mt76 Driver
+
+Felix Fietkau <nbd@nbd.name>
+  - Original mt76 driver author and maintainer
+
+MediaTek Inc.
+  - MT7921/MT7925 chipset support
+
+Sean Wang <sean.wang@mediatek.com>
+  - Upstream MT7925 driver development
+  - ROC deadlock fix (patch 01)
+
+## MT7925 Fixes and Patches
+
+Zac Bowling <zac@zacbowling.com>
+  - Project maintainer
+  - MLO NULL pointer fixes
+  - Mutex protection patches
+  - MCU error handling
+  - DKMS packaging
+
+## Contributors
+
+David Hubbard <davidhubbard@users.noreply.github.com>
+  - Testing and feedback

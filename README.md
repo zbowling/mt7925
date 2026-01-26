@@ -10,13 +10,47 @@ Critical fixes for the MediaTek MT7925 WiFi driver that resolve kernel panics, m
 
 ## Quick Start
 
-### Option 1: Apply Patches to Your Kernel (Recommended)
+### Option 1: DKMS Package (Kernel 6.17+)
+
+> **Experimental:** These packages are new and lightly tested. Please [report issues](https://github.com/zbowling/mt7925/issues) if you encounter problems!
+
+The easiest way to install the fixed drivers. Supports both MT7925 and MT7921 chipsets.
+
+```bash
+# Arch Linux (AUR)
+yay -S mt76-mt7925-dkms
+
+# Debian/Ubuntu (kernel 6.17+)
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms_1.4.0_all.deb
+sudo apt install ./mt76-mt7925-dkms_1.4.0_all.deb
+
+# Fedora/RHEL
+wget https://github.com/zbowling/mt7925/releases/latest/download/mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+sudo dnf install ./mt76-mt7925-dkms-1.4.0-1.noarch.rpm
+
+# Or install from source
+cd dkms
+sudo ./install.sh
+```
+
+**Uninstall:**
+```bash
+# Arch: sudo pacman -R mt76-mt7925-dkms
+# Debian/Ubuntu: sudo apt remove mt76-mt7925-dkms
+# Fedora: sudo dnf remove mt76-mt7925-dkms
+# Manual: cd dkms && sudo ./uninstall.sh
+```
+
+> **Note:** Requires kernel 6.17 or newer. For older kernels (Ubuntu 24.04's 6.8, etc.), use the patch method below.
+
+See [docs/INSTALL_PACKAGES.md](docs/INSTALL_PACKAGES.md) for detailed installation instructions.
+
+### Option 2: Apply Patches to Your Kernel
+
+For older kernels or when you prefer patching your kernel source:
 
 ```bash
 # Get kernel source matching your version
-# Ideally google how to fetch your linux kernel sources for your distro with all the your distro patches and config.
-
-# Or check out vanilla linux kernel
 git clone --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git -b v6.18.5
 cd linux
 
@@ -29,7 +63,7 @@ make -j$(nproc)
 sudo make modules_install install
 ```
 
-### Option 2: Use Pre-Patched Kernel
+### Option 3: Use Pre-Patched Kernel
 
 ```bash
 git clone https://github.com/zbowling/linux-wifi.git
@@ -41,17 +75,6 @@ make -j$(nproc)
 sudo make modules_install install
 ```
 
-### Option 3: DKMS Package (Beta - Kernel 6.17+ Only)
-
-> **Note:** The DKMS package now includes both MT7925 and MT7921 drivers for ABI compatibility. If you have an MT7921 chip, the DKMS will also work for you.
->
-> **Warning:** Requires kernel 6.17 or newer. Will NOT build on older kernels like Ubuntu 24.04's 6.8 kernel due to missing kernel APIs.
-
-```bash
-cd dkms
-sudo ./install.sh
-```
-
 ## Supported Kernel Versions
 
 | Version | Patches | Status | Notes |
@@ -61,7 +84,7 @@ sudo ./install.sh
 | 6.17.x | 12 (`kernels/6.17/`) | EOL | Fedora 41, older Arch |
 | nbd168 | 12 (`kernels/nbd168/`) | **Upstream target** | nbd168/wireless tree |
 
-## Patch Series (v6)
+## Patch Series (v7)
 
 **12 patches** - Sean Wang's upstream deadlock fix as base + 11 stability patches:
 
@@ -91,10 +114,14 @@ mt7925/
 │   ├── 6.18/                   # 12 patches for v6.18.5
 │   ├── 6.19-rc/                # 12 patches for v6.19-rc5
 │   └── nbd168/                 # 12 patches for nbd168/wireless (upstream)
-├── dkms/                       # DKMS package (v1.3.0, requires 6.17+)
+├── dkms/                       # DKMS package (v1.4.0, requires 6.17+)
 │   ├── install.sh              # Installer (auto-detects clang)
 │   ├── uninstall.sh            # Clean removal
+│   ├── collect-logs.sh         # Debug log collector for bug reports
 │   ├── dkms.conf               # DKMS configuration
+│   ├── PKGBUILD                # Arch Linux AUR package
+│   ├── mt76-mt7925-dkms.spec   # RPM spec file
+│   ├── debian/                 # Debian packaging
 │   └── src/                    # Pre-patched mt76 source
 ├── crashes/                    # Crash logs for debugging
 ├── docs/                       # Documentation for mt76 drivers
@@ -116,7 +143,7 @@ mt7925/
 | `mt7925-upstream-v2-6.19` | v6.19-rc5 | RC |
 | `mt7925-upstream-v2-6.17` | v6.17.13 | EOL |
 
-## DKMS Installation (Beta)
+## DKMS Installation
 
 ### Requirements
 
@@ -128,6 +155,8 @@ mt7925/
 ### Install
 
 ```bash
+# From package (see Quick Start above)
+# Or from source:
 cd dkms
 sudo ./install.sh
 ```
@@ -135,8 +164,8 @@ sudo ./install.sh
 The installer:
 1. Checks dependencies and kernel version
 2. Auto-detects clang-built kernels (uses `CC=clang LD=ld.lld LLVM=1`)
-3. Blacklists stock mt76 modules
-4. Builds 5 modules via DKMS: mt76, mt76-connac-lib, mt792x-lib, mt7925-common, mt7925e
+3. Installs to /updates/dkms/ (higher priority than stock modules)
+4. Builds 12 modules via DKMS: mt76, mt76-connac-lib, mt792x-lib, mt76-usb, mt792x-usb, mt76-sdio, mt7921-common, mt7921e, mt7921s, mt7921u, mt7925-common, mt7925e
 5. Loads the new modules
 
 ### Verify
@@ -153,6 +182,77 @@ modinfo mt7925e                # Check module info
 cd dkms
 sudo ./uninstall.sh
 ```
+
+## Troubleshooting
+
+### Collect Debug Logs
+
+If you're experiencing issues, collect debug logs for a bug report:
+
+```bash
+cd dkms
+sudo ./collect-logs.sh
+```
+
+This creates a `mt7925-debug-*.txt` file with:
+- System information (kernel, distro, architecture)
+- Hardware detection (PCI WiFi devices)
+- DKMS status and loaded modules
+- Kernel messages related to mt76/WiFi
+- Firmware file status
+
+### Report an Issue
+
+**Your feedback helps!** These packages are experimental and I need help finding bugs.
+
+1. Run `sudo ./dkms/collect-logs.sh`
+2. Go to [New Issue](https://github.com/zbowling/mt7925/issues/new)
+3. Select "Bug Report" template
+4. Paste the debug log output
+
+Even if the install works perfectly, let me know which distro/kernel you're using - it helps me know what's tested!
+
+## Telemetry (Opt-In)
+
+The installer offers **optional, opt-in** telemetry to help improve the driver.
+
+During installation, you'll be prompted:
+```
+Enable telemetry? [y/N]
+```
+
+**Default is NO** - press Enter to skip, or type `y` to enable.
+
+**Why enable telemetry?**
+- Helps find issues people are having
+- Discovers which hardware/distros need testing
+- Measures install success rates and duration
+- Fully anonymized - no way to identify individual users
+
+**Data collected (if enabled):**
+
+| Property | Example | Purpose |
+|----------|---------|---------|
+| `kernel` | `6.18.7-2-cachyos` | Find kernel-specific bugs |
+| `distro` | `Arch Linux` | Discover distros to test |
+| `chip` | `mt7925` or `mt7921` | Track chipset variants |
+| `bus_type` | `pcie`, `usb`, `sdio` | Hardware interface type |
+| `hardware` | `[14c3:7925]` | PCI device ID |
+| `uses_clang` | `true`/`false` | Build toolchain |
+| `version` | `1.4.0` | DKMS package version |
+| `session_id` | UUID | Correlate start/end events |
+| `duration_seconds` | `45` | Install/uninstall time |
+| `error_type` | `build_failed` | Failure categorization |
+
+**Events tracked:** `install_started`, `install_success`, `install_failure`, `uninstall_started`, `uninstall_success`, `uninstall_failure`
+
+**NOT collected:** IP addresses, MAC addresses, hostnames, usernames, or any personally identifiable information.
+
+**Privacy:** Telemetry is sent to [PostHog](https://posthog.com) using a write-only API key. Data is fully anonymized with no user tracking.
+
+Your preference is saved to `/etc/mt7925-telemetry.conf`.
+
+**Override:** `sudo MT7925_TELEMETRY=1 ./install.sh` (enable) or `MT7925_TELEMETRY=0` (disable)
 
 ## Problem Description
 
@@ -221,4 +321,4 @@ Patch 01 (Sean Wang's deadlock fix) is already in the upstream queue.
 
 ## License
 
-BSD-2-Clause-Clear AND GPL-2.0-only (dual licensed, same as mt76 driver)
+ISC AND GPL-2.0-only (dual licensed, same as mt76 driver)

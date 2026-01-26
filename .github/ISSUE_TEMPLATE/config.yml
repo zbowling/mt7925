@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Framework Community Forum
+    url: https://community.frame.work/t/kernel-panic-from-wifi-mediatek-mt7925-nullptr-dereference/79301
+    about: Discuss MT7925 issues with other Framework users
+  - name: Ubuntu Bug Tracker
+    url: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2137291
+    about: Track upstream Ubuntu bug

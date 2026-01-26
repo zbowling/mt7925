@@ -179,6 +179,96 @@ sudo dkms install .
 
 The source in `dkms/src/` has all patches pre-applied and may contain experimental fixes not yet in the patch files.
 
+### DKMS Package Structure
+
+```
+dkms/
+├── src/                        # Full mt76 driver source (patched)
+├── dkms.conf                   # DKMS configuration (version, modules)
+├── install.sh                  # Manual install script
+├── uninstall.sh                # Manual uninstall script
+├── README.md                   # User documentation
+├── DIFFERENCES.md              # Patch documentation
+├── PKGBUILD                    # Arch Linux AUR package
+├── mt76-mt7925-dkms.install    # Arch Linux DKMS hooks
+├── mt76-mt7925-dkms.spec       # RPM spec file (Fedora/RHEL)
+└── debian/                     # Debian/Ubuntu packaging
+    ├── control                 # Package metadata (includes debhelper-compat)
+    ├── rules                   # Build rules (auto-extracts version from changelog)
+    ├── changelog               # Version history
+    ├── copyright               # License info
+    └── source/format           # Source format (3.0 quilt)
+```
+
+### Version Update Checklist
+
+**CRITICAL: When updating the DKMS package version, ALL of these files must be updated:**
+
+| File | Field to Update |
+|------|-----------------|
+| `dkms/dkms.conf` | `PACKAGE_VERSION="X.Y.Z"` |
+| `dkms/install.sh` | `PACKAGE_VERSION="X.Y.Z"` (near top of file) |
+| `dkms/PKGBUILD` | `pkgver=X.Y.Z` |
+| `dkms/mt76-mt7925-dkms.install` | `_dkms_ver="X.Y.Z"` |
+| `dkms/mt76-mt7925-dkms.spec` | `%define version X.Y.Z` |
+| `dkms/debian/changelog` | Add new version entry at top (debian/rules auto-extracts) |
+
+Example version bump workflow:
+```bash
+# Update all files, then:
+git add dkms/
+git commit -m "dkms: bump version to X.Y.Z"
+git tag -a vX.Y.Z -m "Release X.Y.Z"
+git push origin main --tags
+```
+
+### CI/CD Release Workflow
+
+The `.github/workflows/release.yml` workflow automatically builds and publishes packages:
+
+**Trigger:** Push a tag matching `v*` (e.g., `v1.4.0`)
+
+**Build Steps:**
+1. Creates source tarball (`mt76-mt7925-dkms-X.Y.Z.tar.gz`)
+2. Builds DEB package (Debian/Ubuntu)
+3. Builds RPM package (Fedora/RHEL)
+4. Builds Arch package (`.pkg.tar.zst`)
+
+**Release Steps:**
+1. Creates GitHub Release with all package assets
+2. Publishes PKGBUILD to AUR
+
+### GitHub Secrets for AUR Publishing
+
+The following secrets must be configured in the repository for AUR publishing:
+
+| Secret | Description |
+|--------|-------------|
+| `AUR_USERNAME` | AUR username (currently: `zbowling`) |
+| `AUR_EMAIL` | AUR email |
+| `AUR_SSH_PRIVATE_KEY` | SSH private key registered with AUR |
+
+### Module List
+
+The DKMS package builds 12 kernel modules:
+
+| Module | Purpose |
+|--------|---------|
+| `mt76` | Core driver |
+| `mt76-connac-lib` | Connac chipset library |
+| `mt792x-lib` | Shared MT7921/MT7925 library |
+| `mt76-usb` | USB transport |
+| `mt792x-usb` | MT792x USB helpers |
+| `mt76-sdio` | SDIO transport |
+| `mt7921-common` | MT7921 common code |
+| `mt7921e` | MT7921 PCIe |
+| `mt7921s` | MT7921 SDIO |
+| `mt7921u` | MT7921 USB |
+| `mt7925-common` | MT7925 common code |
+| `mt7925e` | MT7925 PCIe |
+
+MT7921 modules are included because `mt792x-lib` is shared - building only MT7925 would cause ABI mismatch for MT7921 users.
+
 ---
 
 ## Contact
