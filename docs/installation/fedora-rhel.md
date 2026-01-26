@@ -20,12 +20,14 @@ sudo dnf install mt76-mt7925-dkms
 # Import GPG key
 sudo rpm --import 'https://dl.cloudsmith.io/public/mt76/packages/gpg.5993EEFA4E82E600.key'
 
-# Add repository (Fedora)
-curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/config.rpm.txt?distro=fedora&codename=42' | \
+# Add repository (Fedora - auto-detects version)
+FEDORA_VERSION=$(rpm -E %fedora)
+curl -1sLf "https://dl.cloudsmith.io/public/mt76/packages/config.rpm.txt?distro=fedora&codename=${FEDORA_VERSION}" | \
   sudo tee /etc/yum.repos.d/mt76-packages.repo
 
-# Or for RHEL/CentOS/Rocky
-curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/config.rpm.txt?distro=el&codename=9' | \
+# Or for RHEL/CentOS/Rocky (auto-detects version)
+RHEL_VERSION=$(rpm -E %rhel)
+curl -1sLf "https://dl.cloudsmith.io/public/mt76/packages/config.rpm.txt?distro=el&codename=${RHEL_VERSION}" | \
   sudo tee /etc/yum.repos.d/mt76-packages.repo
 
 # Install

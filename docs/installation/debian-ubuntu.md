@@ -25,8 +25,10 @@ sudo apt install apt-transport-https curl gnupg
 curl -1sLf 'https://dl.cloudsmith.io/public/mt76/packages/gpg.5993EEFA4E82E600.key' | \
   sudo gpg --dearmor -o /usr/share/keyrings/mt76-packages.gpg
 
-# Add repository (replace CODENAME with your release: noble, bookworm, etc.)
-echo "deb [signed-by=/usr/share/keyrings/mt76-packages.gpg] https://dl.cloudsmith.io/public/mt76/packages/deb/ubuntu noble main" | \
+# Add repository (auto-detects your release codename)
+CODENAME=$(lsb_release -cs)
+DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+echo "deb [signed-by=/usr/share/keyrings/mt76-packages.gpg] https://dl.cloudsmith.io/public/mt76/packages/deb/${DISTRO} ${CODENAME} main" | \
   sudo tee /etc/apt/sources.list.d/mt76-packages.list
 
 # Install

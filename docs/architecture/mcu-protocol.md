@@ -206,7 +206,7 @@ int mt76_mcu_skb_send_and_get_msg(struct mt76_dev *dev, struct sk_buff *skb,
 
 If MCU doesn't respond within timeout:
 
-```
+```text
 mt7925e 0000:c0:00.0: Message 00020002 (seq 12) timeout
 ```
 
