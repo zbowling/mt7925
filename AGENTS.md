@@ -296,17 +296,24 @@ uvx tbump 1.5.0
 # 3. Review and edit changelog entries
 #    - Edit dkms/debian/changelog with actual release notes
 #    - Edit CHANGELOG.md with detailed changes
-#    - Amend commit if needed:
+
+# 4. Verify no old version references were missed
+grep -rn "1\.4\.2" --include="*.md" --include="*.conf" --include="*.sh" \
+  --include="*.spec" --include="*.toml" --include="PKGBUILD" \
+  --include="*.install" . | grep -v CHANGELOG | grep -v ".git"
+#    If any old versions found, update manually
+
+# 5. Amend commit with any additional changes
 git add -A && git commit --amend --no-edit
 
-# 4. Delete local tag (tbump created it, but we tag after merge)
+# 6. Delete local tag (tbump created it, but we tag after merge)
 git tag -d v1.5.0
 
-# 5. Push branch and create PR
+# 7. Push branch and create PR
 git push -u origin chore/bump-version-1.5.0
 gh pr create --title "chore: bump version to 1.5.0"
 
-# 6. After PR is merged, tag from main
+# 8. After PR is merged, tag from main
 git checkout main && git pull
 git tag -a v1.5.0 -m "Release v1.5.0"
 git push origin v1.5.0
