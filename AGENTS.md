@@ -72,6 +72,33 @@ The `docs/` folder contains comprehensive documentation. Use this index to find 
 
 ## Critical Requirements
 
+### Git Workflow (IMPORTANT)
+
+**DO NOT push directly to `main` branch.** The repository has branch protection rules that block direct pushes.
+
+1. **Always use feature branches**
+   ```bash
+   git checkout -b feature/your-feature-name
+   # or
+   git checkout -b fix/your-bug-fix
+   # or
+   git checkout -b docs/your-documentation-change
+   ```
+
+2. **Push to feature branch and create a PR**
+   ```bash
+   git push -u origin feature/your-feature-name
+   gh pr create --fill
+   ```
+
+3. **Branch naming conventions**
+   - `feature/` - New features or enhancements
+   - `fix/` - Bug fixes
+   - `docs/` - Documentation changes
+   - `chore/` - Maintenance tasks (version bumps, CI updates)
+
+4. **Never force push to `main`** - This will be rejected by branch protection
+
 ### Patch Quality
 
 1. **Patches MUST apply cleanly**
