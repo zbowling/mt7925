@@ -238,7 +238,7 @@ uvx tbump --only-patch 1.5.0
 
 | Hook | Command | Purpose |
 |------|---------|---------|
-| `before_commit` | `./scripts/update-changelogs.sh {new_version}` | Updates all changelog files |
+| `before_commit` | `./scripts/update-changelogs.sh {new_version} {current_version}` | Updates all changelog files |
 
 **Files automatically updated:**
 
@@ -263,7 +263,7 @@ uvx tbump --only-patch 1.5.0
 The `before_commit` hook runs this script to update special changelog formats:
 
 ```bash
-./scripts/update-changelogs.sh <new_version> [message]
+./scripts/update-changelogs.sh <new_version> <prev_version> [message]
 ```
 
 **What it updates:**

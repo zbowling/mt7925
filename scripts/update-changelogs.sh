@@ -2,17 +2,18 @@
 # Update changelog files that tbump can't handle automatically
 # Called by tbump before_commit hook
 #
-# Usage: ./scripts/update-changelogs.sh <new_version> [message]
+# Usage: ./scripts/update-changelogs.sh <new_version> <prev_version> [message]
 
 set -e
 
 NEW_VERSION="$1"
-MESSAGE="${2:-Version bump}"
+PREV_VERSION="$2"
+MESSAGE="${3:-Version bump}"
 DATE=$(date -R)  # RFC 2822 format for debian
 RPM_DATE=$(date "+%a %b %d %Y")  # RPM changelog format
 
-if [[ -z "$NEW_VERSION" ]]; then
-    echo "Usage: $0 <new_version> [message]"
+if [[ -z "$NEW_VERSION" ]] || [[ -z "$PREV_VERSION" ]]; then
+    echo "Usage: $0 <new_version> <prev_version> [message]"
     exit 1
 fi
 
@@ -74,17 +75,12 @@ if [[ -f "$CHANGELOG" ]]; then
     sed -i "s/^## \[Unreleased\]$/${NEW_SECTION}/" "$CHANGELOG"
 
     # Update the comparison links at the bottom
-    # Find the [Unreleased] link and update it, then add new version link
-    PREV_VERSION=$(grep -oP '\[Unreleased\].*compare/v\K[0-9.]+' "$CHANGELOG" | head -1)
+    # Note: tbump already updated the [Unreleased] link, so we just add the new version link
+    # PREV_VERSION is passed as parameter since tbump already modified the file
 
-    if [[ -n "$PREV_VERSION" ]]; then
-        # Update Unreleased link to point to new version
-        sed -i "s|\[Unreleased\]: \(.*\)/compare/v${PREV_VERSION}\.\.\.HEAD|[Unreleased]: \1/compare/v${NEW_VERSION}...HEAD|" "$CHANGELOG"
-
-        # Add new version link after Unreleased
-        NEW_LINK="[${NEW_VERSION}]: https://github.com/zbowling/mt7925/compare/v${PREV_VERSION}...v${NEW_VERSION}"
-        sed -i "/^\[Unreleased\]:.*HEAD$/a ${NEW_LINK}" "$CHANGELOG"
-    fi
+    # Add new version link after Unreleased link
+    NEW_LINK="[${NEW_VERSION}]: https://github.com/zbowling/mt7925/compare/v${PREV_VERSION}...v${NEW_VERSION}"
+    sed -i "/^\[Unreleased\]:.*HEAD$/a ${NEW_LINK}" "$CHANGELOG"
 
     echo "  Added section for ${NEW_VERSION}"
 fi
