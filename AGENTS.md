@@ -258,21 +258,31 @@ uvx tbump --only-patch 1.5.0
 | `docs/developer/index.md` | `mt76-mt7925/{version}` | DKMS commands |
 | `CHANGELOG.md` | `compare/v{version}...HEAD` | Unreleased link |
 
-#### Changelog Script (`scripts/update-changelogs.sh`)
+#### Custom Format Files (Require Special Handling)
 
-The `before_commit` hook runs this script to update special changelog formats:
+These files have complex formats that **cannot** be updated with simple search/replace. They require inserting new entries with timestamps, maintaining specific formatting, etc. The `scripts/update-changelogs.sh` script handles these automatically via tbump's `before_commit` hook.
+
+| File | Why Special | Format Requirements |
+|------|-------------|---------------------|
+| `dkms/debian/changelog` | New entries prepended, RFC 2822 timestamp | Strict Debian changelog format with maintainer email |
+| `dkms/mt76-mt7925-dkms.spec` | New entries inserted after `%changelog` | RPM date format (`%a %b %d %Y`), dash-prefixed lines |
+| `CHANGELOG.md` | New section + comparison link | Keep a Changelog format, ISO date, GitHub compare URLs |
+
+#### Changelog Script (`scripts/update-changelogs.sh`)
 
 ```bash
 ./scripts/update-changelogs.sh <new_version> <prev_version> [message]
 ```
 
-**What it updates:**
+**What it generates:**
 
-| File | Format | Example |
-|------|--------|---------|
-| `dkms/debian/changelog` | Debian changelog (RFC 2822 date) | `mt76-mt7925-dkms (1.5.0-1) unstable; urgency=medium` |
-| `dkms/mt76-mt7925-dkms.spec` | RPM %changelog | `* Mon Jan 27 2026 Zac Bowling - 1.5.0-1` |
-| `CHANGELOG.md` | Keep a Changelog format | `## [1.5.0] - 2026-01-27` |
+| File | Generated Entry Example |
+|------|------------------------|
+| `dkms/debian/changelog` | `mt76-mt7925-dkms (1.5.0-1) unstable; urgency=medium`<br>`  * Version bump`<br>` -- Zac Bowling <zac@zacbowling.com>  Mon, 27 Jan 2026 10:30:00 -0800` |
+| `dkms/mt76-mt7925-dkms.spec` | `* Mon Jan 27 2026 Zac Bowling <zac@zacbowling.com> - 1.5.0-1`<br>`- Version bump` |
+| `CHANGELOG.md` | `## [1.5.0] - 2026-01-27`<br>`### Changed`<br>`- Version bump`<br>`[1.5.0]: https://github.com/.../compare/v1.4.2...v1.5.0` |
+
+**Important:** After running tbump, review and edit these changelog entries with meaningful release notes before pushing.
 
 #### Full Release Workflow
 
