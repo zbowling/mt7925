@@ -1,0 +1,53 @@
+#!/bin/sh
+set -e
+
+PACKAGE_NAME="mt76-mt7925"
+
+case "$1" in
+    configure)
+        # Get the version from the installed dkms.conf
+        if [ -f "/usr/src/${PACKAGE_NAME}-#MODULE_VERSION#/dkms.conf" ]; then
+            VERSION="#MODULE_VERSION#"
+        else
+            # Fallback: find the installed version
+            VERSION=$(ls -1 /usr/src/ | grep "^${PACKAGE_NAME}-" | sed "s/${PACKAGE_NAME}-//" | sort -V | tail -1)
+        fi
+
+        if [ -n "$VERSION" ]; then
+            # Add to DKMS if not already added
+            if ! dkms status -m "$PACKAGE_NAME" -v "$VERSION" 2>/dev/null | grep -q "added\|built\|installed"; then
+                echo "Adding ${PACKAGE_NAME}/${VERSION} to DKMS..."
+                dkms add -m "$PACKAGE_NAME" -v "$VERSION" || true
+            fi
+
+            # Get current kernel version
+            KERNEL_VER=$(uname -r)
+
+            # Check if already built/installed for current kernel
+            if dkms status -m "$PACKAGE_NAME" -v "$VERSION" -k "$KERNEL_VER" 2>/dev/null | grep -q "installed"; then
+                echo "${PACKAGE_NAME}/${VERSION} is already installed for kernel ${KERNEL_VER}"
+            else
+                echo "Building ${PACKAGE_NAME}/${VERSION} for kernel ${KERNEL_VER}..."
+                if dkms build -m "$PACKAGE_NAME" -v "$VERSION" -k "$KERNEL_VER"; then
+                    echo "Installing ${PACKAGE_NAME}/${VERSION} for kernel ${KERNEL_VER}..."
+                    dkms install -m "$PACKAGE_NAME" -v "$VERSION" -k "$KERNEL_VER" --force
+                else
+                    echo "Warning: DKMS build failed. Check dkms status for details."
+                    echo "You may need to install kernel headers: apt install linux-headers-${KERNEL_VER}"
+                fi
+            fi
+        fi
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

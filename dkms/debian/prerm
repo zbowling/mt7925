@@ -1,0 +1,33 @@
+#!/bin/sh
+set -e
+
+PACKAGE_NAME="mt76-mt7925"
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # Get the version from the installed dkms.conf
+        if [ -f "/usr/src/${PACKAGE_NAME}-#MODULE_VERSION#/dkms.conf" ]; then
+            VERSION="#MODULE_VERSION#"
+        else
+            # Fallback: find the installed version
+            VERSION=$(ls -1 /usr/src/ 2>/dev/null | grep "^${PACKAGE_NAME}-" | sed "s/${PACKAGE_NAME}-//" | sort -V | tail -1)
+        fi
+
+        if [ -n "$VERSION" ]; then
+            echo "Removing ${PACKAGE_NAME}/${VERSION} from DKMS..."
+            dkms remove -m "$PACKAGE_NAME" -v "$VERSION" --all 2>/dev/null || true
+        fi
+        ;;
+
+    failed-upgrade)
+        ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
