@@ -227,27 +227,117 @@ dkms/
     └── source/format           # Source format (3.0 quilt)
 ```
 
-### Version Update Checklist
+### Version Update Workflow
 
-**CRITICAL: When updating the DKMS package version, ALL of these files must be updated:**
+Use `tbump` to automatically update version numbers and changelogs:
 
-| File | Field to Update |
-|------|-----------------|
-| `dkms/dkms.conf` | `PACKAGE_VERSION="X.Y.Z"` |
-| `dkms/install.sh` | `PACKAGE_VERSION="X.Y.Z"` (near top of file) |
-| `dkms/PKGBUILD` | `pkgver=X.Y.Z` |
-| `dkms/mt76-mt7925-dkms.install` | `_dkms_ver="X.Y.Z"` |
-| `dkms/mt76-mt7925-dkms.spec` | `%define version X.Y.Z` |
-| `dkms/debian/changelog` | Add new version entry at top (debian/rules auto-extracts) |
-
-Example version bump workflow:
 ```bash
-# Update all files, then:
-git add dkms/
-git commit -m "dkms: bump version to X.Y.Z"
-git tag -a vX.Y.Z -m "Release X.Y.Z"
-git push origin main --tags
+# Simple version bump (interactive mode, recommended)
+uvx tbump 1.5.0
+
+# Non-interactive mode (for scripts)
+uvx tbump 1.5.0 --non-interactive
+
+# Only update files, no git operations
+uvx tbump --only-patch 1.5.0
 ```
+
+**What tbump does automatically:**
+
+1. Updates version strings in 12+ files (see table below)
+2. Runs `scripts/update-changelogs.sh` to update:
+   - `dkms/debian/changelog` (Debian format with RFC 2822 date)
+   - `dkms/mt76-mt7925-dkms.spec` `%changelog` section
+   - `CHANGELOG.md` (adds new version section and comparison link)
+3. Creates a git commit with message `chore: bump version to X.Y.Z`
+4. Creates a git tag `vX.Y.Z`
+5. Does NOT push (you create a PR manually)
+
+**After tbump, you should:**
+
+1. Review the auto-generated changelog entries
+2. Edit them to include meaningful release notes
+3. Amend the commit if needed: `git add -A && git commit --amend`
+
+#### tbump Configuration (`tbump.toml`)
+
+**Hooks:**
+
+| Hook | Command | Purpose |
+|------|---------|---------|
+| `before_commit` | `./scripts/update-changelogs.sh {new_version} {current_version}` | Updates all changelog files |
+
+**Files automatically updated:**
+
+| File | Search Pattern | Purpose |
+|------|----------------|---------|
+| `dkms/dkms.conf` | `PACKAGE_VERSION="{version}"` | DKMS config |
+| `dkms/install.sh` | `PACKAGE_VERSION="{version}"` | Install script |
+| `dkms/uninstall.sh` | `PACKAGE_VERSION="{version}"` | Uninstall script |
+| `dkms/PKGBUILD` | `pkgver={version}` | Arch package |
+| `dkms/mt76-mt7925-dkms.install` | `_dkms_ver="{version}"` | Arch DKMS hooks |
+| `dkms/mt76-mt7925-dkms.spec` | `%define version {version}` | RPM spec |
+| `README.md` | `v{version}` | Status table |
+| `docs/index.md` | `v{version}` | Status table |
+| `docs/telemetry.md` | `{version}` | Example output |
+| `docs/installation/index.md` | `{version}` | Package filenames |
+| `docs/installation/manual.md` | `mt76-mt7925/{version}` | DKMS commands |
+| `docs/developer/index.md` | `mt76-mt7925/{version}` | DKMS commands |
+| `CHANGELOG.md` | `compare/v{version}...HEAD` | Unreleased link |
+
+#### Changelog Script (`scripts/update-changelogs.sh`)
+
+The `before_commit` hook runs this script to update special changelog formats:
+
+```bash
+./scripts/update-changelogs.sh <new_version> <prev_version> [message]
+```
+
+**What it updates:**
+
+| File | Format | Example |
+|------|--------|---------|
+| `dkms/debian/changelog` | Debian changelog (RFC 2822 date) | `mt76-mt7925-dkms (1.5.0-1) unstable; urgency=medium` |
+| `dkms/mt76-mt7925-dkms.spec` | RPM %changelog | `* Mon Jan 27 2026 Zac Bowling - 1.5.0-1` |
+| `CHANGELOG.md` | Keep a Changelog format | `## [1.5.0] - 2026-01-27` |
+
+#### Full Release Workflow
+
+```bash
+# 1. Create feature branch
+git checkout -b chore/bump-version-1.5.0
+
+# 2. Run tbump (updates files + changelogs, commits, creates tag)
+uvx tbump 1.5.0
+
+# 3. Review and edit changelog entries
+#    - Edit dkms/debian/changelog with actual release notes
+#    - Edit CHANGELOG.md with detailed changes
+#    - Amend commit if needed:
+git add -A && git commit --amend --no-edit
+
+# 4. Delete local tag (tbump created it, but we tag after merge)
+git tag -d v1.5.0
+
+# 5. Push branch and create PR
+git push -u origin chore/bump-version-1.5.0
+gh pr create --title "chore: bump version to 1.5.0"
+
+# 6. After PR is merged, tag from main
+git checkout main && git pull
+git tag -a v1.5.0 -m "Release v1.5.0"
+git push origin v1.5.0
+```
+
+#### tbump Reference
+
+See [tbump documentation](https://github.com/your-tools/tbump) for more options:
+
+- `{new_version}` - Placeholder for new version in hooks
+- `{current_version}` - Placeholder for current version in search patterns
+- `{major}`, `{minor}`, `{patch}` - Individual version components
+- `--non-interactive` - Skip confirmation prompts
+- `--only-patch` - Update files only, no git operations
 
 ### CI/CD Release Workflow
 
