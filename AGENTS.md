@@ -81,12 +81,14 @@ The `docs/` folder contains comprehensive documentation. Use this index to find 
    git checkout -b feature/your-feature-name
    # or
    git checkout -b fix/your-bug-fix
+   # or
+   git checkout -b docs/your-documentation-change
    ```
 
 2. **Push to feature branch and create a PR**
    ```bash
-   git push origin feature/your-feature-name
-   gh pr create --title "Your PR title" --body "Description"
+   git push -u origin feature/your-feature-name
+   gh pr create --fill
    ```
 
 3. **Branch naming conventions**
