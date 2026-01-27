@@ -1,11 +1,23 @@
 # tbump configuration for mt7925
-# Usage: tbump 1.4.3
-# Install: pip install tbump (or uvx tbump 1.4.3)
+#
+# Usage:
+#   uvx tbump 1.5.0                    # Interactive mode (recommended)
+#   uvx tbump 1.5.0 --non-interactive  # CI/automated mode
+#   uvx tbump --only-patch 1.5.0       # Update files only, no git operations
+#
+# What happens when you run tbump:
+#   1. Updates version in all [[file]] entries
+#   2. Runs [[before_commit]] hooks (updates changelogs)
+#   3. Creates git commit with message_template
+#   4. Creates git tag with tag_template
+#   5. Does NOT push (push = false) - you create a PR manually
+#
+# Install: pip install tbump (or use uvx for one-shot runs)
 
 [version]
 current = "1.4.2"
 
-# Version format regex - semver
+# Version format - semantic versioning (major.minor.patch)
 regex = '''
   (?P<major>\d+)
   \.
@@ -17,7 +29,16 @@ regex = '''
 [git]
 message_template = "chore: bump version to {new_version}"
 tag_template = "v{new_version}"
-push = false  # Don't auto-push, we use PRs
+push = false  # Don't auto-push - we use feature branches and PRs
+
+# =============================================================================
+# Before Commit Hooks
+# Run after files are updated but before git commit
+# =============================================================================
+
+[[before_commit]]
+name = "Update changelogs"
+cmd = "./scripts/update-changelogs.sh {new_version} 'Version bump'"
 
 # =============================================================================
 # DKMS Package Files
@@ -76,21 +97,10 @@ src = "docs/developer/index.md"
 search = "mt76-mt7925/{current_version}"
 
 # =============================================================================
-# Changelog - only update the "Unreleased" link
-# The actual changelog entries are added manually
+# Changelog - update the "Unreleased" comparison link
+# The before_commit hook handles adding new sections and version links
 # =============================================================================
 
 [[file]]
 src = "CHANGELOG.md"
 search = "compare/v{current_version}...HEAD"
-
-# =============================================================================
-# Hooks for files that need special handling
-# =============================================================================
-
-# Note: debian/changelog and RPM spec %changelog need manual updates
-# because they have specific formats with dates and descriptions.
-# After running tbump, you should:
-#   1. Add entry to dkms/debian/changelog
-#   2. Add entry to dkms/mt76-mt7925-dkms.spec %changelog
-#   3. Add section to CHANGELOG.md
