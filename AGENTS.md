@@ -200,26 +200,74 @@ dkms/
     └── source/format           # Source format (3.0 quilt)
 ```
 
-### Version Update Checklist
+### Version Update Workflow
 
-**CRITICAL: When updating the DKMS package version, ALL of these files must be updated:**
+Use `tbump` to automatically update version numbers across all files:
 
-| File | Field to Update |
-|------|-----------------|
-| `dkms/dkms.conf` | `PACKAGE_VERSION="X.Y.Z"` |
-| `dkms/install.sh` | `PACKAGE_VERSION="X.Y.Z"` (near top of file) |
-| `dkms/PKGBUILD` | `pkgver=X.Y.Z` |
-| `dkms/mt76-mt7925-dkms.install` | `_dkms_ver="X.Y.Z"` |
-| `dkms/mt76-mt7925-dkms.spec` | `%define version X.Y.Z` |
-| `dkms/debian/changelog` | Add new version entry at top (debian/rules auto-extracts) |
-
-Example version bump workflow:
 ```bash
-# Update all files, then:
-git add dkms/
-git commit -m "dkms: bump version to X.Y.Z"
-git tag -a vX.Y.Z -m "Release X.Y.Z"
-git push origin main --tags
+# Install tbump (or use uvx)
+pip install tbump
+
+# Bump version (updates all configured files)
+tbump 1.5.0
+
+# Or with uvx (no install needed)
+uvx tbump 1.5.0
+```
+
+**After running tbump, manually update:**
+
+1. **`dkms/debian/changelog`** - Add new entry at top:
+   ```
+   mt76-mt7925-dkms (1.5.0-1) unstable; urgency=medium
+
+     * Your changes here
+
+    -- Zac Bowling <zac@zacbowling.com>  Mon, 27 Jan 2026 12:00:00 -0800
+   ```
+
+2. **`dkms/mt76-mt7925-dkms.spec`** - Add `%changelog` entry
+
+3. **`CHANGELOG.md`** - Add new version section with changes
+
+**Files automatically updated by tbump** (configured in `tbump.toml`):
+
+| File | Field |
+|------|-------|
+| `dkms/dkms.conf` | `PACKAGE_VERSION` |
+| `dkms/install.sh` | `PACKAGE_VERSION` |
+| `dkms/uninstall.sh` | `PACKAGE_VERSION` |
+| `dkms/PKGBUILD` | `pkgver` |
+| `dkms/mt76-mt7925-dkms.install` | `_dkms_ver` |
+| `dkms/mt76-mt7925-dkms.spec` | `%define version` |
+| `README.md` | Version in status table |
+| `docs/index.md` | Version in status table |
+| `docs/telemetry.md` | Version examples |
+| `docs/installation/index.md` | Package filenames |
+| `docs/installation/manual.md` | DKMS commands |
+| `docs/developer/index.md` | DKMS commands |
+| `CHANGELOG.md` | Unreleased comparison link |
+
+**Full release workflow:**
+```bash
+# 1. Create feature branch
+git checkout -b chore/bump-version-1.5.0
+
+# 2. Run tbump (updates files, commits, but doesn't push)
+uvx tbump 1.5.0
+
+# 3. Manually update changelogs (debian, rpm, CHANGELOG.md)
+# 4. Amend commit with changelog updates
+git add -A && git commit --amend --no-edit
+
+# 5. Push and create PR
+git push -u origin chore/bump-version-1.5.0
+gh pr create --title "chore: bump version to 1.5.0"
+
+# 6. After PR is merged, tag and push from main
+git checkout main && git pull
+git tag -a v1.5.0 -m "Release v1.5.0"
+git push origin v1.5.0
 ```
 
 ### CI/CD Release Workflow

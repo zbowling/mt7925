@@ -1,0 +1,96 @@
+# tbump configuration for mt7925
+# Usage: tbump 1.4.3
+# Install: pip install tbump (or uvx tbump 1.4.3)
+
+[version]
+current = "1.4.2"
+
+# Version format regex - semver
+regex = '''
+  (?P<major>\d+)
+  \.
+  (?P<minor>\d+)
+  \.
+  (?P<patch>\d+)
+'''
+
+[git]
+message_template = "chore: bump version to {new_version}"
+tag_template = "v{new_version}"
+push = false  # Don't auto-push, we use PRs
+
+# =============================================================================
+# DKMS Package Files
+# =============================================================================
+
+[[file]]
+src = "dkms/dkms.conf"
+search = 'PACKAGE_VERSION="{current_version}"'
+
+[[file]]
+src = "dkms/install.sh"
+search = 'PACKAGE_VERSION="{current_version}"'
+
+[[file]]
+src = "dkms/uninstall.sh"
+search = 'PACKAGE_VERSION="{current_version}"'
+
+[[file]]
+src = "dkms/PKGBUILD"
+search = "pkgver={current_version}"
+
+[[file]]
+src = "dkms/mt76-mt7925-dkms.install"
+search = '_dkms_ver="{current_version}"'
+
+[[file]]
+src = "dkms/mt76-mt7925-dkms.spec"
+search = "%define version {current_version}"
+
+# =============================================================================
+# Documentation Files
+# =============================================================================
+
+[[file]]
+src = "README.md"
+search = "v{current_version}"
+
+[[file]]
+src = "docs/index.md"
+search = "v{current_version}"
+
+[[file]]
+src = "docs/telemetry.md"
+search = "{current_version}"
+
+[[file]]
+src = "docs/installation/index.md"
+search = "{current_version}"
+
+[[file]]
+src = "docs/installation/manual.md"
+search = "mt76-mt7925/{current_version}"
+
+[[file]]
+src = "docs/developer/index.md"
+search = "mt76-mt7925/{current_version}"
+
+# =============================================================================
+# Changelog - only update the "Unreleased" link
+# The actual changelog entries are added manually
+# =============================================================================
+
+[[file]]
+src = "CHANGELOG.md"
+search = "compare/v{current_version}...HEAD"
+
+# =============================================================================
+# Hooks for files that need special handling
+# =============================================================================
+
+# Note: debian/changelog and RPM spec %changelog need manual updates
+# because they have specific formats with dates and descriptions.
+# After running tbump, you should:
+#   1. Add entry to dkms/debian/changelog
+#   2. Add entry to dkms/mt76-mt7925-dkms.spec %changelog
+#   3. Add section to CHANGELOG.md
