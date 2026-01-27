@@ -71,7 +71,7 @@ In the process of creating these patches, I’ve also documented what I’ve lea
 | Component | Version | Status |
 |-----------|---------|--------|
 | **Patches** | Patchset v7 (12 patches) | :material-check-circle:{ .green } Stable |
-| **DKMS Package** | v1.4.1 | :material-check-circle:{ .green } Released |
+| **DKMS Package** | v1.4.2 | :material-check-circle:{ .green } Released |
 | **Upstreaming work** | Still in progress | :material-clock:{ .yellow } Pending review |
 
 ## Supported Hardware

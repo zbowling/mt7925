@@ -1,3 +1,10 @@
+mt76-mt7925-dkms (1.4.2-1) unstable; urgency=medium
+
+  * Fix DKMS modules not building on package install
+  * Add postinst/prerm scripts to trigger DKMS build
+
+ -- Zac Bowling <zac@zacbowling.com>  Sun, 26 Jan 2026 20:00:00 -0800
+
 mt76-mt7925-dkms (1.4.1-1) unstable; urgency=medium
 
   * Add Cloudsmith package repository publishing

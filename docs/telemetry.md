@@ -14,7 +14,7 @@ When telemetry is enabled, the following anonymous data is sent:
 |------|---------|---------|
 | Event type | `install`, `uninstall` | Track adoption |
 | Kernel version | `6.18.5` | Kernel compatibility |
-| Package version | `1.4.1` | Version distribution |
+| Package version | `1.4.2` | Version distribution |
 | Chip type | `mt7925`, `mt7921` | Hardware support |
 | Bus type | `pci`, `usb` | Interface usage |
 | Clang kernel | `yes`, `no` | Build compatibility |
@@ -41,7 +41,7 @@ Telemetry uses [GoatCounter](https://www.goatcounter.com/), a privacy-focused an
 Events are sent as simple HTTP requests:
 
 ```bash
-curl -s "https://mt7925.goatcounter.com/count?p=/install&t=MT7925%20DKMS%20v1.4.1"
+curl -s "https://mt7925.goatcounter.com/count?p=/install&t=MT7925%20DKMS%20v1.4.2"
 ```
 
 ## Enabling Telemetry
