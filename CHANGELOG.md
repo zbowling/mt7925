@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-01-29
+
+### Added
+- **RSSI Monitor Support**: CQM RSSI threshold notifications via firmware events
+  - New MCU command `MCU_UNI_CMD_RSSI_MONITOR` for configuring thresholds
+  - Event handler for `MCU_UNI_EVENT_RSSI_MONITOR` unsolicited events
+  - Integration with mac80211 `ieee80211_cqm_rssi_notify()` API
+  - Automatic enable when chip has `MT792x_CHIP_CAP_RSSI_NOTIFY_EVT_EN`
+- **Channel Switch Announcement (CSA) Support**: Handle AP-initiated channel switches
+  - `pre_channel_switch` validation for supported scenarios
+  - `channel_switch` timer-based CSA work scheduling
+  - `channel_switch_rx_beacon` for beacon count updates
+  - `abort_channel_switch` for CSA cancellation
+  - `switch_vif_chanctx` for channel context transitions
+  - Extended channel switching capability advertised in STA mode
+- **Conditional Debug Features**: `MT76_DKMS_DEBUG_FEATURES` compile-time flag
+  - Wraps ROC abort state (`MT76_STATE_ROC_ABORT`) for async abort handling
+  - Wraps ROC rate limiting/backoff mechanism for MCU overload protection
+  - Wraps verbose `dev_info()` logging throughout driver
+  - Can be disabled via `-DMT76_DKMS_DEBUG_FEATURES=0` for upstream-matching builds
+- **Kernel Compatibility Macros**:
+  - `MT76_HAS_EHT_PUNCTURING` for kernel 6.5+ EHT puncturing support
+  - `MT76_HAS_CSA_SUPPORT` for CSA feature availability
+  - `MT76_KERNEL_HAS_REGD_REFACTOR` for kernel 6.19+ regulatory changes
+  - `MT76_KERNEL_HAS_MLO_PM` for kernel 6.18+ MLO power management
+
+### Changed
+- **Reorganized nbd168 Patch Series**: Consolidated from 12 patches to 6 focused patches
+  - Patch 01: Fix double wcid initialization race condition
+  - Patch 02: Add NULL pointer protection for MLO operations
+  - Patch 03: Add mutex protection in critical paths
+  - Patch 04: Add MCU command error handling in AMPDU actions
+  - Patch 05: Add lockdep assertions for mutex verification
+  - Patch 06: Fix MLO ROC setup error handling
+- DKMS source now includes upstream RSSI/CSA features from nbd168 tree
+- Improved `switch_vif_chanctx` to properly iterate all vifs (not just first)
+- CSA work now uses consolidated mutex acquisition pattern
+
+### Fixed
+- RSSI monitor event TLV parsing (use `tlv` pointer instead of `skb->data`)
+- `GFP_KERNEL` to `GFP_ATOMIC` in atomic context for RSSI notifications
+- NULL pointer dereference in `channel_switch_rx_beacon` when `new_ctx` is NULL
+- `add_timer` replaced with `mod_timer` for safer CSA timer handling
+- Duplicate mutex acquisition in CSA work consolidated
+- Channel context lifetime tracking in `add_chanctx`/`remove_chanctx`
+
 ## [1.4.2] - 2026-01-26
 
 ### Fixed

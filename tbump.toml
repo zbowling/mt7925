@@ -29,8 +29,6 @@ regex = '''
 [git]
 message_template = "chore: bump version to {new_version}"
 tag_template = "v{new_version}"
-tag = false   # Don't auto-tag - we tag on main after PR merge
-push = false  # Don't auto-push - we use feature branches and PRs
 
 # =============================================================================
 # Before Commit Hooks
