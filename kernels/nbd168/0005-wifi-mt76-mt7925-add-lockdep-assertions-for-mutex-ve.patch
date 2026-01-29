@@ -1,7 +1,7 @@
-From 261532bcc914120d4602e2bb6256708a9c05d42d Mon Sep 17 00:00:00 2001
-From: Zac Bowling <zac@zacbowling.com>
-Date: Sun, 4 Jan 2026 16:05:04 -0800
-Subject: [PATCH 08/12] wifi: mt76: mt7925: add lockdep assertions for mutex
+From 708f6ef4d13b1a6065d2caa3974a3bbbf0f8bbdc Mon Sep 17 00:00:00 2001
+From: Zac <zac@zacbowling.com>
+Date: Wed, 28 Jan 2026 22:42:48 -0800
+Subject: [PATCH 5/6] wifi: mt76: mt7925: add lockdep assertions for mutex
  verification
 
 Add lockdep_assert_held() calls to critical MCU functions to help catch
@@ -18,15 +18,16 @@ device mutex held to prevent race conditions. The lockdep assertions
 will trigger warnings at runtime if code paths exist that call these
 functions without proper mutex protection.
 
-This aids in detecting the class of bugs fixed by patches in this series.
+Also fixes a potential NULL pointer issue in mt7925_mcu_sta_update()
+by initializing mlink to NULL and checking it before use.
 
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
- drivers/net/wireless/mediatek/mt76/mt7925/mcu.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/mediatek/mt76/mt7925/mcu.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
-index 94ec62a4538a..1c58b0be2be4 100644
+index 1379bf6a26b5..2ed4af282120 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/mcu.c
 @@ -1532,6 +1532,8 @@ int mt7925_mcu_uni_bss_ps(struct mt792x_dev *dev,
@@ -38,16 +39,25 @@ index 94ec62a4538a..1c58b0be2be4 100644
  	if (link_conf->vif->type != NL80211_IFTYPE_STATION)
  		return -EOPNOTSUPP;
  
-@@ -2047,6 +2049,8 @@ int mt7925_mcu_sta_update(struct mt792x_dev *dev,
+@@ -2032,13 +2034,15 @@ int mt7925_mcu_sta_update(struct mt792x_dev *dev,
+ 		.rcpi = to_rcpi(rssi),
+ 	};
  	struct mt792x_sta *msta;
- 	struct mt792x_link_sta *mlink = NULL;
- 
-+	lockdep_assert_held(&dev->mt76.mutex);
+-	struct mt792x_link_sta *mlink;
++	struct mt792x_link_sta *mlink = NULL;
 +
++	lockdep_assert_held(&dev->mt76.mutex);
+ 
  	if (link_sta) {
  		msta = (struct mt792x_sta *)link_sta->sta->drv_priv;
  		mlink = mt792x_sta_to_link(msta, link_sta->link_id);
-@@ -2853,6 +2857,8 @@ int mt7925_mcu_add_bss_info(struct mt792x_phy *phy,
+ 	}
+-	info.wcid = link_sta ? &mlink->wcid : &mvif->sta.deflink.wcid;
++	info.wcid = (link_sta && mlink) ? &mlink->wcid : &mvif->sta.deflink.wcid;
+ 	info.newly = state != MT76_STA_INFO_STATE_ASSOC;
+ 
+ 	return mt7925_mcu_sta_cmd(&dev->mphy, &info);
+@@ -2840,6 +2844,8 @@ int mt7925_mcu_add_bss_info(struct mt792x_phy *phy,
  	struct mt792x_link_sta *mlink_bc;
  	struct sk_buff *skb;
  
