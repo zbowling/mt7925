@@ -451,29 +451,6 @@ static void mt7925_roc_iter(void *priv, u8 *mac,
 	mt7925_mcu_abort_roc(phy, &mvif->bss_conf, phy->roc_token_id);
 }
 
-#ifdef MT76_DKMS_DEBUG_FEATURES
-/* Async ROC abort - safe to call while holding mutex.
- * Sets abort flag and lets roc_work handle cleanup without blocking.
- * This prevents deadlock when called from sta_remove path which holds mutex.
- */
-static void mt7925_roc_abort_async(struct mt792x_dev *dev)
-{
-	struct mt792x_phy *phy = &dev->phy;
-	bool was_roc = test_bit(MT76_STATE_ROC, &phy->mt76->state);
-
-	dev_info(dev->mt76.dev, "ROC: abort_async called, ROC=%d\n", was_roc);
-
-	/* Set abort flag - roc_work checks this before acquiring mutex */
-	set_bit(MT76_STATE_ROC_ABORT, &phy->mt76->state);
-
-	/* Stop timer and schedule work to handle cleanup.
-	 * Must schedule work since timer may not have fired yet.
-	 */
-	timer_delete(&phy->roc_timer);
-	ieee80211_queue_work(phy->mt76->hw, &phy->roc_work);
-}
-#endif /* MT76_DKMS_DEBUG_FEATURES */
-
 void mt7925_roc_abort_sync(struct mt792x_dev *dev)
 {
 	struct mt792x_phy *phy = &dev->phy;
