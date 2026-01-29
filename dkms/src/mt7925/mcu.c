@@ -538,7 +538,7 @@ mt7925_mcu_rssi_monitor_iter(void *priv, u8 *mac,
 	else
 		nl_event = NL80211_CQM_RSSI_THRESHOLD_EVENT_LOW;
 
-	ieee80211_cqm_rssi_notify(vif, nl_event, rssi, GFP_KERNEL);
+	ieee80211_cqm_rssi_notify(vif, nl_event, rssi, GFP_ATOMIC);
 }
 
 static void
@@ -555,7 +555,7 @@ mt7925_mcu_rssi_monitor_event(struct mt792x_dev *dev, struct sk_buff *skb)
 	while (tlv_len > 0 && le16_to_cpu(tlv->len) <= tlv_len) {
 		switch (le16_to_cpu(tlv->tag)) {
 		case UNI_EVENT_RSSI_MONITOR_INFO:
-			event = (struct mt7925_uni_rssi_monitor_event *)skb->data;
+			event = (struct mt7925_uni_rssi_monitor_event *)tlv;
 			ieee80211_iterate_active_interfaces_atomic(dev->mt76.hw,
 								   IEEE80211_IFACE_ITER_RESUME_ALL,
 								   mt7925_mcu_rssi_monitor_iter,

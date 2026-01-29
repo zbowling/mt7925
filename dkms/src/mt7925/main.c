@@ -2147,6 +2147,12 @@ mt7925_add_chanctx(struct ieee80211_hw *hw,
 {
 	struct mt792x_dev *dev = mt792x_hw_dev(hw);
 
+	/* Track the new channel context for CSA operations.
+	 * Note: Only one CSA context can be active at a time.
+	 */
+	if (dev->new_ctx && dev->new_ctx != ctx)
+		dev->new_ctx = NULL;
+
 	dev->new_ctx = ctx;
 	return 0;
 }
@@ -2741,8 +2747,18 @@ static int mt7925_switch_vif_chanctx(struct ieee80211_hw *hw,
 				     int n_vifs,
 				     enum ieee80211_chanctx_switch_mode mode)
 {
-	return mt7925_assign_vif_chanctx(hw, vifs->vif, vifs->link_conf,
-					 vifs->new_ctx);
+	int i, ret;
+
+	/* Process each vif in the switch list */
+	for (i = 0; i < n_vifs; i++) {
+		ret = mt7925_assign_vif_chanctx(hw, vifs[i].vif,
+						vifs[i].link_conf,
+						vifs[i].new_ctx);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
 }
 
 void mt7925_csa_work(struct work_struct *work)
@@ -2772,17 +2788,25 @@ void mt7925_csa_work(struct work_struct *work)
 	roc_rtype = MT7925_ROC_REQ_JOIN;
 
 	mt792x_mutex_acquire(dev);
+
+	/* Verify new_ctx is still valid after acquiring lock */
+	if (!dev->new_ctx) {
+		mt792x_mutex_release(dev);
+		ieee80211_chswitch_done(vif, false, link_id);
+		return;
+	}
+
 	ret = mt7925_set_roc(mvif->phy, mconf, dev->new_ctx->def.chan,
 			     4000, roc_rtype);
-	mt792x_mutex_release(dev);
 	if (!ret) {
-		mt792x_mutex_acquire(dev);
 		ret = mt7925_mcu_set_chctx(mvif->phy->mt76, &mconf->mt76, link_conf,
 					   dev->new_ctx);
-		mt792x_mutex_release(dev);
-
-		mt7925_abort_roc(mvif->phy, mconf);
 	}
+	mt792x_mutex_release(dev);
+
+	/* Abort ROC outside of mutex - it acquires the mutex internally */
+	if (!ret)
+		mt7925_abort_roc(mvif->phy, mconf);
 
 	ieee80211_chswitch_done(vif, !ret, link_id);
 }
@@ -2842,6 +2866,9 @@ static void mt7925_channel_switch_rx_beacon(struct ieee80211_hw *hw,
 		return;
 
 	beacon_interval = vif->bss_conf.beacon_int;
+
+	if (!dev->new_ctx)
+		return;
 
 	if (cfg80211_chandef_identical(&chsw->chandef,
 				       &dev->new_ctx->def) &&

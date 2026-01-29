@@ -18,9 +18,11 @@
  * - MT76_STATE_ROC_ABORT for async ROC abort
  * - ROC rate limiting/backoff mechanism
  * - Extra dev_info() logging throughout
- * Comment out or set to 0 to disable and match upstream behavior
+ * Override via compiler flag: -DMT76_DKMS_DEBUG_FEATURES=0
  */
+#ifndef MT76_DKMS_DEBUG_FEATURES
 #define MT76_DKMS_DEBUG_FEATURES 1
+#endif
 
 /* 6.19+ has refactored regulatory code in regd.c */
 #define MT76_KERNEL_HAS_REGD_REFACTOR (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 19, 0))
@@ -31,6 +33,8 @@
 /* EHT puncturing support (kernel 6.5+) */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
 #define MT76_HAS_EHT_PUNCTURING 1
+#else
+#define MT76_HAS_EHT_PUNCTURING 0
 #endif
 
 /* CSA in chanctx mode (available in all supported kernels) */
