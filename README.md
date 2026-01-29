@@ -99,7 +99,7 @@ sudo dnf install mt76-mt7925-dkms
 6 patches targeting critical MLO stability bugs:
 
 | # | Patch |
-|---|-------|
+| --- | ------- |
 | 1 | Fix double wcid initialization race condition |
 | 2 | Add NULL pointer protection for MLO operations |
 | 3 | Add mutex protection in critical paths |

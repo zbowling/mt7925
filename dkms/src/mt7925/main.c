@@ -1285,11 +1285,16 @@ mt7925_mac_set_links(struct mt76_dev *mdev, struct ieee80211_vif *vif)
 
 	if (band == NL80211_BAND_2GHZ ||
 	    (band == NL80211_BAND_5GHZ && secondary_band == NL80211_BAND_6GHZ)) {
+		int ret;
+
 		mt7925_abort_roc(mvif->phy, &mvif->bss_conf);
 
 		mt792x_mutex_acquire(dev);
 
-		mt7925_set_mlo_roc(mvif->phy, &mvif->bss_conf, sel_links);
+		ret = mt7925_set_mlo_roc(mvif->phy, &mvif->bss_conf, sel_links);
+		if (ret && ret != -ENOLINK)
+			dev_warn(dev->mt76.dev,
+				 "MLO ROC setup failed in set_links: %d\n", ret);
 
 		mt792x_mutex_release(dev);
 	}
