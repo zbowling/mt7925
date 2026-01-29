@@ -127,7 +127,7 @@ The `docs/` folder contains comprehensive documentation. Use this index to find 
 | Primary | 6.18.x | `kernels/6.18/` | Current stable - Arch, Fedora 42 |
 | High | 6.19-rcX | `kernels/6.19-rc/` | Bleeding edge |
 | Medium | 6.17.x | `kernels/6.17/` | EOL but still used |
-| Reference | nbd168 | `kernels/nbd168/` | Upstream staging patches |
+| Reference | nbd168 | `kernels/nbd168/` | Upstream patches (v7 - 7 patches) |
 
 When porting patches to a new kernel version, see [PATCH_DIFFERENCES.md](docs/PATCH_DIFFERENCES.md).
 

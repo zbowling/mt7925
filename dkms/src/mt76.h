@@ -16,6 +16,7 @@
 #include <linux/soc/mediatek/mtk_wed.h>
 #include <net/mac80211.h>
 #include <net/page_pool/helpers.h>
+#include "compat.h"
 #include "util.h"
 #include "testmode.h"
 
@@ -500,7 +501,9 @@ enum {
 	MT76_STATE_POWER_OFF,
 	MT76_STATE_SUSPEND,
 	MT76_STATE_ROC,
+#ifdef MT76_DKMS_DEBUG_FEATURES
 	MT76_STATE_ROC_ABORT,
+#endif
 	MT76_STATE_PM,
 	MT76_STATE_WED_RESET,
 };

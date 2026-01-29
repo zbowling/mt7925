@@ -1,0 +1,48 @@
+From 9a895ce4c26a3fa3bf03beeb435eccf3a009e883 Mon Sep 17 00:00:00 2001
+From: Zac <zac@zacbowling.com>
+Date: Thu, 29 Jan 2026 01:01:33 -0800
+Subject: [PATCH 7/7] wifi: mt76: mt7925: add error logging for MLO ROC setup
+ in set_links
+
+Add error logging in mt7925_mac_set_links() when mt7925_set_mlo_roc()
+fails. Previously the error return was silently ignored since the
+callback function is void.
+
+The function now logs non-ENOLINK errors as warnings. ENOLINK errors
+are expected during link transitions when the link configuration is
+not yet ready, and mac80211 will retry the operation later.
+
+This complements the error handling changes in mt7925_mcu_set_mlo_roc()
+where WARN_ON_ONCE was replaced with proper -ENOLINK returns.
+
+Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 device")
+Signed-off-by: Zac Bowling <zac@zacbowling.com>
+---
+ drivers/net/wireless/mediatek/mt76/mt7925/main.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
+index 0b088c448151..769c09e99d48 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
+@@ -1048,11 +1048,16 @@ mt7925_mac_set_links(struct mt76_dev *mdev, struct ieee80211_vif *vif)
+ 
+ 	if (band == NL80211_BAND_2GHZ ||
+ 	    (band == NL80211_BAND_5GHZ && secondary_band == NL80211_BAND_6GHZ)) {
++		int ret;
++
+ 		mt7925_abort_roc(mvif->phy, &mvif->bss_conf);
+ 
+ 		mt792x_mutex_acquire(dev);
+ 
+-		mt7925_set_mlo_roc(mvif->phy, &mvif->bss_conf, sel_links);
++		ret = mt7925_set_mlo_roc(mvif->phy, &mvif->bss_conf, sel_links);
++		if (ret && ret != -ENOLINK)
++			dev_warn(dev->mt76.dev,
++				 "MLO ROC setup failed in set_links: %d\n", ret);
+ 
+ 		mt792x_mutex_release(dev);
+ 	}
+-- 
+2.52.0
+

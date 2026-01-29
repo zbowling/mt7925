@@ -44,7 +44,7 @@ In the process of creating these patches, I’ve also documented what I’ve lea
 
     ---
 
-    12 stability patches for kernel 6.17+
+    6 stability patches for kernel 6.17+
 
     [:octicons-arrow-right-24: Patch Details](patches/index.md)
 
@@ -70,8 +70,8 @@ In the process of creating these patches, I’ve also documented what I’ve lea
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| **Patches** | Patchset v7 (12 patches) | :material-check-circle:{ .green } Stable |
-| **DKMS Package** | v1.4.2 | :material-check-circle:{ .green } Released |
+| **Patches** | Patchset v7 (7 patches) | :material-check-circle:{ .green } Stable |
+| **DKMS Package** | v1.5.0 | :material-check-circle:{ .green } Released |
 | **Upstreaming work** | Still in progress | :material-clock:{ .yellow } Pending review |
 
 ## Supported Hardware

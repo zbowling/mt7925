@@ -1,23 +1,30 @@
 # Patch Overview
 
-This project provides 12 stability patches for the MediaTek MT7925/MT7921 WiFi drivers that fix critical bugs causing kernel panics, deadlocks, and system hangs.
+This project provides stability patches for the MediaTek MT7925/MT7921 WiFi drivers that fix critical bugs causing kernel panics, deadlocks, and system hangs.
 
-## Patch Series Summary
+## Upstream Patch Series (v7)
+
+The v7 series consists of 7 focused patches submitted to the nbd168 upstream tree:
 
 | # | Patch | Issue Fixed |
 |---|-------|-------------|
-| 01 | Fix deadlock in `mt7925_abort_roc` | ROC abort deadlock |
-| 02 | Fix list corruption in `mt76_wcid_cleanup` | wcid list corruption |
-| 03 | Fix NULL pointer in `mt792x_sta_link_rc_work` | NULL deref in RC work |
-| 04 | Fix mutex deadlock in suspend/resume | Suspend deadlock |
-| 05 | Add NULL checks for MLO operations | MLO NULL derefs |
-| 06 | Add mutex protection in critical paths | Race conditions |
-| 07 | Add MCU command error handling | MCU timeout handling |
-| 08 | Add lockdep assertions | Debug assertions |
-| 09 | Fix MLO roaming and ROC setup | MLO roaming issues |
-| 10 | Fix BA session teardown | Beacon loss handling |
-| 11 | Fix ROC deadlocks and races | ROC stability |
-| 12 | Fix double wcid initialization | Race condition |
+| 01 | Fix double wcid initialization race | Race condition in station add |
+| 02 | Add NULL pointer protection for MLO | NULL derefs in link transitions |
+| 03 | Add mutex protection in critical paths | Race conditions in PM/recovery |
+| 04 | Add MCU command error handling | AMPDU BA session issues |
+| 05 | Add lockdep assertions | Debug assertions for mutex |
+| 06 | Fix MLO ROC setup error handling | WARN_ON_ONCE spam in MLO |
+| 07 | Add error logging for MLO ROC in set_links | Silent failure in void callback |
+
+## DKMS Package Features
+
+The DKMS package includes additional features beyond the upstream patches:
+
+| Feature | Description |
+|---------|-------------|
+| **RSSI Monitor** | CQM RSSI threshold notifications via firmware events |
+| **CSA Support** | Handle AP-initiated channel switches (WiFi 7 MLO) |
+| **Debug Features** | Optional verbose logging (compile-time flag) |
 
 ## Supported Kernel Versions
 
@@ -28,7 +35,7 @@ Patches are maintained for multiple kernel versions:
 | 6.17.x | `kernels/6.17/` | :material-check: Stable |
 | 6.18.x | `kernels/6.18/` | :material-check: Stable |
 | 6.19-rc | `kernels/6.19-rc/` | :material-check: Stable |
-| nbd168 | `kernels/nbd168/` | :material-check: Upstream tree |
+| nbd168 | `kernels/nbd168/` | :material-check: v7 series (7 patches) |
 
 ## Applying Patches Manually
 

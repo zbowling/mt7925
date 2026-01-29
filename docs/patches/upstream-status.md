@@ -6,21 +6,38 @@ Progress toward getting these fixes into the mainline Linux kernel.
 
 | Patch | Status | Notes |
 |-------|--------|-------|
-| 01 - ROC abort deadlock | :material-check-circle:{ .green } Merged | Sean Wang's upstream fix |
-| 02-12 - Stability series | :material-clock:{ .yellow } Submitted | v7 series under review |
+| 01 - Double wcid init race | :material-email:{ .yellow } Submitted | v7 series |
+| 02 - NULL pointer protection | :material-email:{ .yellow } Submitted | v7 series |
+| 03 - Mutex protection | :material-email:{ .yellow } Submitted | v7 series |
+| 04 - MCU error handling | :material-email:{ .yellow } Submitted | v7 series |
+| 05 - Lockdep assertions | :material-email:{ .yellow } Submitted | v7 series |
+| 06 - MLO ROC error handling | :material-email:{ .yellow } Submitted | v7 series |
 
 ## Submission History
 
-### v7 (Current)
+### v7 (Current - January 29, 2026)
+
+- **Date:** January 29, 2026
+- **Series:** 7 patches
+- **To:** Felix Fietkau (nbd@nbd.name) - MT76 maintainer
+- **Cc:** linux-wireless, linux-kernel, MediaTek engineers, Framework
+- **Status:** Under review
+
+**Patches:**
+
+1. `wifi: mt76: mt7925: fix double wcid initialization race condition`
+2. `wifi: mt76: mt7925: add NULL pointer protection for MLO operations`
+3. `wifi: mt76: mt7925: add mutex protection in critical paths`
+4. `wifi: mt76: mt7925: add MCU command error handling in ampdu_action`
+5. `wifi: mt76: mt7925: add lockdep assertions for mutex verification`
+6. `wifi: mt76: mt7925: fix MLO ROC setup error handling`
+
+### v6 (January 2026)
 
 - **Date:** January 2026
-- **Series:** 12 patches
-- **Status:** Under review on linux-wireless mailing list
-
-### v6
-
-- **Date:** January 2026
+- **Series:** 12 patches (consolidated from earlier versions)
 - **Changes:** Squashed mt7921 patches, added wcid init fix
+- **Status:** Superseded by v7
 
 ### Previous Versions
 
