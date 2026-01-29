@@ -91,19 +91,29 @@ sudo dnf install mt76-mt7925-dkms
 | Component | Version | Description |
 |-----------|---------|-------------|
 | **DKMS Package** | v1.5.0 | Drop-in replacement for stock mt76 modules |
-| **Patch Series** | v7 (12 patches) | For manual kernel patching |
+| **Patch Series** | v7 (6 patches) | For manual kernel patching |
 | **Documentation** | [Website](https://zbowling.github.io/mt7925) | Architecture, debugging, crash analysis |
 
-### Patch Summary
+### Patch Summary (nbd168 Upstream)
 
-12 patches targeting critical bugs:
+6 patches targeting critical MLO stability bugs:
 
-| Category | Patches |
-|----------|---------|
-| **Deadlocks** | ROC abort, mutex nesting, suspend/resume races |
-| **NULL derefs** | MLO code paths, firmware reload, state transitions |
-| **Corruption** | WCID double-init, sta_poll_list, resource leaks |
-| **Error handling** | MCU command failures, BA session teardown |
+| # | Patch |
+|---|-------|
+| 1 | Fix double wcid initialization race condition |
+| 2 | Add NULL pointer protection for MLO operations |
+| 3 | Add mutex protection in critical paths |
+| 4 | Add MCU command error handling in AMPDU actions |
+| 5 | Add lockdep assertions for mutex verification |
+| 6 | Fix MLO ROC setup error handling |
+
+### DKMS Package Features
+
+The DKMS package includes additional features beyond the upstream patches:
+
+- **RSSI Monitor**: CQM threshold notifications via firmware events
+- **CSA Support**: Handle AP-initiated channel switches
+- **Debug Features**: Optional verbose logging (compile-time flag)
 
 See [full patch list](https://zbowling.github.io/mt7925/patches/patch-list/) for details.
 

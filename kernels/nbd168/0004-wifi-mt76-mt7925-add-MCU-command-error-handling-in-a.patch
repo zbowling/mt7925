@@ -1,7 +1,7 @@
 From abe0e834bb957a9ee53cb87a2a1c2fecab07aa11 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 28 Jan 2026 22:41:50 -0800
-Subject: [PATCH 4/6] wifi: mt76: mt7925: add MCU command error handling in
+Subject: [PATCH v7 4/6] wifi: mt76: mt7925: add MCU command error handling in
  ampdu_action
 
 Add proper error handling for MCU command return values that were

@@ -2,23 +2,72 @@
 
 This document tracks patches and modifications in the DKMS module that differ
 from mainline Linux. These are either:
-- Patches pending merge in mainline
-- Patches from linux-wireless mailing list not yet merged
-- Local fixes specific to this DKMS build
+- Patches pending merge in mainline (submitted to nbd168 as v7 series)
+- Additional features from linux-wireless/nbd168 not yet in stable kernels
+- DKMS-specific debug features
 
-## Patches from Mainline Patchsets
+## Upstream Patch Series (v7)
 
-The following patches are from our patchsets submitted to linux-wireless:
-- See `kernels/nbd168/*.patch` for the full list (22 patches)
-- These fix NULL pointer dereferences, mutex issues, MLO bugs, etc.
-- Tracking: Submitted as v4 patchset to linux-wireless mailing list
+The following 6 patches have been submitted to nbd168 (Felix Fietkau) for upstream:
 
-## Additional Patches (DKMS Only)
+| # | Patch | Status |
+|---|-------|--------|
+| 1 | Fix double wcid initialization race condition | Submitted |
+| 2 | Add NULL pointer protection for MLO operations | Submitted |
+| 3 | Add mutex protection in critical paths | Submitted |
+| 4 | Add MCU command error handling in AMPDU actions | Submitted |
+| 5 | Add lockdep assertions for mutex verification | Submitted |
+| 6 | Fix MLO ROC setup error handling | Submitted |
 
-These patches are applied to the DKMS module but NOT included in the mainline
-patchsets. They are either pending review, from other authors, or experimental.
+See `kernels/nbd168/*.patch` for the full patch files.
 
-### 1. Skip scan during suspend (2026-01-12)
+## Additional Features (DKMS Only)
+
+These features are in the DKMS module but NOT in the upstream patch series.
+They are from the nbd168 development tree or are DKMS-specific enhancements.
+
+### 1. RSSI Monitor Support (from nbd168)
+
+**Source:** nbd168/wireless development tree
+
+**Status:** In DKMS, tracking upstream
+
+**Files:** `mt7925/mcu.c`, `mt7925/mcu.h`, `mt7925/mt7925.h`
+
+**Description:**
+CQM RSSI threshold notifications via firmware events. When signal strength
+crosses configured thresholds, the driver notifies mac80211.
+
+**Features:**
+- MCU command `MCU_UNI_CMD_RSSI_MONITOR` for configuring thresholds
+- Event handler for `MCU_UNI_EVENT_RSSI_MONITOR` unsolicited events
+- Integration with mac80211 `ieee80211_cqm_rssi_notify()` API
+- Automatic enable when chip has `MT792x_CHIP_CAP_RSSI_NOTIFY_EVT_EN`
+
+---
+
+### 2. CSA (Channel Switch Announcement) Support (from nbd168)
+
+**Source:** nbd168/wireless development tree
+
+**Status:** In DKMS, tracking upstream
+
+**Files:** `mt7925/main.c`
+
+**Description:**
+Handle AP-initiated channel switches for WiFi 7 MLO scenarios.
+
+**Features:**
+- `pre_channel_switch` validation for supported scenarios
+- `channel_switch` timer-based CSA work scheduling
+- `channel_switch_rx_beacon` for beacon count updates
+- `abort_channel_switch` for CSA cancellation
+- `switch_vif_chanctx` for channel context transitions
+- Extended channel switching capability advertised in STA mode
+
+---
+
+### 3. Skip scan during suspend (from MediaTek)
 
 **Source:** https://lore.kernel.org/linux-mediatek/20260112114007.2115873-1-leon.yen@mediatek.com/
 
@@ -62,6 +111,34 @@ mainline merge.
 
 ---
 
+### 4. Conditional Debug Features (DKMS-specific)
+
+**Source:** Local DKMS enhancements
+
+**Status:** DKMS-only (not for upstream)
+
+**Files:** `compat.h`, `mt76.h`, `mt792x.h`, `mt7925/main.c`, `mt7921/main.c`
+
+**Description:**
+Controlled by `MT76_DKMS_DEBUG_FEATURES` compile-time flag in `compat.h`.
+
+**Features when enabled:**
+- `MT76_STATE_ROC_ABORT` atomic flag for async ROC abort handling
+- ROC rate limiting/backoff mechanism to prevent MCU overload
+- Verbose `dev_info()` logging for ROC, MLO, key management, and channel context
+
+**To disable:**
+```bash
+# Build without debug features (matches upstream behavior)
+make EXTRA_CFLAGS="-DMT76_DKMS_DEBUG_FEATURES=0"
+```
+
+**Why not in patchset:**
+These are debugging aids for users experiencing issues. Upstream prefers
+minimal logging, but for out-of-tree builds we want maximum visibility.
+
+---
+
 ## How to Add New Patches
 
 When adding patches to DKMS that aren't in the mainline patchsets:
@@ -75,50 +152,14 @@ When adding patches to DKMS that aren't in the mainline patchsets:
    - Why it's not in the patchset
 3. Do NOT add it to `kernels/*/` directories (those are for mainline submission)
 
-### 2. Fix deadlock in sta removal ROC abort path (2026-01-16)
-
-**Source:** Local fix based on user crash reports
-
-**Author:** Zac Bowling <zac@zacbowling.com>
-
-**Status:** Patch 0022 - pending submission to linux-wireless
-
-**Files:** `mt76.h`, `mt7925/main.c`
-
-**Description:**
-Fixes a mutex deadlock that occurs during station removal when ROC (Remain On
-Channel) work is pending. The deadlock happens when cancel_work_sync() is
-called while holding the device mutex, and the work function needs the same
-mutex.
-
-This manifests as hung tasks (122+ second timeouts), system freezes during
-roaming, and processes stuck in uninterruptible sleep.
-
-**Root cause:**
-```
-Thread A (sta_remove):          Thread B (roc_work):
-mutex_lock(&dev->mutex)
-  -> cancel_work_sync(roc_work)   -> mt792x_mutex_acquire()
-     WAITS for work                   BLOCKED on mutex
-        DEADLOCK
-```
-
-**Fix approach:**
-- Add MT76_STATE_ROC_ABORT atomic flag
-- Create mt7925_roc_abort_async() that sets flag without blocking
-- Modify roc_work to check abort flag BEFORE acquiring mutex
-- Use async abort in sta_remove path
-
-**Why in patchset:**
-This is a significant deadlock fix that affects users during normal operation
-(roaming). Added to patch 0022 for upstream submission.
-
 ---
 
 ## Version History
 
 | Date | Change |
 |------|--------|
+| 2026-01-29 | v1.5.0: Added RSSI monitor, CSA support, conditional debug features |
+| 2026-01-29 | Consolidated upstream patches from 12 to 6 for v7 submission |
 | 2026-01-16 | Added patch 0022: deadlock fix in sta removal ROC abort |
 | 2026-01-16 | Added scan suspend skip patch from MediaTek |
 | 2026-01-15 | Initial DKMS with 21 patches from patchset |
