@@ -4,7 +4,7 @@ This project provides stability patches for the MediaTek MT7925/MT7921 WiFi driv
 
 ## Upstream Patch Series (v7)
 
-The v7 series consists of 6 focused patches submitted to the nbd168 upstream tree:
+The v7 series consists of 7 focused patches submitted to the nbd168 upstream tree:
 
 | # | Patch | Issue Fixed |
 |---|-------|-------------|
@@ -14,6 +14,7 @@ The v7 series consists of 6 focused patches submitted to the nbd168 upstream tre
 | 04 | Add MCU command error handling | AMPDU BA session issues |
 | 05 | Add lockdep assertions | Debug assertions for mutex |
 | 06 | Fix MLO ROC setup error handling | WARN_ON_ONCE spam in MLO |
+| 07 | Add error logging for MLO ROC in set_links | Silent failure in void callback |
 
 ## DKMS Package Features
 
@@ -34,7 +35,7 @@ Patches are maintained for multiple kernel versions:
 | 6.17.x | `kernels/6.17/` | :material-check: Stable |
 | 6.18.x | `kernels/6.18/` | :material-check: Stable |
 | 6.19-rc | `kernels/6.19-rc/` | :material-check: Stable |
-| nbd168 | `kernels/nbd168/` | :material-check: v7 series (6 patches) |
+| nbd168 | `kernels/nbd168/` | :material-check: v7 series (7 patches) |
 
 ## Applying Patches Manually
 

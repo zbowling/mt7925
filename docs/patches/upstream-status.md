@@ -18,7 +18,7 @@ Progress toward getting these fixes into the mainline Linux kernel.
 ### v7 (Current - January 29, 2026)
 
 - **Date:** January 29, 2026
-- **Series:** 6 patches
+- **Series:** 7 patches
 - **To:** Felix Fietkau (nbd@nbd.name) - MT76 maintainer
 - **Cc:** linux-wireless, linux-kernel, MediaTek engineers, Framework
 - **Status:** Under review

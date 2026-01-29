@@ -1,7 +1,7 @@
 From be87fa8c43292355ce7273c4a8dc07b0e2a8b2e7 Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 28 Jan 2026 22:38:27 -0800
-Subject: [PATCH 1/6] wifi: mt76: mt7925: fix double wcid initialization race
+Subject: [PATCH 1/7] wifi: mt76: mt7925: fix double wcid initialization race
  condition
 
 Remove duplicate mt76_wcid_init() call in mt7925_mac_link_sta_add that

@@ -8,7 +8,7 @@ from mainline Linux. These are either:
 
 ## Upstream Patch Series (v7)
 
-The following 6 patches have been submitted to nbd168 (Felix Fietkau) for upstream:
+The following 7 patches have been submitted to nbd168 (Felix Fietkau) for upstream:
 
 | # | Patch | Status |
 |---|-------|--------|
@@ -18,6 +18,7 @@ The following 6 patches have been submitted to nbd168 (Felix Fietkau) for upstre
 | 4 | Add MCU command error handling in AMPDU actions | Submitted |
 | 5 | Add lockdep assertions for mutex verification | Submitted |
 | 6 | Fix MLO ROC setup error handling | Submitted |
+| 7 | Add error logging for MLO ROC in set_links | Pending |
 
 See `kernels/nbd168/*.patch` for the full patch files.
 

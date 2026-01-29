@@ -1,6 +1,6 @@
 # Patch List
 
-Detailed description of the 6 patches in the v7 stability series submitted to the nbd168 upstream tree.
+Detailed description of the 7 patches in the v7 stability series submitted to the nbd168 upstream tree.
 
 ## Patch 01: Fix Double WCID Initialization Race
 
@@ -126,6 +126,25 @@ Replaces noisy `WARN_ON_ONCE` checks with silent returns in `mt7925_mcu_set_mlo_
 During MLO setup, links may not be fully configured when ROC is requested. The `WARN_ON_ONCE` statements were triggering unnecessary kernel warnings during normal operation.
 
 The `-ENOLINK` error code properly indicates that the link is not yet ready for ROC, allowing upper layers to retry later without generating spurious kernel warnings.
+
+---
+
+## Patch 07: Add Error Logging for MLO ROC Setup in set_links
+
+**File:** `0007-wifi-mt76-mt7925-add-error-logging-for-MLO-ROC-setup.patch`
+
+Adds error logging in `mt7925_mac_set_links()` when `mt7925_set_mlo_roc()` fails.
+
+**Why needed:**
+The `mt7925_mac_set_links()` function is a void callback that previously ignored error returns from `mt7925_set_mlo_roc()`. After patch 06 changes the ROC setup to return `-ENOLINK` instead of `WARN_ON_ONCE`, errors would be silently dropped.
+
+**Changes:**
+
+- Check return value of `mt7925_set_mlo_roc()`
+- Log non-ENOLINK errors as warnings via `dev_warn()`
+- ENOLINK errors are expected during link transitions and are not logged
+
+This complements patch 06 by ensuring ROC setup failures are visible in logs for debugging, while avoiding noise for expected transient conditions.
 
 ---
 
