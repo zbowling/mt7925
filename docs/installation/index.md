@@ -16,9 +16,9 @@ Using your distribution's package manager with our repository enables automatic 
 
 Download packages directly from [GitHub Releases](https://github.com/zbowling/mt7925/releases/latest):
 
-- `mt76-mt7925-dkms_1.4.2-1_all.deb` - Debian/Ubuntu
-- `mt76-mt7925-dkms-1.4.2-1.noarch.rpm` - Fedora/RHEL
-- `mt76-mt7925-dkms-1.4.2-1-any.pkg.tar.zst` - Arch Linux
+- `mt76-mt7925-dkms_1.5.0-1_all.deb` - Debian/Ubuntu
+- `mt76-mt7925-dkms-1.5.0-1.noarch.rpm` - Fedora/RHEL
+- `mt76-mt7925-dkms-1.5.0-1-any.pkg.tar.zst` - Arch Linux
 
 ## Manual Installation
 

@@ -90,7 +90,7 @@ sudo dnf install mt76-mt7925-dkms
 
 | Component | Version | Description |
 |-----------|---------|-------------|
-| **DKMS Package** | v1.4.2 | Drop-in replacement for stock mt76 modules |
+| **DKMS Package** | v1.5.0 | Drop-in replacement for stock mt76 modules |
 | **Patch Series** | v7 (12 patches) | For manual kernel patching |
 | **Documentation** | [Website](https://zbowling.github.io/mt7925) | Architecture, debugging, crash analysis |
 

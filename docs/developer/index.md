@@ -63,8 +63,8 @@ git format-patch -1
 dkms status | grep mt76
 
 # Rebuild DKMS module
-sudo dkms build mt76-mt7925/1.4.2
-sudo dkms install mt76-mt7925/1.4.2
+sudo dkms build mt76-mt7925/1.5.0
+sudo dkms install mt76-mt7925/1.5.0
 
 # View driver messages
 dmesg | grep mt7925

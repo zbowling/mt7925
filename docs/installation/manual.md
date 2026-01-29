@@ -87,7 +87,7 @@ ip link show | grep wl
 Check the DKMS build log:
 
 ```bash
-sudo cat /var/lib/dkms/mt76-mt7925/1.4.2/build/make.log
+sudo cat /var/lib/dkms/mt76-mt7925/1.5.0/build/make.log
 ```
 
 Common issues:
@@ -105,14 +105,14 @@ Common issues:
 dkms status
 
 # Rebuild for current kernel
-sudo dkms build mt76-mt7925/1.4.2
-sudo dkms install mt76-mt7925/1.4.2
+sudo dkms build mt76-mt7925/1.5.0
+sudo dkms install mt76-mt7925/1.5.0
 
 # Remove and reinstall
-sudo dkms remove mt76-mt7925/1.4.2 --all
-sudo dkms add mt76-mt7925/1.4.2
-sudo dkms build mt76-mt7925/1.4.2
-sudo dkms install mt76-mt7925/1.4.2
+sudo dkms remove mt76-mt7925/1.5.0 --all
+sudo dkms add mt76-mt7925/1.5.0
+sudo dkms build mt76-mt7925/1.5.0
+sudo dkms install mt76-mt7925/1.5.0
 ```
 
 ### Module Loading

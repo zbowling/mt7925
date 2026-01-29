@@ -1,5 +1,5 @@
 %define module_name mt76-mt7925
-%define version 1.4.2
+%define version 1.5.0
 
 Name:           %{module_name}-dkms
 Version:        %{version}
@@ -38,6 +38,9 @@ dkms remove -m %{module_name} -v %{version} --all --rpm_safe_upgrade || :
 %{_usrsrc}/%{module_name}-%{version}
 
 %changelog
+* Thu Jan 29 2026 Zac Bowling <zac@zacbowling.com> - 1.5.0-1
+- Version bump
+
 * Sun Jan 26 2026 Zac Bowling <zac@zacbowling.com> - 1.4.2-1
 - Fix Debian package not building DKMS modules on install
 
