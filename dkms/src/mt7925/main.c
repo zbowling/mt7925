@@ -1209,6 +1209,7 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
 
 err_wcid:
 	rcu_assign_pointer(dev->mt76.wcid[idx], NULL);
+	mt76_wcid_cleanup(&dev->mt76, wcid);
 	mt76_wcid_mask_clear(dev->mt76.wcid_mask, idx);
 	mt76_connac_power_save_sched(&dev->mphy, &dev->pm);
 	return ret;
@@ -1681,8 +1682,19 @@ void mt7925_scan_work(struct work_struct *work)
 	dev = phy->dev;
 	pm = &dev->pm;
 
-	if (pm->suspended)
+	if (pm->suspended) {
+		/* Drain pending scan events to prevent stranded skbs */
+		struct sk_buff *skb;
+
+		spin_lock_bh(&dev->mt76.lock);
+		while ((skb = __skb_dequeue(&phy->scan_event_list)) != NULL) {
+			spin_unlock_bh(&dev->mt76.lock);
+			dev_kfree_skb(skb);
+			spin_lock_bh(&dev->mt76.lock);
+		}
+		spin_unlock_bh(&dev->mt76.lock);
 		return;
+	}
 
 	while (true) {
 		struct mt76_dev *mdev = &phy->dev->mt76;
@@ -2749,13 +2761,27 @@ static int mt7925_switch_vif_chanctx(struct ieee80211_hw *hw,
 {
 	int i, ret;
 
-	/* Process each vif in the switch list */
+	/* Process each vif in the switch list:
+	 * 1. First unassign from old context to clean up CSA state
+	 * 2. Then assign to new context
+	 */
 	for (i = 0; i < n_vifs; i++) {
+		/* Unassign from old context first */
+		mt7925_unassign_vif_chanctx(hw, vifs[i].vif,
+					    vifs[i].link_conf,
+					    vifs[i].old_ctx);
+
+		/* Assign to new context */
 		ret = mt7925_assign_vif_chanctx(hw, vifs[i].vif,
 						vifs[i].link_conf,
 						vifs[i].new_ctx);
-		if (ret)
+		if (ret) {
+			/* On failure, try to restore old context */
+			mt7925_assign_vif_chanctx(hw, vifs[i].vif,
+						  vifs[i].link_conf,
+						  vifs[i].old_ctx);
 			return ret;
+		}
 	}
 
 	return 0;
@@ -2804,9 +2830,10 @@ void mt7925_csa_work(struct work_struct *work)
 	}
 	mt792x_mutex_release(dev);
 
-	/* Abort ROC outside of mutex - it acquires the mutex internally */
-	if (!ret)
-		mt7925_abort_roc(mvif->phy, mconf);
+	/* Always abort ROC - if set_roc succeeded, we need to clean it up
+	 * regardless of whether set_chctx succeeded or failed
+	 */
+	mt7925_abort_roc(mvif->phy, mconf);
 
 	ieee80211_chswitch_done(vif, !ret, link_id);
 }

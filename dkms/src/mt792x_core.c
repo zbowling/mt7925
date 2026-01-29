@@ -206,6 +206,10 @@ void mt792x_remove_interface(struct ieee80211_hw *hw,
 	struct mt792x_dev *dev = mt792x_hw_dev(hw);
 	struct mt792x_bss_conf *mconf;
 
+	/* Cancel CSA work and timer before teardown to prevent use-after-free */
+	cancel_work_sync(&mvif->csa_work);
+	timer_delete_sync(&mvif->csa_timer);
+
 	mt792x_mutex_acquire(dev);
 
 	mconf = mt792x_link_conf_to_mconf(&vif->bss_conf);

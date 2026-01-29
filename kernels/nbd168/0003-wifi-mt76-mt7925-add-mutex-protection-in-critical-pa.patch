@@ -1,7 +1,7 @@
-From c3bbca681776959180e300ce04d2c7fb96b0e380 Mon Sep 17 00:00:00 2001
+From bec085ce9488ddf105847199941e2cf99a1e55dc Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 28 Jan 2026 22:41:17 -0800
-Subject: [PATCH v7 3/6] wifi: mt76: mt7925: add mutex protection in critical
+Subject: [PATCH 3/6] wifi: mt76: mt7925: add mutex protection in critical
  paths
 
 Add proper mutex protection for mt7925 driver operations that access
@@ -45,7 +45,7 @@ index f1f0bc9eab04..88cf214ab452 100644
  
  	mt7925_regd_change(&dev->phy, "00");
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index 88ee90709b75..82de6f30ec27 100644
+index 1400633712b7..d71db57e9f8c 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -770,9 +770,11 @@ void mt7925_set_runtime_pm(struct mt792x_dev *dev)

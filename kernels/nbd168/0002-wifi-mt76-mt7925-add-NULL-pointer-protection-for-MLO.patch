@@ -1,7 +1,7 @@
-From c0edbb77876806a67daa8451de3cb1f80f322d3e Mon Sep 17 00:00:00 2001
+From e989fe7dc459bd82c828d1fe431a87dd84437ebb Mon Sep 17 00:00:00 2001
 From: Zac <zac@zacbowling.com>
 Date: Wed, 28 Jan 2026 22:40:38 -0800
-Subject: [PATCH v7 2/6] wifi: mt76: mt7925: add NULL pointer protection for MLO
+Subject: [PATCH 2/6] wifi: mt76: mt7925: add NULL pointer protection for MLO
  state transitions
 
 Add NULL pointer checks for functions that return pointers to link-related
@@ -41,11 +41,11 @@ Prevents crashes during:
 Fixes: c948b5da6bbe ("wifi: mt76: mt7925: add Mediatek Wi-Fi7 driver for mt7925 device")
 Signed-off-by: Zac Bowling <zac@zacbowling.com>
 ---
- .../net/wireless/mediatek/mt76/mt7925/main.c  | 66 ++++++++++++++-----
- 1 file changed, 51 insertions(+), 15 deletions(-)
+ .../net/wireless/mediatek/mt76/mt7925/main.c  | 67 ++++++++++++++-----
+ 1 file changed, 52 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/net/wireless/mediatek/mt76/mt7925/main.c b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
-index fad3b1505f67..88ee90709b75 100644
+index fad3b1505f67..1400633712b7 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 +++ b/drivers/net/wireless/mediatek/mt76/mt7925/main.c
 @@ -612,6 +612,17 @@ static int mt7925_set_link_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
@@ -119,7 +119,7 @@ index fad3b1505f67..88ee90709b75 100644
  	}
  
  	if (ieee80211_vif_is_mld(vif) &&
-@@ -910,28 +933,34 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
+@@ -910,28 +933,35 @@ static int mt7925_mac_link_sta_add(struct mt76_dev *mdev,
  		ret = mt7925_mcu_sta_update(dev, link_sta, vif, true,
  					    MT76_STA_INFO_STATE_NONE);
  		if (ret)
@@ -152,13 +152,14 @@ index fad3b1505f67..88ee90709b75 100644
 +
 +err_wcid:
 +	rcu_assign_pointer(dev->mt76.wcid[idx], NULL);
++	mt76_wcid_cleanup(&dev->mt76, wcid);
 +	mt76_wcid_mask_clear(dev->mt76.wcid_mask, idx);
 +	mt76_connac_power_save_sched(&dev->mphy, &dev->pm);
 +	return ret;
  }
  
  static int
-@@ -1039,6 +1068,8 @@ static void mt7925_mac_link_sta_assoc(struct mt76_dev *mdev,
+@@ -1039,6 +1069,8 @@ static void mt7925_mac_link_sta_assoc(struct mt76_dev *mdev,
  
  	msta = (struct mt792x_sta *)link_sta->sta->drv_priv;
  	mlink = mt792x_sta_to_link(msta, link_sta->link_id);
@@ -167,7 +168,7 @@ index fad3b1505f67..88ee90709b75 100644
  
  	mt792x_mutex_acquire(dev);
  
-@@ -1048,12 +1079,13 @@ static void mt7925_mac_link_sta_assoc(struct mt76_dev *mdev,
+@@ -1048,12 +1080,13 @@ static void mt7925_mac_link_sta_assoc(struct mt76_dev *mdev,
  		link_conf = mt792x_vif_to_bss_conf(vif, vif->bss_conf.link_id);
  	}
  
@@ -184,7 +185,7 @@ index fad3b1505f67..88ee90709b75 100644
  	}
  
  	ewma_avg_signal_init(&mlink->avg_ack_signal);
-@@ -1100,6 +1132,8 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
+@@ -1100,6 +1133,8 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
  
  	msta = (struct mt792x_sta *)link_sta->sta->drv_priv;
  	mlink = mt792x_sta_to_link(msta, link_id);
@@ -193,7 +194,7 @@ index fad3b1505f67..88ee90709b75 100644
  
  	mt7925_roc_abort_sync(dev);
  
-@@ -1113,10 +1147,12 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
+@@ -1113,10 +1148,12 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
  
  	link_conf = mt792x_vif_to_bss_conf(vif, link_id);
  
@@ -207,7 +208,7 @@ index fad3b1505f67..88ee90709b75 100644
  
  		if (ieee80211_vif_is_mld(vif))
  			mt792x_mac_link_bss_remove(dev, mconf, mlink);
-@@ -1124,7 +1160,7 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
+@@ -1124,7 +1161,7 @@ static void mt7925_mac_link_sta_remove(struct mt76_dev *mdev,
  			mt7925_mcu_add_bss_info(&dev->phy, mconf->mt76.ctx, link_conf,
  						link_sta, false);
  	}

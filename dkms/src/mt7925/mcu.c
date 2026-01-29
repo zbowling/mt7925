@@ -553,6 +553,12 @@ mt7925_mcu_rssi_monitor_event(struct mt792x_dev *dev, struct sk_buff *skb)
 	tlv_len = skb->len;
 
 	while (tlv_len > 0 && le16_to_cpu(tlv->len) <= tlv_len) {
+		u16 len = le16_to_cpu(tlv->len);
+
+		/* Prevent infinite loop on malformed zero-length TLV */
+		if (!len)
+			break;
+
 		switch (le16_to_cpu(tlv->tag)) {
 		case UNI_EVENT_RSSI_MONITOR_INFO:
 			event = (struct mt7925_uni_rssi_monitor_event *)tlv;
@@ -564,8 +570,8 @@ mt7925_mcu_rssi_monitor_event(struct mt792x_dev *dev, struct sk_buff *skb)
 		default:
 			break;
 		}
-		tlv_len -= le16_to_cpu(tlv->len);
-		tlv = (struct tlv *)((char *)(tlv) + le16_to_cpu(tlv->len));
+		tlv_len -= len;
+		tlv = (struct tlv *)((char *)(tlv) + len);
 	}
 }
 
