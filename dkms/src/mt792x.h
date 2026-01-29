@@ -186,12 +186,14 @@ struct mt792x_phy {
 	u8 roc_token_id;
 	bool roc_grant;
 
+#ifdef MT76_DKMS_DEBUG_FEATURES
 	/* ROC rate limiting to prevent MCU overload during rapid reconnection
 	 * cycles (e.g., MLO authentication failures causing repeated ROC).
 	 */
 	u8 roc_timeout_count;		/* consecutive ROC timeouts */
 	unsigned long roc_last_timeout;	/* jiffies of last timeout */
 	unsigned long roc_backoff_until;/* don't issue ROC until this time */
+#endif
 };
 
 struct mt792x_irq_map {
