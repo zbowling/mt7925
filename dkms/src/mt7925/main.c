@@ -2840,8 +2840,9 @@ static void mt7925_channel_switch(struct ieee80211_hw *hw,
 
 	beacon_interval = vif->bss_conf.beacon_int;
 
-	mvif->csa_timer.expires = TU_TO_EXP_TIME(beacon_interval * chsw->count);
-	add_timer(&mvif->csa_timer);
+	/* Use mod_timer to safely handle already-pending timer case */
+	mod_timer(&mvif->csa_timer,
+		  TU_TO_EXP_TIME(beacon_interval * chsw->count));
 }
 
 static void mt7925_abort_channel_switch(struct ieee80211_hw *hw,
