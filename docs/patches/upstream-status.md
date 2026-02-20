@@ -31,6 +31,7 @@ Progress toward getting these fixes into the mainline Linux kernel.
 4. `wifi: mt76: mt7925: add MCU command error handling in ampdu_action`
 5. `wifi: mt76: mt7925: add lockdep assertions for mutex verification`
 6. `wifi: mt76: mt7925: fix MLO ROC setup error handling`
+7. `wifi: mt76: mt7925: add error logging for MLO ROC setup in set_links`
 
 ### v6 (January 2026)
 
