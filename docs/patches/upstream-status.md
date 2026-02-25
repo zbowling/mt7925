@@ -12,6 +12,7 @@ Progress toward getting these fixes into the mainline Linux kernel.
 | 04 - MCU error handling | :material-email:{ .yellow } Submitted | v7 series |
 | 05 - Lockdep assertions | :material-email:{ .yellow } Submitted | v7 series |
 | 06 - MLO ROC error handling | :material-email:{ .yellow } Submitted | v7 series |
+| 07 - MLO ROC error logging  | :material-email:{ .yellow } Submitted | v7 series |
 
 ## Submission History
 
