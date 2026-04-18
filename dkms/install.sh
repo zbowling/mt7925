@@ -227,8 +227,7 @@ send_telemetry() {
     local error_type="${2:-none}"
     local wait_for_net="${3:-false}"
 
-    # `|| return 0` (not bare call + `$?`) so set -e doesn't kill the script
-    # when telemetry is disabled — the non-zero return must be consumed here.
+    # Return early if telemetry is disabled or not configured
     check_telemetry_enabled || return 0
 
     # Collect safe system info
