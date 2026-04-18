@@ -132,8 +132,7 @@ queue_telemetry() {
 send_queued_telemetry() {
     [[ ! -f "$TELEMETRY_QUEUE" ]] && return 0
 
-    # `|| return 0` (not bare call + `$?`) so set -e doesn't kill the script
-    # when telemetry is disabled — the non-zero return must be consumed here.
+    # Return early if telemetry is disabled or not configured
     check_telemetry_enabled || return 0
 
     # Process each queued event
