@@ -132,10 +132,9 @@ queue_telemetry() {
 send_queued_telemetry() {
     [[ ! -f "$TELEMETRY_QUEUE" ]] && return 0
 
-    # Check if telemetry is enabled before sending queued events
-    check_telemetry_enabled
-    local status=$?
-    [[ $status -ne 0 ]] && return 0
+    # `|| return 0` (not bare call + `$?`) so set -e doesn't kill the script
+    # when telemetry is disabled — the non-zero return must be consumed here.
+    check_telemetry_enabled || return 0
 
     # Process each queued event
     local failed_events=""
@@ -228,14 +227,9 @@ send_telemetry() {
     local error_type="${2:-none}"
     local wait_for_net="${3:-false}"
 
-    # Check if telemetry is enabled
-    check_telemetry_enabled
-    local status=$?
-    if [[ $status -eq 1 ]]; then
-        return 0  # Explicitly disabled
-    elif [[ $status -eq 2 ]]; then
-        return 0  # No preference set (shouldn't happen after prompt)
-    fi
+    # `|| return 0` (not bare call + `$?`) so set -e doesn't kill the script
+    # when telemetry is disabled — the non-zero return must be consumed here.
+    check_telemetry_enabled || return 0
 
     # Collect safe system info
     local kernel=$(uname -r)
