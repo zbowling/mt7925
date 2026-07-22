@@ -668,7 +668,7 @@ mt7925_mac_write_txwi_80211(struct mt76_dev *dev, __le32 *txwi,
 
 	if (ieee80211_is_action(fc) &&
 	    mgmt->u.action.category == WLAN_CATEGORY_BACK &&
-	    mgmt->u.action.u.addba_req.action_code == WLAN_ACTION_ADDBA_REQ)
+	    MT76_MGMT_ACTION_CODE(mgmt) == WLAN_ACTION_ADDBA_REQ)
 		tid = MT_TX_ADDBA;
 	else if (ieee80211_is_mgmt(hdr->frame_control))
 		tid = MT_TX_NORMAL;
