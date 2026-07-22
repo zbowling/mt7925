@@ -41,6 +41,20 @@
 #define MT76_HAS_CSA_SUPPORT 1
 
 /*
+ * struct ieee80211_mgmt action-frame layout
+ * - 7.0 flattened the nested action union: u.action.u.addba_req became
+ *   u.action.addba_req, and action_code is read via u.action.action_code
+ * - 6.x keeps the nested form u.action.u.addba_req.{action_code,capab}
+ */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+#define MT76_MGMT_ACTION_CODE(mgmt) ((mgmt)->u.action.action_code)
+#define MT76_MGMT_ADDBA_REQ(mgmt)   ((mgmt)->u.action.addba_req)
+#else
+#define MT76_MGMT_ACTION_CODE(mgmt) ((mgmt)->u.action.u.addba_req.action_code)
+#define MT76_MGMT_ADDBA_REQ(mgmt)   ((mgmt)->u.action.u.addba_req)
+#endif
+
+/*
  * ieee80211_iterate_active_interfaces() callback signature
  * Stable across 6.8-6.19+
  */
