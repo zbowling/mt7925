@@ -46,7 +46,7 @@ check_telemetry_enabled() {
 # 2=unset), which aborts the script under set -e if called bare. Capture with
 # `status=$(telemetry_status)` instead of checking $? directly.
 telemetry_status() {
-    check_telemetry_enabled && echo 0 || echo $?
+    check_telemetry_enabled && echo 0 || echo "$?"
 }
 
 # Save telemetry preference
