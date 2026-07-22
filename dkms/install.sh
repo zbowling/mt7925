@@ -42,6 +42,13 @@ check_telemetry_enabled() {
     return 2
 }
 
+# set -e-safe wrapper: check_telemetry_enabled signals via exit code (1=disabled,
+# 2=unset), which aborts the script under set -e if called bare. Capture with
+# `status=$(telemetry_status)` instead of checking $? directly.
+telemetry_status() {
+    check_telemetry_enabled && echo 0 || echo $?
+}
+
 # Save telemetry preference
 save_telemetry_preference() {
     echo "$1" > "$TELEMETRY_CONFIG" 2>/dev/null || true
@@ -133,8 +140,8 @@ send_queued_telemetry() {
     [[ ! -f "$TELEMETRY_QUEUE" ]] && return 0
 
     # Check if telemetry is enabled before sending queued events
-    check_telemetry_enabled
-    local status=$?
+    local status
+    status=$(telemetry_status)
     [[ $status -ne 0 ]] && return 0
 
     # Process each queued event
@@ -229,8 +236,8 @@ send_telemetry() {
     local wait_for_net="${3:-false}"
 
     # Check if telemetry is enabled
-    check_telemetry_enabled
-    local status=$?
+    local status
+    status=$(telemetry_status)
     if [[ $status -eq 1 ]]; then
         return 0  # Explicitly disabled
     elif [[ $status -eq 2 ]]; then
