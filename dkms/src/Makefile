@@ -86,6 +86,10 @@ mt7925-common-$(CONFIG_NL80211_TESTMODE) += mt7925/testmode.o
 # mt7925e PCIe module
 obj-m += mt7925e.o
 mt7925e-y := mt7925/pci.o mt7925/pci_mac.o mt7925/pci_mcu.o
+# mt7925u USB module
+obj-m += mt7925u.o
+mt7925u-y := mt7925/usb.o
+
 
 # Build targets
 all:
